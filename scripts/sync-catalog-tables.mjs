@@ -85,7 +85,7 @@ for (const [local, mapped] of uploaded) {
   if (prodErr) throw prodErr;
 }
 
-const mattexLogo = uploaded.get("/assets/prod-mesh.png") || [...uploaded.values()][0];
+const mattexLogo = uploaded.get("/assets/prod-mesh.webp") || [...uploaded.values()][0];
 if (mattexLogo) {
   const { error } = await sb.from("suppliers").update({ image_url: mattexLogo.url, updated_at: new Date().toISOString() }).eq("slug", "mattex");
   if (error) throw error;

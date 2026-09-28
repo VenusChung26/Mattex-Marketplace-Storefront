@@ -60,7 +60,7 @@ export default function GreenPage() {
       <section className="relative overflow-hidden bg-brand-800 text-white">
         <div
           className="absolute inset-0 opacity-25 bg-cover bg-center"
-          style={{ backgroundImage: 'url("/assets/cat-timber.png")' }}
+          style={{ backgroundImage: 'url("/assets/cat-timber.webp")' }}
           aria-hidden
         />
         <div className="absolute inset-0 bg-gradient-to-r from-brand-800 via-brand-800/92 to-brand-800/70" aria-hidden />

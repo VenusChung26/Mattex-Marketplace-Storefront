@@ -7,7 +7,7 @@ export function orgJsonLd(origin) {
     "@type": "Organization",
     name: "Mattex Marketplace",
     url: origin,
-    logo: absAsset(origin, "/assets/mattex-logo.png"),
+    logo: absAsset(origin, "/assets/mattex-logo.webp"),
     parentOrganization: {
       "@type": "Organization",
       name: "Mattex Asia Development Limited",

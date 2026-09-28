@@ -19,7 +19,7 @@ export default function SiteFooter() {
             title={t("footerMattexSite")}
           >
             <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white">
-              <img src="/assets/mattex-logo.png" alt="Mattex" className="h-10 w-10 object-contain" />
+              <img src="/assets/mattex-logo.webp" alt="Mattex" className="h-10 w-10 object-contain" />
             </span>
             <span className="leading-tight">
               <span className="block text-base font-semibold tracking-tight">Mattex</span>

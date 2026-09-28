@@ -76,7 +76,7 @@ export function absUrl(origin, path) {
 
 export function absAsset(origin, src) {
   const value = String(src || "").trim();
-  if (!value) return absUrl(origin, "/og-default.jpg");
+  if (!value) return absUrl(origin, "/og-default.webp");
   if (/^https?:\/\//i.test(value) || value.startsWith("data:")) return value;
   return absUrl(origin, value.startsWith("/") ? value : `/${value}`);
 }

@@ -45,6 +45,6 @@
     { "source": "/:lang(en|zh)/catalog/:slug", "destination": "/api/ssr?p=/:lang/catalog/:slug" },
     { "source": "/:lang(en|zh)/details/:id", "destination": "/api/ssr?p=/:lang/details/:id" },
     { "source": "/:lang(en|zh)/supplier/:slug", "destination": "/api/ssr?p=/:lang/supplier/:slug" },
-    { "source": "/((?!api/|assets/|og/|og-default\\.jpg|og-default\\.png|robots\\.txt|sitemap\\.xml).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|assets/|og/|og-default\\.webp|robots\\.txt|sitemap\\.xml).*)", "destination": "/index.html" }
   ]
 }

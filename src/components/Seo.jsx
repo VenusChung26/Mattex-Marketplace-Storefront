@@ -57,7 +57,7 @@ export default function Seo({
   title,
   description,
   path,
-  image = "/og-default.jpg",
+  image = "/og-default.webp",
   noindex = false,
   jsonLd,
   ogType = "website",
@@ -89,7 +89,7 @@ export default function Seo({
     if (secure) {
       upsertMeta('meta[property="og:image:secure_url"]', { property: "og:image:secure_url", content: secure });
     }
-    upsertMeta('meta[property="og:image:type"]', { property: "og:image:type", content: "image/jpeg" });
+    upsertMeta('meta[property="og:image:type"]', { property: "og:image:type", content: "image/webp" });
     upsertMeta('meta[property="og:image:width"]', { property: "og:image:width", content: String(OG_WIDTH) });
     upsertMeta('meta[property="og:image:height"]', { property: "og:image:height", content: String(OG_HEIGHT) });
     upsertMeta('meta[property="og:image:alt"]', { property: "og:image:alt", content: title || "Mattex Marketplace" });

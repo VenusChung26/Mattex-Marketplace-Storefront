@@ -4,7 +4,7 @@ export default function SupplierLogo({ name, className = "h-12 w-12" }) {
   if (isMattexSupplier(name)) {
     return (
       <span className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-md bg-white ${className}`} aria-hidden>
-        <img src="/assets/mattex-logo.png" alt="" className="h-full w-full object-contain p-0.5" />
+        <img src="/assets/mattex-logo.webp" alt="" className="h-full w-full object-contain p-0.5" />
       </span>
     );
   }

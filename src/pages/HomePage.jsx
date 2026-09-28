@@ -73,7 +73,7 @@ function readCatalogView() {
  * Subbie storefront landing.
  */
 export default function HomePage() {
-  const { user, cartCount } = useStore();
+  const { user, cartCount, catalogEpoch } = useStore();
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -167,13 +167,13 @@ export default function HomePage() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const categories = useMemo(() => getCategoryDefs(), []);
+  const categories = useMemo(() => getCategoryDefs(), [catalogEpoch]);
   const visibleCategories = categoriesExpanded
     ? categories
     : categories.slice(0, CATEGORY_PREVIEW_COUNT);
-  const top = useMemo(() => getTopProducts(5), []);
-  const greens = useMemo(() => getGreenProducts(5), []);
-  const suppliers = useMemo(() => getSuppliers(), []);
+  const top = useMemo(() => getTopProducts(5), [catalogEpoch]);
+  const greens = useMemo(() => getGreenProducts(5), [catalogEpoch]);
+  const suppliers = useMemo(() => getSuppliers(), [catalogEpoch]);
   const visibleSuppliers = suppliersExpanded
     ? suppliers
     : suppliers.slice(0, SUPPLIER_PREVIEW_COUNT);
@@ -185,7 +185,7 @@ export default function HomePage() {
     if (priceFilter === "unpriced") list = list.filter((p) => getEffectivePrice(p).displayPrice == null);
     if (priceFilter === "hot") list = list.filter((p) => isHitProduct(p));
     return list;
-  }, [searchQuery, selectedCategories, greenOnly, priceFilter, searchFields]);
+  }, [searchQuery, selectedCategories, greenOnly, priceFilter, searchFields, catalogEpoch]);
 
   useEffect(() => {
     setCatalogShown(CATALOG_BATCH);
@@ -416,12 +416,11 @@ export default function HomePage() {
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
             {visibleCategories.map((c) => (
-              <button
+              <Link
                 key={c.id}
-                type="button"
+                to={withLocale(lang, catalogPathForCategory(c.name))}
                 title={c.name}
-                onClick={() => selectCategory(c.name)}
-                className={`cat-tile group ${selectedCategories.includes(c.name) ? "is-active" : ""}`}
+                className="cat-tile group"
               >
                 <img src={c.image} alt="" loading="lazy" />
                 <span className="cat-tile-body">
@@ -432,7 +431,7 @@ export default function HomePage() {
                     {c.count}
                   </span>
                 </span>
-              </button>
+              </Link>
             ))}
           </div>
         </section>
@@ -441,7 +440,7 @@ export default function HomePage() {
           <div className="relative overflow-hidden bg-brand-800 text-white px-6 py-8 sm:px-9 sm:py-10 mb-7">
             <div
               className="absolute inset-0 opacity-25 bg-cover bg-center"
-              style={{ backgroundImage: 'url("/assets/cat-timber.png")' }}
+              style={{ backgroundImage: 'url("/assets/cat-timber.webp")' }}
               aria-hidden
             />
             <div className="absolute inset-0 bg-gradient-to-r from-brand-800 via-brand-800/92 to-brand-800/70" aria-hidden />
@@ -621,7 +620,7 @@ export default function HomePage() {
             </div>
             <div
               className="min-h-[18rem] bg-cover bg-center bg-no-repeat lg:min-h-0"
-              style={{ backgroundImage: 'url("/assets/prod-custom-rail.png?v=2")' }}
+              style={{ backgroundImage: 'url("/assets/prod-custom-rail.webp?v=2")' }}
               aria-hidden
             />
           </div>
@@ -854,7 +853,7 @@ export default function HomePage() {
         </a>
         <button
           type="button"
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          onClick={() => window.scrollTo({ top: 0, behavior: "auto" })}
           className="flex h-12 w-12 items-center justify-center rounded-full bg-charcoal text-white shadow-[0_8px_20px_rgba(16,21,19,0.28)] hover:bg-brand-800 transition-colors"
           aria-label={t("backToTop")}
         >

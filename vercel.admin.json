@@ -3,6 +3,6 @@
   "buildCommand": "npm run build:admin",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/((?!api/|assets/|og/|og-default\\.jpg|og-default\\.png|robots\\.txt|sitemap\\.xml).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|assets/|og/|og-default\\.webp|robots\\.txt|sitemap\\.xml).*)", "destination": "/index.html" }
   ]
 }

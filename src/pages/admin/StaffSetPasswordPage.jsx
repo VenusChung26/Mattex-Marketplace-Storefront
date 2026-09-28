@@ -46,7 +46,7 @@ export default function StaffSetPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-charcoal px-4 py-12 text-white">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 text-ink shadow-[0_24px_60px_rgba(16,21,19,0.25)]">
         <div className="flex items-center gap-2.5">
-          <img src="/assets/mattex-logo.png" alt="" className="h-8 w-auto shrink-0" />
+          <img src="/assets/mattex-logo.webp" alt="" className="h-8 w-auto shrink-0" />
           <span className="text-[15px] sm:text-lg font-semibold leading-tight tracking-tight text-brand-900">
             Mattex Marketplace Admin Portal
           </span>

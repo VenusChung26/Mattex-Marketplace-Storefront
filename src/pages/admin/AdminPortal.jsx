@@ -517,7 +517,7 @@ export default function AdminPortal() {
       <div className="min-h-screen bg-charcoal text-white font-sans">
         <header className="flex items-center justify-between gap-4 px-6 py-4">
           <div className="flex min-w-0 items-center gap-2.5">
-            <img src="/assets/mattex-logo.png" alt="" className="h-8 w-auto shrink-0 brightness-0 invert" />
+            <img src="/assets/mattex-logo.webp" alt="" className="h-8 w-auto shrink-0 brightness-0 invert" />
             <span className="block text-[15px] sm:text-lg font-semibold tracking-tight leading-tight">
               Mattex Marketplace Admin Portal
             </span>
@@ -659,7 +659,7 @@ export default function AdminPortal() {
     <div className="flex min-h-screen bg-paper text-ink font-sans">
       <aside className="sticky top-0 flex h-dvh w-60 shrink-0 flex-col self-start bg-charcoal text-white">
         <div className="flex shrink-0 items-center gap-2.5 px-4 py-4">
-          <img src="/assets/mattex-logo.png" alt="" className="h-8 w-auto shrink-0 brightness-0 invert" />
+          <img src="/assets/mattex-logo.webp" alt="" className="h-8 w-auto shrink-0 brightness-0 invert" />
           <span className="min-w-0 text-[15px] font-semibold leading-tight tracking-tight">
             Mattex Marketplace Admin Portal
           </span>

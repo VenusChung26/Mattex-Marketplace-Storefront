@@ -552,7 +552,7 @@ export function rfqReverseDeclinedEmailHtml({ logoUrl, salesEmail, name, rfqId, 
 export function listPrototypeEmails({ marketplaceOrigin, adminOrigin, salesEmail = "sales@mattex.com.hk" } = {}) {
   const shop = String(marketplaceOrigin || "").replace(/\/$/, "") || "http://localhost:5178";
   const admin = String(adminOrigin || "").replace(/\/$/, "") || "http://localhost:5179";
-  const logoUrl = `${shop}/assets/mattex-logo.png`;
+  const logoUrl = `${shop}/assets/mattex-logo.webp`;
   const fontBase = shop;
   const rows = [
     {

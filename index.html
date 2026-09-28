@@ -11,14 +11,14 @@
     <meta property="og:description" content="Engineering products, ready to quote. Specs first, then a clean RFQ path for construction buyers." />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Mattex Marketplace" />
-    <meta property="og:image" content="/og-default.jpg" />
-    <meta property="og:image:url" content="/og-default.jpg" />
-    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image" content="/og-default.webp" />
+    <meta property="og:image:url" content="/og-default.webp" />
+    <meta property="og:image:type" content="image/webp" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Mattex Marketplace" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="/og-default.jpg" />
+    <meta name="twitter:image" content="/og-default.webp" />
     <!--/seo-head-->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -55,7 +55,20 @@
       };
     </script>
     <style>
+      .mattex-ssr {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+      }
       .mattex-boot {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
         min-height: 100vh;
         margin: 0;
         display: grid;
@@ -156,7 +169,7 @@
     <div id="root"><!--app-root-->
       <div data-ssr="mattex" class="mattex-boot">
         <div class="mattex-boot-orb" aria-hidden="true">
-          <img class="mattex-boot-logo" src="/assets/mattex-logo.png" alt="" />
+          <img class="mattex-boot-logo" src="/assets/mattex-logo.webp" alt="" />
         </div>
         <h1>Mattex Marketplace</h1>
         <p>Engineering products, ready to quote. Specs first, then a clear quote path for construction buyers.</p>

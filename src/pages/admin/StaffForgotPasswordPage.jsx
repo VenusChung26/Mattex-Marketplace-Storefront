@@ -31,7 +31,7 @@ export default function StaffForgotPasswordPage() {
     <div className="min-h-screen bg-charcoal text-white font-sans">
       <header className="flex items-center justify-between gap-4 px-6 py-4">
         <div className="flex min-w-0 items-center gap-2.5">
-          <img src="/assets/mattex-logo.png" alt="" className="h-8 w-auto shrink-0 brightness-0 invert" />
+          <img src="/assets/mattex-logo.webp" alt="" className="h-8 w-auto shrink-0 brightness-0 invert" />
           <span className="block text-[15px] sm:text-lg font-semibold tracking-tight leading-tight">
             Mattex Marketplace Admin Portal
           </span>

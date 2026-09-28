@@ -151,7 +151,7 @@ export function HomeVariantC({
       <section className="relative overflow-hidden bg-brand-800 text-white">
         <div
           className="absolute inset-0 opacity-30 bg-cover bg-center"
-          style={{ backgroundImage: 'url("/assets/cat-steel.png")' }}
+          style={{ backgroundImage: 'url("/assets/cat-steel.webp")' }}
           aria-hidden
         />
         <div className="absolute inset-0 bg-gradient-to-r from-brand-900 via-brand-800/90 to-brand-800/50" aria-hidden />

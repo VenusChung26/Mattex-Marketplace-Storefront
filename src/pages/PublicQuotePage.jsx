@@ -55,7 +55,7 @@ export default function PublicQuotePage() {
         <div className="mx-auto flex max-w-xl items-center gap-3 px-4 py-3">
           <Link to={withLocale(lang, "/")} className="inline-flex items-center gap-2">
             <span className="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-md border border-line bg-white">
-              <img src="/assets/mattex-logo.png" alt="Mattex" className="h-7 w-7 object-contain" />
+              <img src="/assets/mattex-logo.webp" alt="Mattex" className="h-7 w-7 object-contain" />
             </span>
             <span className="text-sm font-semibold text-brand-800">Mattex Marketplace</span>
           </Link>

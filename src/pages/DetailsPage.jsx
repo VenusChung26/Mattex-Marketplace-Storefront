@@ -9,6 +9,7 @@ import ProductRating from "../components/ProductRating";
 import { ProductActions, ProductBadges, ProductImage } from "../components/ProductCard";
 import { productImageList } from "../lib/compressImage";
 import { useStore } from "../hooks/useStore";
+import { useLanguage } from "../i18n";
 import { bootProduct } from "../lib/bootPage";
 import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { seoCopy } from "../lib/seoCopy";
@@ -122,7 +123,7 @@ export default function DetailsPage() {
         path={path}
         title={copy.productTitle(product.name)}
         description={copy.productDesc(product)}
-        image={product.image || "/og-default.jpg"}
+        image={product.image || "/og-default.webp"}
         ogType="product"
         jsonLd={[
           orgJsonLd(origin),

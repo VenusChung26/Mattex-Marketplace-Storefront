@@ -8,6 +8,7 @@ import SearchFieldsSelect from "../components/SearchFieldsSelect";
 import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
+import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
 import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { categoryOgPath } from "../lib/ogImage";
@@ -34,6 +35,7 @@ function readCatalogView() {
 
 export default function CatalogPage() {
   const { t, lang } = useLanguage();
+  const { catalogEpoch } = useStore();
   const { slug } = useParams();
   const [params] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(() => params.get("q") || "");
@@ -70,7 +72,7 @@ export default function CatalogPage() {
     if (priceFilter === "unpriced") list = list.filter((p) => getEffectivePrice(p).displayPrice == null);
     if (priceFilter === "hot") list = list.filter((p) => isHitProduct(p));
     return list;
-  }, [searchQuery, category, searchFields, priceFilter, greenOnly]);
+  }, [searchQuery, category, searchFields, priceFilter, greenOnly, catalogEpoch]);
 
   useEffect(() => {
     setCatalogShown(CATALOG_BATCH);

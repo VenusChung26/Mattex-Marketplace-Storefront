@@ -7,12 +7,18 @@ import {
   catalogPathForCategory,
   getCategoryBySlug,
   getCategoryDefs,
+  getGreenProducts,
   getProduct,
+  getProductsBySupplier,
   getSupplier,
   getSuppliers,
+  getTopProducts,
+  getTopProductsForSupplier,
   isBuyerVisible,
   isDiscontinued,
   searchProducts,
+  supplierDisplayName,
+  supplierPath,
 } from "./store.js";
 
 function esc(value) {
@@ -83,7 +89,7 @@ export function resolvePublicPage(pathname, origin = siteOrigin()) {
     lang: parsed.lang,
     path: parsed.path,
     ogType: "website",
-    image: "/og-default.jpg",
+    image: "/og-default.webp",
     product: null,
     category: null,
     supplier: null,
@@ -175,7 +181,7 @@ export function resolvePublicPage(pathname, origin = siteOrigin()) {
     ogType: "product",
     title: copy.productTitle(product.name),
     description: copy.productDesc(product),
-    image: slim.image || "/og-default.jpg",
+    image: slim.image || "/og-default.webp",
     product: slim,
     jsonLd: [
       orgJsonLd(origin),
@@ -195,7 +201,7 @@ function headSnippet(page, origin) {
   const url = absUrl(origin, page.path);
   const enUrl = absUrl(origin, withLocale("en", stripLocale(page.path)));
   const zhUrl = absUrl(origin, withLocale("zh", stripLocale(page.path)));
-  const img = absAsset(origin, ogImagePath(page.image || "/og-default.jpg"));
+  const img = absAsset(origin, ogImagePath(page.image || "/og-default.webp"));
   const robots = page.noindex ? "noindex, nofollow" : "index, follow";
   const payload = Array.isArray(page.jsonLd) ? page.jsonLd.filter(Boolean) : page.jsonLd ? [page.jsonLd] : [];
   const json = payload.length
@@ -216,7 +222,7 @@ function headSnippet(page, origin) {
     `<meta property="og:image" content="${esc(img)}" />`,
     `<meta property="og:image:url" content="${esc(img)}" />`,
     img.startsWith("https://") ? `<meta property="og:image:secure_url" content="${esc(img)}" />` : "",
-    `<meta property="og:image:type" content="image/jpeg" />`,
+    `<meta property="og:image:type" content="image/webp" />`,
     `<meta property="og:image:width" content="${OG_WIDTH}" />`,
     `<meta property="og:image:height" content="${OG_HEIGHT}" />`,
     `<meta property="og:image:alt" content="${esc(page.title)}" />`,
@@ -249,16 +255,286 @@ function bootPayload(page) {
   };
 }
 
-function ssrBody(page) {
-  return `<div data-ssr="mattex" class="mattex-boot">
-      <div class="mattex-boot-orb" aria-hidden="true">
-        <img class="mattex-boot-logo" src="/assets/mattex-logo.png" alt="" />
-      </div>
-      <h1>${esc(page.heading || page.title)}</h1>
+function paragraphs(value) {
+  return String(value || "")
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => `<p>${esc(line)}</p>`)
+    .join("\n");
+}
+
+const HOME_COPY = {
+  en: {
+    heroHeadline: "Engineering products, ready to quote",
+    heroSupport: "Catalog SKUs or your own spec — both go to the same WhatsApp quote.",
+    browseCatalog: "Browse catalog",
+    materialCategories: "Material categories",
+    greenHeadline: "Lower-impact picks for greener builds",
+    greenSupport: "FSC timber, high-R insulation, recycled aggregate, and low-VOC boards — ready to quote.",
+    topProducts: "Top products",
+    supplierCompanies: "Supplier companies",
+    supplierSupport: "Open a company page for top products and a searchable catalog",
+    howHeadline: "From catalog to quote in three steps",
+    step1Title: "Browse specs",
+    step1Body: "Open product details for datasheet-style info before you quote.",
+    step2Title: "Ask, add, or tailor make",
+    step2Body: "WhatsApp for price, add catalog SKUs, or describe a Tailor Made Product if it is not listed.",
+    step3Title: "Send via WhatsApp",
+    step3Body: "Review quantities in your cart. We prepare a PDF with product images, then you open WhatsApp to send the PDF link to the supplier.",
+    customPitchTitle: "Not in the catalog? Still quote it.",
+    customPitchBody: "Name the material, attach drawings or spec files, and drop it in the same cart as listed SKUs.",
+    allProductsTitle: "All products",
+    searchHint: "Search by spec, size, material, SKU, supplier, or description",
+  },
+  zh: {
+    heroHeadline: "工程產品，即時報價",
+    heroSupport: "目錄 SKU 或你自己的規格，都經同一條 WhatsApp 問價。",
+    browseCatalog: "瀏覽目錄",
+    materialCategories: "物料分類",
+    greenHeadline: "較低碳影響的建材選擇",
+    greenSupport: "FSC 木材、高 R 值隔熱、再生骨料、低 VOC 板材 — 可直接問價。",
+    topProducts: "熱門產品",
+    supplierCompanies: "供應商公司",
+    supplierSupport: "進入公司頁查看熱門產品與可搜尋目錄",
+    howHeadline: "三步完成問價",
+    step1Title: "瀏覽規格",
+    step1Body: "先開啟產品詳情，查看規格再問價。",
+    step2Title: "詢價、加入，或度身訂造",
+    step2Body: "可用 WhatsApp 問價、加入目錄 SKU，目錄沒有的可新增度身訂造產品。",
+    step3Title: "用 WhatsApp 送出",
+    step3Body: "在購物車核對數量。系統會準備含產品圖的 PDF 連結，再開 WhatsApp 傳送給供應商。",
+    customPitchTitle: "目錄沒有，一樣可以問價",
+    customPitchBody: "寫物料名稱、上傳圖則或規格附件，同目錄 SKU 放喺同一個購物車。",
+    allProductsTitle: "全部產品",
+    searchHint: "用規格、尺寸、物料、SKU、供應商或描述搜尋",
+  },
+};
+
+function productBlock(lang, product) {
+  const href = withLocale(lang, `/details/${product.id}`);
+  const image = safeImage(product.image);
+  const categoryHref = withLocale(lang, catalogPathForCategory(product.category));
+  const supplierHref = product.supplier ? withLocale(lang, supplierPath(product.supplier)) : "";
+  const specs = (product.specs || []).map((line) => `<li>${esc(line)}</li>`).join("");
+  const purposes = (product.purposes || []).map((line) => `<li>${esc(line)}</li>`).join("");
+  return `<article>
+        ${image ? `<img src="${esc(image)}" alt="${esc(product.name)}" />` : ""}
+        <p><a href="${esc(categoryHref)}">${esc(product.category)}</a></p>
+        <h3><a href="${esc(href)}">${esc(product.name)}</a></h3>
+        <p>${esc(product.productNo || product.provisionalSku || "")}${
+          product.supplier
+            ? ` · <a href="${esc(supplierHref)}">${esc(supplierDisplayName(product.supplier))}</a>`
+            : ""
+        }</p>
+        <p>${esc(
+          [
+            product.unit ? `Unit ${product.unit}` : "",
+            product.moq != null ? `MOQ ${product.moq}` : "",
+            product.leadTimeLabel || "",
+            product.standard || "",
+          ]
+            .filter(Boolean)
+            .join(" · ")
+        )}</p>
+        ${paragraphs(product.description)}
+        ${paragraphs(product.sizeDesc)}
+        ${paragraphs(product.primarySpec)}
+        ${paragraphs(product.certifications)}
+        ${specs ? `<ul>${specs}</ul>` : ""}
+        ${purposes ? `<ul>${purposes}</ul>` : ""}
+        ${paragraphs(product.remark)}
+      </article>`;
+}
+
+function categoryNav(lang, activeId) {
+  return getCategoryDefs()
+    .filter((category) => category.count > 0)
+    .map((category) => {
+      const href = withLocale(lang, `/catalog/${category.id}`);
+      const current = category.id === activeId ? ` aria-current="page"` : "";
+      return `<li><a href="${esc(href)}"${current}>${esc(category.name)}</a> — ${category.count}</li>`;
+    })
+    .join("\n");
+}
+
+function visibleProducts(categoryName) {
+  return searchProducts("", categoryName || "").filter((product) => isBuyerVisible(product) && !isDiscontinued(product));
+}
+
+function pageContent(page) {
+  const lang = page.lang === "zh" ? "zh" : "en";
+  const copy = HOME_COPY[lang];
+  if (page.kind === "details" && page.product) {
+    const product = getProduct(page.product.id) || page.product;
+    const image = safeImage(product.image);
+    const images = (product.images || []).map((src) => safeImage(src)).filter(Boolean);
+    const gallery = images.length ? images : image ? [image] : [];
+    const specs = (product.specs || []).map((line) => `<li>${esc(line)}</li>`).join("");
+    const purposes = (product.purposes || []).map((term) => `<li>${esc(term)}</li>`).join("");
+    const lead = product.leadTime
+      ? product.leadTime.min === product.leadTime.max
+        ? String(product.leadTime.min)
+        : `${product.leadTime.min}–${product.leadTime.max}`
+      : product.leadTimeLabel || "";
+    return `<article class="mattex-ssr">
+      <nav>
+        <a href="${esc(withLocale(lang, "/"))}">${lang === "zh" ? "產品目錄" : "Catalog"}</a>
+        /
+        <a href="${esc(withLocale(lang, catalogPathForCategory(product.category)))}">${esc(product.category)}</a>
+      </nav>
+      ${gallery.map((src) => `<img src="${esc(src)}" alt="${esc(product.name)}" />`).join("\n")}
+      <p><a href="${esc(withLocale(lang, catalogPathForCategory(product.category)))}">${esc(product.category)}</a></p>
+      <h1>${esc(product.name)}</h1>
+      <p>${lang === "zh" ? "供應商" : "Supplier"}: ${
+        product.supplier
+          ? `<a href="${esc(withLocale(lang, supplierPath(product.supplier)))}">${esc(supplierDisplayName(product.supplier))}</a>`
+          : "Mattex"
+      }</p>
+      ${paragraphs(product.description)}
+      <dl>
+        <dt>${lang === "zh" ? "產品編號" : "Product no."}</dt><dd>${esc(product.productNo || product.id)}</dd>
+        <dt>MOQ</dt><dd>${esc(product.moq)} ${esc(product.unit)}</dd>
+        <dt>${lang === "zh" ? "交貨期" : "Lead time"}</dt><dd>${esc(lead)} ${lang === "zh" ? "日" : "days"}</dd>
+        <dt>${lang === "zh" ? "標準" : "Standard"}</dt><dd>${esc(product.standard)}</dd>
+      </dl>
+      ${paragraphs(product.sizeDesc)}
+      ${paragraphs(product.primarySpec)}
+      ${paragraphs(product.certifications)}
+      <h2>${lang === "zh" ? "規格" : "Specifications"}</h2>
+      ${specs ? `<ul>${specs}</ul>` : ""}
+      ${
+        purposes
+          ? `<h2>${lang === "zh" ? "用途" : "Purposes"}</h2><ul>${purposes}</ul>`
+          : ""
+      }
+      ${product.remark ? `<h2>${lang === "zh" ? "備註" : "Remark"}</h2>${paragraphs(product.remark)}` : ""}
+    </article>`;
+  }
+  if (page.kind === "catalog" && page.category) {
+    const products = visibleProducts(page.category.name);
+    return `<article class="mattex-ssr">
+      <nav>
+        <a href="${esc(withLocale(lang, "/"))}">${esc(copy.allProductsTitle)}</a>
+        / ${esc(page.category.name)}
+      </nav>
+      <aside>
+        <h2>${esc(copy.materialCategories)}</h2>
+        <ul>${categoryNav(lang, page.category.id)}</ul>
+      </aside>
+      <h1>${esc(page.category.name)}</h1>
       <p>${esc(page.body || page.description)}</p>
+      <p>${esc(copy.searchHint)}</p>
+      <p>${products.length} ${lang === "zh" ? "件產品" : "products"}</p>
+      ${products.map((product) => productBlock(lang, product)).join("\n")}
+    </article>`;
+  }
+  if (page.kind === "supplier" && page.supplier) {
+    const supplier = getSupplier(page.supplier.slug) || page.supplier;
+    const products = getProductsBySupplier(supplier.slug).filter((product) => isBuyerVisible(product) && !isDiscontinued(product));
+    const top = getTopProductsForSupplier(supplier.slug, 5);
+    const categories = supplier.categories || [];
+    return `<article class="mattex-ssr">
+      <p>${lang === "zh" ? "供應商" : "Supplier"}</p>
+      <h1>${esc(supplier.name)}</h1>
+      <p>${esc(copy.supplierSupport)}</p>
+      <p>${products.length} ${lang === "zh" ? "件產品" : "products"}${categories.length ? ` · ${esc(categories.join(", "))}` : ""}</p>
+      <section>
+        <h2>${esc(copy.topProducts)}</h2>
+        ${top.map((product) => productBlock(lang, product)).join("\n")}
+      </section>
+      <section>
+        <h2>${lang === "zh" ? `${esc(supplier.name)} 的產品` : `Products from ${esc(supplier.name)}`}</h2>
+        <ul>${categoryNav(lang)}</ul>
+        ${products.map((product) => productBlock(lang, product)).join("\n")}
+      </section>
+    </article>`;
+  }
+  if (page.kind === "green") {
+    const products = getGreenProducts().filter((product) => isBuyerVisible(product));
+    return `<article class="mattex-ssr">
+      <p>${lang === "zh" ? "綠色優選" : "Green preferred"}</p>
+      <h1>${esc(copy.greenHeadline)}</h1>
+      <p>${esc(copy.greenSupport)}</p>
+      <h2>${lang === "zh" ? "綠色產品" : "Green products"}</h2>
+      <p>${products.length} ${lang === "zh" ? "件產品" : "products"}</p>
+      ${products.map((product) => productBlock(lang, product)).join("\n")}
+    </article>`;
+  }
+  const categories = getCategoryDefs().filter((category) => category.count > 0);
+  const products = visibleProducts();
+  const featured = getTopProducts(12);
+  const greens = getGreenProducts(8);
+  const suppliers = getSuppliers();
+  return `<article class="mattex-ssr">
+      <h1>${esc(copy.heroHeadline)}</h1>
+      <p>${esc(copy.heroSupport)}</p>
+      <p><a href="${esc(withLocale(lang, "/catalog"))}">${esc(copy.browseCatalog)}</a></p>
+      <section>
+        <h2>${esc(copy.materialCategories)}</h2>
+        <ul>
+          ${categories
+            .map(
+              (category) =>
+                `<li><a href="${esc(withLocale(lang, `/catalog/${category.id}`))}">${esc(category.name)}</a> — ${category.count}</li>`
+            )
+            .join("\n          ")}
+        </ul>
+      </section>
+      <section>
+        <h2>${esc(copy.greenHeadline)}</h2>
+        <p>${esc(copy.greenSupport)}</p>
+        ${greens.map((product) => productBlock(lang, product)).join("\n")}
+      </section>
+      <section>
+        <h2>${esc(copy.topProducts)}</h2>
+        ${featured.map((product) => productBlock(lang, product)).join("\n")}
+      </section>
+      <section>
+        <h2>${esc(copy.supplierCompanies)}</h2>
+        <p>${esc(copy.supplierSupport)}</p>
+        <ul>
+          ${suppliers
+            .map(
+              (supplier) =>
+                `<li><a href="${esc(withLocale(lang, `/supplier/${supplier.slug}`))}">${esc(supplier.name)}</a> — ${supplier.count || 0}</li>`
+            )
+            .join("\n          ")}
+        </ul>
+      </section>
+      <section>
+        <h2>${esc(copy.howHeadline)}</h2>
+        <h3>${esc(copy.step1Title)}</h3>
+        <p>${esc(copy.step1Body)}</p>
+        <h3>${esc(copy.step2Title)}</h3>
+        <p>${esc(copy.step2Body)}</p>
+        <h3>${esc(copy.step3Title)}</h3>
+        <p>${esc(copy.step3Body)}</p>
+      </section>
+      <section>
+        <h2>${esc(copy.customPitchTitle)}</h2>
+        <p>${esc(copy.customPitchBody)}</p>
+      </section>
+      <section>
+        <h2>${esc(copy.allProductsTitle)}</h2>
+        <p>${esc(copy.searchHint)}</p>
+        <p>${products.length} products</p>
+        ${products.map((product) => productBlock(lang, product)).join("\n")}
+      </section>
+    </article>`;
+}
+
+function ssrBody(page) {
+  return `<div data-ssr="mattex">
+    <div class="mattex-boot">
+      <div class="mattex-boot-orb" aria-hidden="true">
+        <img class="mattex-boot-logo" src="/assets/mattex-logo.webp" alt="" />
+      </div>
       <div class="mattex-boot-bar" aria-hidden="true"><span></span></div>
       <p class="mattex-boot-status">Loading catalog</p>
-    </div>`;
+    </div>
+    ${pageContent(page)}
+  </div>`;
 }
 
 export function injectPublicDocument(html, pathname, origin = siteOrigin()) {

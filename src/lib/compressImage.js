@@ -35,10 +35,12 @@ export function compressImageFile(file, { maxBytes = PRODUCT_IMAGE_MAX_BYTES, ma
       }
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       let quality = 0.86;
-      let dataUrl = canvas.toDataURL("image/jpeg", quality);
+      let dataUrl = canvas.toDataURL("image/webp", quality);
+      if (!dataUrl.startsWith("data:image/webp")) dataUrl = canvas.toDataURL("image/jpeg", quality);
+      const mime = dataUrl.startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
       while (dataUrlBytes(dataUrl) > maxBytes && quality > 0.4) {
         quality -= 0.08;
-        dataUrl = canvas.toDataURL("image/jpeg", quality);
+        dataUrl = canvas.toDataURL(mime, quality);
       }
       if (dataUrlBytes(dataUrl) > maxBytes) reject(new Error("too_large"));
       else resolve(dataUrl);

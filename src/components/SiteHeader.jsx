@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AccountMenu from "./AccountMenu";
 import AuthModal from "./AuthModal";
@@ -60,11 +60,11 @@ export default function SiteHeader({
   onCatalogClick,
   onDraftClick,
 } = {}) {
-  const { user, cartCount, authModalOpen } = useStore();
+  const { user, cartCount, authModalOpen, catalogEpoch } = useStore();
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
-  const categories = getCategoryDefs();
+  const categories = useMemo(() => getCategoryDefs(), [catalogEpoch]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [navSolid, setNavSolid] = useState(!overlay);
   const [query, setQuery] = useState(searchValue || "");
@@ -175,15 +175,6 @@ export default function SiteHeader({
 
   function pickCategory(name) {
     closeMenu();
-    if (onSelectCategory) {
-      onSelectCategory(name);
-      return;
-    }
-    const found = getCategoryByName(name);
-    if (found) {
-      navigate({ pathname: lp("/"), search: `?filter=${found.id}`, hash: "products" });
-      return;
-    }
     navigate(catalogTo({ cat: name }));
   }
 
@@ -233,7 +224,7 @@ export default function SiteHeader({
         <div className="flex items-center gap-4 py-3">
           <Link to={lp("/")} className="shrink-0 flex items-center gap-2.5 text-white min-w-0">
             <img
-              src="/assets/mattex-logo.png"
+              src="/assets/mattex-logo.webp"
               alt=""
               className="h-9 w-auto shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]"
             />

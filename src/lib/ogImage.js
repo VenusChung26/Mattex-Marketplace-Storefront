@@ -1,4 +1,4 @@
-export const OG_DEFAULT = "/og-default.jpg";
+export const OG_DEFAULT = "/og-default.webp";
 export const OG_WIDTH = 1200;
 export const OG_HEIGHT = 630;
 
@@ -18,17 +18,17 @@ const OG_STEMS = new Set([
 
 export function categoryOgPath(slug) {
   const id = String(slug || "").trim();
-  return id ? `/og/cat-${id}.jpg` : OG_DEFAULT;
+  return id ? `/og/cat-${id}.webp` : OG_DEFAULT;
 }
 
 export function ogImagePath(src) {
   const value = String(src || "").trim();
-  if (value.startsWith("/og/") && /\.jpe?g$/i.test(value)) return value;
+  if (value.startsWith("/og/") && /\.webp$/i.test(value)) return value;
   if (!value || value.includes("og-default") || value.includes("mattex-logo") || value.includes("mattex-favicon")) {
     return OG_DEFAULT;
   }
   const file = value.split("/").pop() || "";
   const stem = file.replace(/\.[^.]+$/, "");
   if (!OG_STEMS.has(stem)) return OG_DEFAULT;
-  return `/og/${stem}.jpg`;
+  return `/og/${stem}.webp`;
 }

@@ -142,6 +142,7 @@ function jsonPlugin() {
 
 function publicSsrHtmlPlugin() {
   let surface = "marketplace";
+  let catalogReady;
   return {
     name: "mattex-public-ssr-html",
     configResolved(config) {
@@ -160,7 +161,11 @@ function publicSsrHtmlPlugin() {
         if (surface === "admin") return html;
         if (!ctx.server) return html;
         const url = String(ctx.originalUrl || ctx.path || "/").split("?")[0];
+        await import("./src/lib/ssrNodePolyfill.js");
+        const { hydrateStore } = await import("./src/lib/store.js");
         const { injectPublicDocument } = await import("./src/lib/ssrHtml.js");
+        if (!catalogReady) catalogReady = hydrateStore();
+        await catalogReady;
         return injectPublicDocument(html, url);
       },
     },
@@ -187,6 +192,8 @@ export default defineConfig(({ mode }) => {
     env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
     "";
+  if (supabaseUrl) process.env.VITE_SUPABASE_URL = supabaseUrl;
+  if (supabaseAnon) process.env.VITE_SUPABASE_ANON_KEY = supabaseAnon;
   const gaMeasurementId =
     process.env.VITE_GA_MEASUREMENT_ID || env.VITE_GA_MEASUREMENT_ID || GA_MEASUREMENT_ID;
   const marketplaceOrigin =

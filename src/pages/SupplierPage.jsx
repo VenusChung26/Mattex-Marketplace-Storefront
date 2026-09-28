@@ -122,7 +122,7 @@ export default function SupplierPage() {
         path={withLocale(lang, `/supplier/${supplier.slug}`)}
         title={seoCopy(lang).supplierTitle(supplier.name)}
         description={seoCopy(lang).supplierDesc(supplier.name)}
-        image="/og-default.jpg"
+        image="/og-default.webp"
         jsonLd={[
           orgJsonLd(siteOrigin()),
           breadcrumbJsonLd(siteOrigin(), [

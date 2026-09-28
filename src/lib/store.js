@@ -24,33 +24,33 @@ const HIDDEN_CATEGORY_IDS = new Set(["service", "computer", "hardware"]);
 const SYNTHETIC_CATEGORY_IDS = new Set(["service", "computer", "hardware"]);
 
 const CATEGORY_DEFS = [
-  { id: "reinforcement-mesh", name: "鋼筋網, Reinforcement Mesh", nameEn: "Reinforcement Mesh", image: "/assets/prod-mesh.png", count: 12, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: reinforcement mesh", "Size: 2.1m × 4.8m / custom", "Standard: BS4483 / BS4449", "Use: road / slab"] },
-  { id: "safety-net", name: "密目防燃安全網, Dense Mesh Flame Retardant Safety Net", nameEn: "Dense Mesh Flame Retardant Safety Net", image: "/assets/prod-safetynet.png", count: 7, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: dense mesh FR net", "Color: green / orange", "Use: edge protection", "Stock: HK / site lead"] },
-  { id: "gypsum-block", name: "石膏磚, Gypsum Block", nameEn: "Gypsum Block", image: "/assets/prod-gypsum-block.png", count: 3, unit: "m²", base: 100, supplier: "Mattex", specs: ["Material: gypsum block", "Size: 500 mm series", "Density: 1100–1200 kg/m³", "Use: partition"] },
-  { id: "xps-foam-board", name: "擠塑板, XPS Foam Board", nameEn: "XPS Foam Board", image: "/assets/prod-xps.png", count: 21, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: XPS foam board", "Grade: JL150–JL900", "Thickness: 50–100 mm", "Fire: B1 / B2"] },
-  { id: "tiles", name: "瓷磚, Tiles", nameEn: "Tiles", image: "/assets/prod-tile.png", count: 152, unit: "m²", base: 100, supplier: "Mattex", specs: ["Material: sintered stone / porcelain", "Size: 600×600–1200×3000", "Finish: marble / texture / artistic", "Use: floor / wall"] },
-  { id: "vinyl", name: "膠地板, Vinyl", nameEn: "Vinyl", image: "/assets/prod-vinyl.png", count: 2, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: homogeneous / heterogeneous vinyl", "Size: 2×20 m", "Thickness: 2–3 mm", "Use: flooring"] },
-  { id: "precasted-concrete", name: "預製混凝土, Precasted Concrete", nameEn: "Precasted Concrete", image: "/assets/prod-precast.png", count: 40, unit: "m³", base: 100, supplier: "Mattex", specs: ["Type: precast block", "Size: modular / custom", "Finish: structural", "Use: civil / building"] },
-  { id: "cat-ladder", name: "貓梯, Cat Ladder", nameEn: "Cat Ladder", image: "/assets/prod-ironwork.png", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: cat ladder", "Finish: galvanized", "Custom: by drawing"] },
-  { id: "steel-shelving", name: "貨台同鋼層架, Logistics Storage Platform & Steel Shelving", nameEn: "Logistics Storage Platform & Steel Shelving", image: "/assets/prod-ironwork.png", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: storage platform / shelving", "Custom: by drawing"] },
-  { id: "handrails", name: "扶手, Handrails", nameEn: "Handrails", image: "/assets/prod-ironwork.png", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: ball joint handrail", "Custom: by drawing"] },
-  { id: "balustrades", name: "欄河, Balustrades", nameEn: "Balustrades", image: "/assets/prod-ironwork.png", count: 4, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: carbon / stainless / disability", "Custom: by drawing"] },
-  { id: "forge-welded-grating", name: "焊接鋼格板, Forge-welded Grating", nameEn: "Forge-welded Grating", image: "/assets/prod-grating.png", count: 5, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: forge-welded", "Material: galvanized steel", "Load: by drawing"] },
-  { id: "press-lock-grating", name: "壓鎖鋼格板, Press-Lock Grating", nameEn: "Press-Lock Grating", image: "/assets/prod-grating.png", count: 6, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: press-lock", "Material: galvanized steel", "Load: by drawing"] },
-  { id: "gu-gratings", name: "GU型去水溝蓋, GU Type Drainage Gratings", nameEn: "GU Type Drainage Gratings", image: "/assets/prod-grating.png", count: 15, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: GU drainage grating", "Material: galvanized steel"] },
-  { id: "gt-gratings", name: "GT型去水溝蓋, GT Type Drainage Gratings", nameEn: "GT Type Drainage Gratings", image: "/assets/prod-grating.png", count: 24, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: GT drainage grating", "Material: galvanized steel"] },
-  { id: "gypsum-board", name: "石膏板, Gypsum Board", nameEn: "Gypsum Board", image: "/assets/prod-gypsum-board.png", count: 4, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: fire-resistant gypsum board", "Size: 1220×2440", "Thickness: 9.5–15 mm"] },
-  { id: "oxygen-chamber", name: "氧氣艙, Oxygen Chamber", nameEn: "Oxygen Chamber", image: "/assets/sensor.png", count: 9, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: oxygen chamber", "Use: medical / site"] },
-  { id: "dowel-bar", name: "傳力桿, Dowel Bar", nameEn: "Dowel Bar", image: "/assets/prod-ironwork.png", count: 27, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: dowel bar", "Material: mild / stainless steel"] },
-  { id: "paint", name: "油漆, Paint", nameEn: "Paint", image: "/assets/prod-tile.png", count: 30, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: interior / exterior paint"] },
-  { id: "raised-access-floors", name: "架空地板, Raised Access Floors", nameEn: "Raised Access Floors", image: "/assets/prod-vinyl.png", count: 17, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: raised access floor"] },
-  { id: "aluminum-cladding", name: "鋁板飾面, Aluminum Cladding", nameEn: "Aluminum Cladding", image: "/assets/prod-ironwork.png", count: 13, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: aluminum cladding"] },
-  { id: "cable", name: "電線電纜, Cable", nameEn: "Cable", image: "/assets/gearbox.png", count: 5, unit: "m", base: 100, supplier: "Mattex", specs: ["Type: power cable"] },
-  { id: "shoe-washing-machines", name: "洗鞋機, Shoe Washing Machines", nameEn: "Shoe Washing Machines", image: "/assets/plc.png", count: 6, unit: "set", base: 100, supplier: "Mattex", specs: ["Type: shoe washing machine"] },
-  { id: "service", name: "Service", nameEn: "Service", image: "/assets/sensor.png", count: 3, unit: "lot", base: 1800, supplier: "SiteServe Contracting", specs: ["Type: survey / install / inspect", "Scope: labour + report", "Lead: scheduled", "Use: site support"] },
-  { id: "computer", name: "Computer", nameEn: "Computer", image: "/assets/plc.png", count: 3, unit: "pc", base: 920, supplier: "BuildIT Workstations", specs: ["Type: desktop / rugged laptop", "OS: Windows", "Use: site office / BIM", "Warranty: 3 year"] },
-  { id: "hardware", name: "Hardware", nameEn: "Hardware", image: "/assets/gearbox.png", count: 4, unit: "pack", base: 48, supplier: "FixRight Hardware Co.", specs: ["Type: fixings / tools", "Grade: commercial", "Finish: zinc / stainless", "Use: install"] },
-  { id: "software", name: "Software", nameEn: "Software", image: "/assets/vfd.png", count: 14, unit: "license", base: 240, supplier: "Mattex", specs: ["Type: construction software / platform", "Term: project / annual", "Use: site management / safety / BIM"] },
+  { id: "reinforcement-mesh", name: "鋼筋網, Reinforcement Mesh", nameEn: "Reinforcement Mesh", image: "/assets/prod-mesh.webp", count: 12, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: reinforcement mesh", "Size: 2.1m × 4.8m / custom", "Standard: BS4483 / BS4449", "Use: road / slab"] },
+  { id: "safety-net", name: "密目防燃安全網, Dense Mesh Flame Retardant Safety Net", nameEn: "Dense Mesh Flame Retardant Safety Net", image: "/assets/prod-safetynet.webp", count: 7, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: dense mesh FR net", "Color: green / orange", "Use: edge protection", "Stock: HK / site lead"] },
+  { id: "gypsum-block", name: "石膏磚, Gypsum Block", nameEn: "Gypsum Block", image: "/assets/prod-gypsum-block.webp", count: 3, unit: "m²", base: 100, supplier: "Mattex", specs: ["Material: gypsum block", "Size: 500 mm series", "Density: 1100–1200 kg/m³", "Use: partition"] },
+  { id: "xps-foam-board", name: "擠塑板, XPS Foam Board", nameEn: "XPS Foam Board", image: "/assets/prod-xps.webp", count: 21, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: XPS foam board", "Grade: JL150–JL900", "Thickness: 50–100 mm", "Fire: B1 / B2"] },
+  { id: "tiles", name: "瓷磚, Tiles", nameEn: "Tiles", image: "/assets/prod-tile.webp", count: 152, unit: "m²", base: 100, supplier: "Mattex", specs: ["Material: sintered stone / porcelain", "Size: 600×600–1200×3000", "Finish: marble / texture / artistic", "Use: floor / wall"] },
+  { id: "vinyl", name: "膠地板, Vinyl", nameEn: "Vinyl", image: "/assets/prod-vinyl.webp", count: 2, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: homogeneous / heterogeneous vinyl", "Size: 2×20 m", "Thickness: 2–3 mm", "Use: flooring"] },
+  { id: "precasted-concrete", name: "預製混凝土, Precasted Concrete", nameEn: "Precasted Concrete", image: "/assets/prod-precast.webp", count: 40, unit: "m³", base: 100, supplier: "Mattex", specs: ["Type: precast block", "Size: modular / custom", "Finish: structural", "Use: civil / building"] },
+  { id: "cat-ladder", name: "貓梯, Cat Ladder", nameEn: "Cat Ladder", image: "/assets/prod-ironwork.webp", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: cat ladder", "Finish: galvanized", "Custom: by drawing"] },
+  { id: "steel-shelving", name: "貨台同鋼層架, Logistics Storage Platform & Steel Shelving", nameEn: "Logistics Storage Platform & Steel Shelving", image: "/assets/prod-ironwork.webp", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: storage platform / shelving", "Custom: by drawing"] },
+  { id: "handrails", name: "扶手, Handrails", nameEn: "Handrails", image: "/assets/prod-ironwork.webp", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: ball joint handrail", "Custom: by drawing"] },
+  { id: "balustrades", name: "欄河, Balustrades", nameEn: "Balustrades", image: "/assets/prod-ironwork.webp", count: 4, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: carbon / stainless / disability", "Custom: by drawing"] },
+  { id: "forge-welded-grating", name: "焊接鋼格板, Forge-welded Grating", nameEn: "Forge-welded Grating", image: "/assets/prod-grating.webp", count: 5, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: forge-welded", "Material: galvanized steel", "Load: by drawing"] },
+  { id: "press-lock-grating", name: "壓鎖鋼格板, Press-Lock Grating", nameEn: "Press-Lock Grating", image: "/assets/prod-grating.webp", count: 6, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: press-lock", "Material: galvanized steel", "Load: by drawing"] },
+  { id: "gu-gratings", name: "GU型去水溝蓋, GU Type Drainage Gratings", nameEn: "GU Type Drainage Gratings", image: "/assets/prod-grating.webp", count: 15, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: GU drainage grating", "Material: galvanized steel"] },
+  { id: "gt-gratings", name: "GT型去水溝蓋, GT Type Drainage Gratings", nameEn: "GT Type Drainage Gratings", image: "/assets/prod-grating.webp", count: 24, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: GT drainage grating", "Material: galvanized steel"] },
+  { id: "gypsum-board", name: "石膏板, Gypsum Board", nameEn: "Gypsum Board", image: "/assets/prod-gypsum-board.webp", count: 4, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: fire-resistant gypsum board", "Size: 1220×2440", "Thickness: 9.5–15 mm"] },
+  { id: "oxygen-chamber", name: "氧氣艙, Oxygen Chamber", nameEn: "Oxygen Chamber", image: "/assets/sensor.webp", count: 9, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: oxygen chamber", "Use: medical / site"] },
+  { id: "dowel-bar", name: "傳力桿, Dowel Bar", nameEn: "Dowel Bar", image: "/assets/prod-ironwork.webp", count: 27, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: dowel bar", "Material: mild / stainless steel"] },
+  { id: "paint", name: "油漆, Paint", nameEn: "Paint", image: "/assets/prod-tile.webp", count: 30, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: interior / exterior paint"] },
+  { id: "raised-access-floors", name: "架空地板, Raised Access Floors", nameEn: "Raised Access Floors", image: "/assets/prod-vinyl.webp", count: 17, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: raised access floor"] },
+  { id: "aluminum-cladding", name: "鋁板飾面, Aluminum Cladding", nameEn: "Aluminum Cladding", image: "/assets/prod-ironwork.webp", count: 13, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: aluminum cladding"] },
+  { id: "cable", name: "電線電纜, Cable", nameEn: "Cable", image: "/assets/gearbox.webp", count: 5, unit: "m", base: 100, supplier: "Mattex", specs: ["Type: power cable"] },
+  { id: "shoe-washing-machines", name: "洗鞋機, Shoe Washing Machines", nameEn: "Shoe Washing Machines", image: "/assets/plc.webp", count: 6, unit: "set", base: 100, supplier: "Mattex", specs: ["Type: shoe washing machine"] },
+  { id: "service", name: "Service", nameEn: "Service", image: "/assets/sensor.webp", count: 3, unit: "lot", base: 1800, supplier: "SiteServe Contracting", specs: ["Type: survey / install / inspect", "Scope: labour + report", "Lead: scheduled", "Use: site support"] },
+  { id: "computer", name: "Computer", nameEn: "Computer", image: "/assets/plc.webp", count: 3, unit: "pc", base: 920, supplier: "BuildIT Workstations", specs: ["Type: desktop / rugged laptop", "OS: Windows", "Use: site office / BIM", "Warranty: 3 year"] },
+  { id: "hardware", name: "Hardware", nameEn: "Hardware", image: "/assets/gearbox.webp", count: 4, unit: "pack", base: 48, supplier: "FixRight Hardware Co.", specs: ["Type: fixings / tools", "Grade: commercial", "Finish: zinc / stainless", "Use: install"] },
+  { id: "software", name: "Software", nameEn: "Software", image: "/assets/vfd.webp", count: 14, unit: "license", base: 240, supplier: "Mattex", specs: ["Type: construction software / platform", "Term: project / annual", "Use: site management / safety / BIM"] },
 ];
 
 const ALT_SUPPLIERS = {
@@ -418,10 +418,20 @@ function findCategoryDef(name) {
   return CATEGORY_DEFS.find((c) => categoryAliases(c).some((alias) => categoryKey(alias) === n)) || null;
 }
 
+function categoryPieces(name) {
+  const raw = String(name || "").trim();
+  if (!raw) return [];
+  const parts = raw.split(",");
+  const pieces = [raw];
+  if (parts.length > 1) pieces.push(parts[0].trim(), parts.slice(1).join(",").trim());
+  return pieces;
+}
+
 function productInNamedCategory(product, nameOrDef) {
   const def = nameOrDef && typeof nameOrDef === "object" && nameOrDef.id ? nameOrDef : findCategoryDef(nameOrDef);
-  if (!def) return categoryKey(product?.category) === categoryKey(nameOrDef);
-  return categoryAliases(def).some((alias) => categoryKey(alias) === categoryKey(product?.category));
+  const productPieces = new Set(categoryPieces(product?.category).map(categoryKey));
+  if (!def) return productPieces.has(categoryKey(nameOrDef));
+  return categoryAliases(def).some((alias) => productPieces.has(categoryKey(alias)));
 }
 
 function categoryIdFromName(name) {
@@ -454,7 +464,7 @@ function getCategoryDefs() {
   return visibleCategoryDefs().map((c) => ({
     id: c.id,
     name: c.name,
-    image: c.image || "/assets/prod-mesh.png",
+    image: c.image || "/assets/prod-mesh.webp",
     count: activeCatalog(PRODUCTS).filter((p) => productInNamedCategory(p, c)).length,
     custom: Boolean(c.custom),
   }));
@@ -495,7 +505,7 @@ function addAdminCategory(name) {
   let id = slugifyCategory(nextName);
   const used = new Set([...CATEGORY_DEFS.map((c) => c.id), ...list.map((c) => c.id), ...getCategoryAdminMeta().hidden]);
   if (used.has(id)) id = `${id}-${Date.now().toString(36)}`;
-  list.push({ id, name: nextName, image: "/assets/prod-mesh.png", custom: true });
+  list.push({ id, name: nextName, image: "/assets/prod-mesh.webp", custom: true });
   writeJson(CUSTOM_CATEGORIES_KEY, list);
   emitStoreChange();
   return { ok: true, category: { id, name: nextName } };
@@ -511,7 +521,7 @@ function listAdminCategories() {
     return {
       id: c.id,
       name: c.name,
-      image: c.image || "/assets/prod-mesh.png",
+      image: c.image || "/assets/prod-mesh.webp",
       custom: Boolean(c.custom),
       count: products.length,
       deletedCount: products.filter((p) => p.deleted).length,
@@ -712,6 +722,9 @@ function productSearchBlob(product) {
     product.category,
     product.supplier,
     product.description,
+    product.sizeDesc,
+    product.primarySpec,
+    product.certifications,
     product.standard,
     product.stockStatus,
     specs,
@@ -737,7 +750,9 @@ function productSearchText(product, fields) {
   if (selected.includes("name")) parts.push(product.name);
   if (selected.includes("category")) parts.push(product.category);
   if (selected.includes("sku")) parts.push(product.productNo, product.provisionalSku, product.id);
-  if (selected.includes("spec")) parts.push(specs, product.standard, product.description);
+  if (selected.includes("spec")) {
+    parts.push(specs, product.standard, product.description, product.sizeDesc, product.primarySpec, product.certifications);
+  }
   if (selected.includes("supplier")) parts.push(product.supplier);
   if (selected.includes("remarks")) parts.push(getProductRemarks(product).join(" "), (product.purposes || []).join(" "));
   return parts.filter(Boolean).join(" ").toLowerCase();
@@ -1160,6 +1175,7 @@ async function hydrateStore() {
         /* ignore */
       }
     }
+    bumpCatalog();
     emitStoreChange();
     return true;
   } catch (error) {
@@ -1241,10 +1257,17 @@ const listeners = new Set();
 let authModalOpen = false;
 let authModalMode = "invite";
 let lastCartWhatsappResult = null;
+let catalogEpoch = 0;
+
+function bumpCatalog() {
+  catalogEpoch += 1;
+}
+
 let storeSnapshot = {
   user: null,
   staff: null,
   cartCount: 0,
+  catalogEpoch: 0,
   draft: { lines: [], note: "" },
   rfqs: [],
   allRfqs: [],
@@ -1260,6 +1283,7 @@ function refreshStoreSnapshot() {
     user: getUser(),
     staff: getStaffSession(),
     cartCount: cartCount(),
+    catalogEpoch,
     draft: getDraft(),
     rfqs: getRfqs(),
     allRfqs: getAllRfqs(),
@@ -4091,7 +4115,7 @@ function shouldSendViaResend() {
 }
 
 function mattexLogoUrl() {
-  return `${marketplaceOrigin()}/assets/mattex-logo.png`;
+  return `${marketplaceOrigin()}/assets/mattex-logo.webp`;
 }
 
 function rfqMailContext(rfq) {
@@ -4440,7 +4464,7 @@ function showAdminWebNotification(title, body, href) {
       const note = new Notification(title, {
         body,
         tag: title,
-        icon: "/assets/mattex-logo.png",
+        icon: "/assets/mattex-logo.webp",
       });
       note.onclick = () => {
         window.focus();
@@ -6162,6 +6186,7 @@ function persistProductPatches() {
   patches.__removed = removed;
   writeJson(PRODUCT_PATCH_KEY, patches);
   persistCatalogTables(PRODUCTS);
+  bumpCatalog();
 }
 
 function applySavedProductPatches() {
@@ -6179,6 +6204,7 @@ function applySavedProductPatches() {
     if (!row?.id || removed.has(String(row.id))) return;
     if (!PRODUCTS.some((p) => p.id === row.id)) PRODUCTS.push(normalizeProductRecord(row));
   });
+  bumpCatalog();
 }
 
 function nextTmpSku() {

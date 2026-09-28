@@ -87,7 +87,7 @@ export function buildPrototypeQuotes(rfq) {
             id: `${l.productId}-kit`,
             name: `${sup.name.split(" ")[0]} pairing / fixings kit`,
             description: "Optional fixings and pairing hardware for site installation.",
-            image: kitMeta.image || "/assets/cat-pipe.png",
+            image: kitMeta.image || "/assets/cat-pipe.webp",
             productNo: kitMeta.productNo,
             moq: 1,
             qty: kitQty,
