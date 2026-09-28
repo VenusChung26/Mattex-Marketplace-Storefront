@@ -43,6 +43,7 @@ import {
   logoutStaff,
   markAdminAlertsSeen,
   pullSharedStore,
+  refreshRemoteRfqs,
   assignRfqToBuyer,
   setRfqBuyerPhone,
   buyerWhatsappHref,
@@ -458,6 +459,11 @@ export default function AdminPortal() {
     if (!staff) return;
     requestAdminNotifyPermission();
   }, [staff]);
+
+  useEffect(() => {
+    if (!staff?.email || page !== "rfqs") return;
+    refreshRemoteRfqs();
+  }, [staff?.email, page]);
 
   useEffect(() => {
     if (!staff) return undefined;
@@ -3882,11 +3888,11 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
     let cancelled = false;
     setRfqPulling(true);
     const tick = async () => {
-      await pullSharedStore();
+      await refreshRemoteRfqs();
       if (!cancelled) setRfqPulling(false);
     };
     tick();
-    const timer = window.setInterval(tick, 1000);
+    const timer = window.setInterval(tick, 15000);
     return () => {
       cancelled = true;
       window.clearInterval(timer);

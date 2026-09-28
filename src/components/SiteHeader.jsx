@@ -66,6 +66,7 @@ export default function SiteHeader({
   const location = useLocation();
   const categories = useMemo(() => getCategoryDefs(), [catalogEpoch]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [catsOpen, setCatsOpen] = useState(false);
   const [navSolid, setNavSolid] = useState(!overlay);
   const [query, setQuery] = useState(searchValue || "");
   const isHome = stripLocale(location.pathname) === "/";
@@ -263,7 +264,7 @@ export default function SiteHeader({
               aria-label={`${t("rfqDraft")}, ${t("cartCountAria", { n: cartCount })}`}
             >
               <CartIcon />
-              <span>{t("rfqDraft")}</span>
+              <span className="hidden xl:inline">{t("rfqDraft")}</span>
               {cartCount > 0 ? (
                 <span className="absolute -top-1.5 -right-1 min-w-[1.15rem] h-[1.15rem] px-1 bg-brand-400 text-charcoal text-[10px] font-bold flex items-center justify-center">
                   {cartCount}
@@ -280,7 +281,7 @@ export default function SiteHeader({
                 aria-label={t("myRfqs")}
               >
                 <RfqsIcon />
-                <span>{t("myRfqs")}</span>
+                <span className="hidden xl:inline">{t("myRfqs")}</span>
               </button>
             ) : null}
             <AccountMenu user={user} light />
@@ -297,8 +298,12 @@ export default function SiteHeader({
           </div>
         </div>
 
-        <nav className="hidden lg:flex items-center gap-1 border-t border-white/10 py-1.5 text-sm font-medium text-white/70">
-          <div className="nav-dropdown">
+        <nav className="hidden lg:flex flex-wrap items-center gap-1 border-t border-white/10 py-1.5 text-sm font-medium text-white/70">
+          <div
+            className="nav-dropdown"
+            onMouseEnter={() => setCatsOpen(true)}
+            onFocus={() => setCatsOpen(true)}
+          >
             <Link
               to={isHome ? "#categories" : homeTo("categories")}
               className="inline-flex items-center gap-1.5 hover:text-white hover:bg-white/10 transition-colors px-3 py-2"
@@ -319,7 +324,7 @@ export default function SiteHeader({
                     onClick={() => pickCategory(c.name)}
                     className={`nav-cat-item text-left ${selectedCategories.includes(c.name) ? "!bg-brand-600/40 !text-white" : ""}`}
                   >
-                    <img src={c.image} alt="" loading="lazy" />
+                    {catsOpen ? <img src={c.image} alt="" loading="lazy" decoding="async" /> : <span className="nav-cat-ph" aria-hidden />}
                     <span className="min-w-0">
                       <span className="block text-[12px] font-semibold leading-snug line-clamp-2">{c.name}</span>
                       <span className="block text-[10px] text-white/45 mt-0.5">{c.count} items</span>

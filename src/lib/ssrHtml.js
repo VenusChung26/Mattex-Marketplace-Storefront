@@ -313,13 +313,11 @@ const HOME_COPY = {
 
 function productBlock(lang, product) {
   const href = withLocale(lang, `/details/${product.id}`);
-  const image = safeImage(product.image);
   const categoryHref = withLocale(lang, catalogPathForCategory(product.category));
   const supplierHref = product.supplier ? withLocale(lang, supplierPath(product.supplier)) : "";
   const specs = (product.specs || []).map((line) => `<li>${esc(line)}</li>`).join("");
   const purposes = (product.purposes || []).map((line) => `<li>${esc(line)}</li>`).join("");
   return `<article>
-        ${image ? `<img src="${esc(image)}" alt="${esc(product.name)}" />` : ""}
         <p><a href="${esc(categoryHref)}">${esc(product.category)}</a></p>
         <h3><a href="${esc(href)}">${esc(product.name)}</a></h3>
         <p>${esc(product.productNo || product.provisionalSku || "")}${
@@ -526,13 +524,6 @@ function pageContent(page) {
 
 function ssrBody(page) {
   return `<div data-ssr="mattex">
-    <div class="mattex-boot">
-      <div class="mattex-boot-orb" aria-hidden="true">
-        <img class="mattex-boot-logo" src="/assets/mattex-logo.webp" alt="" />
-      </div>
-      <div class="mattex-boot-bar" aria-hidden="true"><span></span></div>
-      <p class="mattex-boot-status">Loading catalog</p>
-    </div>
     ${pageContent(page)}
   </div>`;
 }

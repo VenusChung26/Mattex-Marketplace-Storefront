@@ -1,6 +1,6 @@
 import { collectAttachmentUrls, collectProductImageUrls, fitWhatsappUrls, uploadRfqPdf } from "./rfqBlob.js";
 import { buildQuotePdf, canSharePdfFile, downloadBlob, sharePdfFile } from "./quotePdf.js";
-import { fetchRemoteKv, fetchRemoteRfqs, fetchRemoteState, isSupabaseConfigured, persistCatalogTables, persistKv, persistKvNow } from "./supabasePersist.js";
+import { fetchCatalogState, fetchRemoteKv, fetchRemoteRfqs, fetchSessionState, isSupabaseConfigured, persistCatalogTables, persistKv, persistKvNow } from "./supabasePersist.js";
 import { adminOrigin, marketplaceOrigin } from "./origins.js";
 import {
   accountCreatedEmailHtml,
@@ -26,27 +26,27 @@ const SYNTHETIC_CATEGORY_IDS = new Set(["service", "computer", "hardware"]);
 const CATEGORY_DEFS = [
   { id: "reinforcement-mesh", name: "鋼筋網, Reinforcement Mesh", nameEn: "Reinforcement Mesh", image: "/assets/prod-mesh.webp", count: 12, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: reinforcement mesh", "Size: 2.1m × 4.8m / custom", "Standard: BS4483 / BS4449", "Use: road / slab"] },
   { id: "safety-net", name: "密目防燃安全網, Dense Mesh Flame Retardant Safety Net", nameEn: "Dense Mesh Flame Retardant Safety Net", image: "/assets/prod-safetynet.webp", count: 7, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: dense mesh FR net", "Color: green / orange", "Use: edge protection", "Stock: HK / site lead"] },
-  { id: "gypsum-block", name: "石膏磚, Gypsum Block", nameEn: "Gypsum Block", image: "/assets/prod-gypsum-block.webp", count: 3, unit: "m²", base: 100, supplier: "Mattex", specs: ["Material: gypsum block", "Size: 500 mm series", "Density: 1100–1200 kg/m³", "Use: partition"] },
-  { id: "xps-foam-board", name: "擠塑板, XPS Foam Board", nameEn: "XPS Foam Board", image: "/assets/prod-xps.webp", count: 21, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: XPS foam board", "Grade: JL150–JL900", "Thickness: 50–100 mm", "Fire: B1 / B2"] },
+  { id: "gypsum-block", name: "石膏磚, Gypsum Block", nameEn: "Gypsum Block", image: "/assets/type-gypsum.webp", count: 3, unit: "m²", base: 100, supplier: "Mattex", specs: ["Material: gypsum block", "Size: 500 mm series", "Density: 1100–1200 kg/m³", "Use: partition"] },
+  { id: "xps-foam-board", name: "擠塑板, XPS Foam Board", nameEn: "XPS Foam Board", image: "/assets/type-xps.webp", count: 21, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: XPS foam board", "Grade: JL150–JL900", "Thickness: 50–100 mm", "Fire: B1 / B2"] },
   { id: "tiles", name: "瓷磚, Tiles", nameEn: "Tiles", image: "/assets/prod-tile.webp", count: 152, unit: "m²", base: 100, supplier: "Mattex", specs: ["Material: sintered stone / porcelain", "Size: 600×600–1200×3000", "Finish: marble / texture / artistic", "Use: floor / wall"] },
-  { id: "vinyl", name: "膠地板, Vinyl", nameEn: "Vinyl", image: "/assets/prod-vinyl.webp", count: 2, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: homogeneous / heterogeneous vinyl", "Size: 2×20 m", "Thickness: 2–3 mm", "Use: flooring"] },
+  { id: "vinyl", name: "膠地板, Vinyl", nameEn: "Vinyl", image: "/assets/type-vinyl.webp", count: 2, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: homogeneous / heterogeneous vinyl", "Size: 2×20 m", "Thickness: 2–3 mm", "Use: flooring"] },
   { id: "precasted-concrete", name: "預製混凝土, Precasted Concrete", nameEn: "Precasted Concrete", image: "/assets/prod-precast.webp", count: 40, unit: "m³", base: 100, supplier: "Mattex", specs: ["Type: precast block", "Size: modular / custom", "Finish: structural", "Use: civil / building"] },
-  { id: "cat-ladder", name: "貓梯, Cat Ladder", nameEn: "Cat Ladder", image: "/assets/prod-ironwork.webp", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: cat ladder", "Finish: galvanized", "Custom: by drawing"] },
+  { id: "cat-ladder", name: "貓梯, Cat Ladder", nameEn: "Cat Ladder", image: "/assets/type-ladder.webp", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: cat ladder", "Finish: galvanized", "Custom: by drawing"] },
   { id: "steel-shelving", name: "貨台同鋼層架, Logistics Storage Platform & Steel Shelving", nameEn: "Logistics Storage Platform & Steel Shelving", image: "/assets/prod-ironwork.webp", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: storage platform / shelving", "Custom: by drawing"] },
-  { id: "handrails", name: "扶手, Handrails", nameEn: "Handrails", image: "/assets/prod-ironwork.webp", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: ball joint handrail", "Custom: by drawing"] },
-  { id: "balustrades", name: "欄河, Balustrades", nameEn: "Balustrades", image: "/assets/prod-ironwork.webp", count: 4, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: carbon / stainless / disability", "Custom: by drawing"] },
-  { id: "forge-welded-grating", name: "焊接鋼格板, Forge-welded Grating", nameEn: "Forge-welded Grating", image: "/assets/prod-grating.webp", count: 5, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: forge-welded", "Material: galvanized steel", "Load: by drawing"] },
-  { id: "press-lock-grating", name: "壓鎖鋼格板, Press-Lock Grating", nameEn: "Press-Lock Grating", image: "/assets/prod-grating.webp", count: 6, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: press-lock", "Material: galvanized steel", "Load: by drawing"] },
-  { id: "gu-gratings", name: "GU型去水溝蓋, GU Type Drainage Gratings", nameEn: "GU Type Drainage Gratings", image: "/assets/prod-grating.webp", count: 15, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: GU drainage grating", "Material: galvanized steel"] },
-  { id: "gt-gratings", name: "GT型去水溝蓋, GT Type Drainage Gratings", nameEn: "GT Type Drainage Gratings", image: "/assets/prod-grating.webp", count: 24, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: GT drainage grating", "Material: galvanized steel"] },
+  { id: "handrails", name: "扶手, Handrails", nameEn: "Handrails", image: "/assets/type-balustrade.webp", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: ball joint handrail", "Custom: by drawing"] },
+  { id: "balustrades", name: "欄河, Balustrades", nameEn: "Balustrades", image: "/assets/type-balustrade.webp", count: 4, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: carbon / stainless / disability", "Custom: by drawing"] },
+  { id: "forge-welded-grating", name: "焊接鋼格板, Forge-welded Grating", nameEn: "Forge-welded Grating", image: "/assets/type-channel.webp", count: 5, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: forge-welded", "Material: galvanized steel", "Load: by drawing"] },
+  { id: "press-lock-grating", name: "壓鎖鋼格板, Press-Lock Grating", nameEn: "Press-Lock Grating", image: "/assets/type-channel.webp", count: 6, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: press-lock", "Material: galvanized steel", "Load: by drawing"] },
+  { id: "gu-gratings", name: "GU型去水溝蓋, GU Type Drainage Gratings", nameEn: "GU Type Drainage Gratings", image: "/assets/type-gully.webp", count: 15, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: GU drainage grating", "Material: galvanized steel"] },
+  { id: "gt-gratings", name: "GT型去水溝蓋, GT Type Drainage Gratings", nameEn: "GT Type Drainage Gratings", image: "/assets/type-gully.webp", count: 24, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: GT drainage grating", "Material: galvanized steel"] },
   { id: "gypsum-board", name: "石膏板, Gypsum Board", nameEn: "Gypsum Board", image: "/assets/prod-gypsum-board.webp", count: 4, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: fire-resistant gypsum board", "Size: 1220×2440", "Thickness: 9.5–15 mm"] },
-  { id: "oxygen-chamber", name: "氧氣艙, Oxygen Chamber", nameEn: "Oxygen Chamber", image: "/assets/sensor.webp", count: 9, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: oxygen chamber", "Use: medical / site"] },
-  { id: "dowel-bar", name: "傳力桿, Dowel Bar", nameEn: "Dowel Bar", image: "/assets/prod-ironwork.webp", count: 27, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: dowel bar", "Material: mild / stainless steel"] },
-  { id: "paint", name: "油漆, Paint", nameEn: "Paint", image: "/assets/prod-tile.webp", count: 30, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: interior / exterior paint"] },
-  { id: "raised-access-floors", name: "架空地板, Raised Access Floors", nameEn: "Raised Access Floors", image: "/assets/prod-vinyl.webp", count: 17, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: raised access floor"] },
-  { id: "aluminum-cladding", name: "鋁板飾面, Aluminum Cladding", nameEn: "Aluminum Cladding", image: "/assets/prod-ironwork.webp", count: 13, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: aluminum cladding"] },
-  { id: "cable", name: "電線電纜, Cable", nameEn: "Cable", image: "/assets/gearbox.webp", count: 5, unit: "m", base: 100, supplier: "Mattex", specs: ["Type: power cable"] },
-  { id: "shoe-washing-machines", name: "洗鞋機, Shoe Washing Machines", nameEn: "Shoe Washing Machines", image: "/assets/plc.webp", count: 6, unit: "set", base: 100, supplier: "Mattex", specs: ["Type: shoe washing machine"] },
+  { id: "oxygen-chamber", name: "氧氣艙, Oxygen Chamber", nameEn: "Oxygen Chamber", image: "/assets/type-oxygen.webp", count: 9, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: oxygen chamber", "Use: medical / site"] },
+  { id: "dowel-bar", name: "傳力桿, Dowel Bar", nameEn: "Dowel Bar", image: "/assets/type-dowel.webp", count: 27, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: dowel bar", "Material: mild / stainless steel"] },
+  { id: "paint", name: "油漆, Paint", nameEn: "Paint", image: "/assets/type-paint.webp", count: 30, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: interior / exterior paint"] },
+  { id: "raised-access-floors", name: "架空地板, Raised Access Floors", nameEn: "Raised Access Floors", image: "/assets/type-floor.webp", count: 17, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: raised access floor"] },
+  { id: "aluminum-cladding", name: "鋁板飾面, Aluminum Cladding", nameEn: "Aluminum Cladding", image: "/assets/type-aluminium.webp", count: 13, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: aluminum cladding"] },
+  { id: "cable", name: "電線電纜, Cable", nameEn: "Cable", image: "/assets/type-cable.webp", count: 5, unit: "m", base: 100, supplier: "Mattex", specs: ["Type: power cable"] },
+  { id: "shoe-washing-machines", name: "洗鞋機, Shoe Washing Machines", nameEn: "Shoe Washing Machines", image: "/assets/type-shoe.webp", count: 6, unit: "set", base: 100, supplier: "Mattex", specs: ["Type: shoe washing machine"] },
   { id: "service", name: "Service", nameEn: "Service", image: "/assets/sensor.webp", count: 3, unit: "lot", base: 1800, supplier: "SiteServe Contracting", specs: ["Type: survey / install / inspect", "Scope: labour + report", "Lead: scheduled", "Use: site support"] },
   { id: "computer", name: "Computer", nameEn: "Computer", image: "/assets/plc.webp", count: 3, unit: "pc", base: 920, supplier: "BuildIT Workstations", specs: ["Type: desktop / rugged laptop", "OS: Windows", "Use: site office / BIM", "Warranty: 3 year"] },
   { id: "hardware", name: "Hardware", nameEn: "Hardware", image: "/assets/gearbox.webp", count: 4, unit: "pack", base: 48, supplier: "FixRight Hardware Co.", specs: ["Type: fixings / tools", "Grade: commercial", "Finish: zinc / stainless", "Use: install"] },
@@ -461,11 +461,29 @@ function visibleCategoryDefs() {
 }
 
 function getCategoryDefs() {
-  return visibleCategoryDefs().map((c) => ({
+  const defs = visibleCategoryDefs();
+  const aliasToId = new Map();
+  for (const def of defs) {
+    for (const alias of categoryAliases(def)) {
+      const key = categoryKey(alias);
+      if (key && !aliasToId.has(key)) aliasToId.set(key, def.id);
+    }
+  }
+  const counts = Object.create(null);
+  for (const def of defs) counts[def.id] = 0;
+  for (const product of activeCatalog(PRODUCTS)) {
+    for (const piece of categoryPieces(product?.category)) {
+      const id = aliasToId.get(categoryKey(piece));
+      if (id == null) continue;
+      counts[id] += 1;
+      break;
+    }
+  }
+  return defs.map((c) => ({
     id: c.id,
     name: c.name,
     image: c.image || "/assets/prod-mesh.webp",
-    count: activeCatalog(PRODUCTS).filter((p) => productInNamedCategory(p, c)).length,
+    count: counts[c.id] || 0,
     custom: Boolean(c.custom),
   }));
 }
@@ -1067,20 +1085,38 @@ function writeLocalOnly(key, value) {
   }
 }
 
+function isPortalSurface() {
+  // Portal build sets VITE_SURFACE. Prerender and the storefront leave it unset.
+  return import.meta.env?.VITE_SURFACE === "admin";
+}
+
+function yieldToBrowser() {
+  return new Promise((resolve) => {
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => setTimeout(resolve, 0));
+      return;
+    }
+    setTimeout(resolve, 0);
+  });
+}
+
 async function hydrateStore() {
   try {
-    const remote = await fetchRemoteState();
-    if (!remote) return false;
-    PRODUCTS.splice(
-      0,
-      PRODUCTS.length,
-      ...(remote.products || []).map((row) =>
-        normalizeProductRecord({
-          ...row,
-          imageUrl: row.imageUrl || row.image_url || "",
-        })
-      )
-    );
+    catalogLoading = isSupabaseConfigured();
+    catalogReady = !catalogLoading;
+    if (catalogLoading) emitStoreChange();
+    await yieldToBrowser();
+
+    const remote = await fetchCatalogState();
+    if (!remote) {
+      catalogLoading = false;
+      catalogReady = true;
+      catalogBootReady = true;
+      bumpCatalog();
+      emitStoreChange();
+      return false;
+    }
+
     const overlayKeys = [
       CUSTOM_CATEGORIES_KEY,
       CATEGORY_ADMIN_KEY,
@@ -1091,44 +1127,44 @@ async function hydrateStore() {
       if (remote.kv[key] == null) return;
       writeLocalOnly(key, remote.kv[key]);
     });
-    if (remote.accounts?.length) {
-      const buyers = {};
-      const staff = [];
-      remote.accounts.forEach((row) => {
-        const extra = row?.extra && typeof row.extra === "object" ? row.extra : {};
-        if (row.kind === "staff") {
-          staff.push({
-            ...extra,
-            email: row.email,
-            name: row.name || extra.name || "",
-            password: row.password || extra.password || "",
-            enabled: row.enabled !== false,
-            bootstrap: Boolean(row.bootstrap || extra.bootstrap),
-          });
-          return;
-        }
-        buyers[row.email] = {
-          ...extra,
-          email: row.email,
-          name: row.name || extra.name || "",
-          phone: row.phone || extra.phone || "",
-          companyName: row.company_name || extra.companyName || "",
-          enabled: row.enabled !== false,
-          approvalStatus: row.approval_status || extra.approvalStatus || "approved",
-        };
-      });
-      if (Object.keys(buyers).length) {
-        writeLocalOnly(ACCOUNTS_KEY, stripDeletedBuyers({ ...readJson(ACCOUNTS_KEY, {}), ...buyers }));
-      }
-      if (staff.length) {
-        writeLocalOnly(STAFF_KEY, mergeStaffLists(readJson(STAFF_KEY, []), staff));
-      }
-    } else if (remote.kv[STAFF_KEY] != null) {
+    if (remote.kv[STAFF_KEY] != null) {
       writeLocalOnly(STAFF_KEY, mergeStaffLists(readJson(STAFF_KEY, []), remote.kv[STAFF_KEY]));
     }
     if (remote.kv[PRODUCT_PATCH_KEY] != null) {
       writeLocalOnly(PRODUCT_PATCH_KEY, mergeProductPatchMaps(readJson(PRODUCT_PATCH_KEY, {}), remote.kv[PRODUCT_PATCH_KEY]));
     }
+
+    await yieldToBrowser();
+    const list = Array.isArray(remote.products) ? remote.products : [];
+    PRODUCTS.splice(0, PRODUCTS.length);
+    const CHUNK = 64;
+    let releasedBoot = false;
+    const releaseBoot = () => {
+      if (releasedBoot) return;
+      releasedBoot = true;
+      applySavedProductPatches();
+      catalogBootReady = true;
+      bumpCatalog();
+      emitStoreChange();
+    };
+    for (let i = 0; i < list.length; i += CHUNK) {
+      const slice = list.slice(i, i + CHUNK);
+      for (const row of slice) {
+        PRODUCTS.push(
+          normalizeProductRecord({
+            ...row,
+            imageUrl: row.imageUrl || row.image_url || "",
+          })
+        );
+      }
+      if (i === 0) releaseBoot();
+      else {
+        bumpCatalog();
+        emitStoreChange();
+      }
+      if (i + CHUNK < list.length) await yieldToBrowser();
+    }
+    if (!releasedBoot) releaseBoot();
     [REPORT_SEQ_KEY, TMP_SEQ_KEY, TMS_SEQ_KEY].forEach((key) => {
       const remoteN = Number(remote.kv[key] || 0);
       let localN = 0;
@@ -1145,7 +1181,6 @@ async function hydrateStore() {
         }
       }
     });
-    applySavedProductPatches();
     supplierMetricsBySlug.clear();
     Object.entries(remote.metrics || {}).forEach(([slug, metrics]) => {
       supplierMetricsBySlug.set(slug, metrics);
@@ -1153,10 +1188,6 @@ async function hydrateStore() {
     if (remote.kv[DELETED_BUYERS_KEY]) mergeDeletedBuyers(remote.kv[DELETED_BUYERS_KEY]);
     if (remote.kv[ACCOUNTS_KEY]) {
       writeLocalOnly(ACCOUNTS_KEY, stripDeletedBuyers({ ...readJson(ACCOUNTS_KEY, {}), ...remote.kv[ACCOUNTS_KEY] }));
-    }
-    const remoteRfqs = mergeRfqMaps(remote.rfqs || {}, remote.kv[RFQS_KEY] || {});
-    if (Object.keys(remoteRfqs).length) {
-      writeLocalOnly(RFQS_KEY, mergeRfqMaps(readJson(RFQS_KEY, {}), remoteRfqs));
     }
     if (remote.kv[QUOTE_SNAPSHOTS_KEY]) {
       writeLocalOnly(QUOTE_SNAPSHOTS_KEY, mergeQuoteSnapshots(remote.kv[QUOTE_SNAPSHOTS_KEY], readJson(QUOTE_SNAPSHOTS_KEY, {})));
@@ -1175,13 +1206,76 @@ async function hydrateStore() {
         /* ignore */
       }
     }
+    applySavedProductPatches();
+    catalogLoading = false;
+    catalogReady = true;
+    catalogBootReady = true;
     bumpCatalog();
     emitStoreChange();
+
+    if (isPortalSurface()) {
+      const session = await fetchSessionState();
+      if (applySessionState(session)) emitStoreChange();
+    }
     return true;
   } catch (error) {
     console.warn("supabase hydrate", error?.message || error);
+    catalogLoading = false;
+    catalogReady = true;
+    catalogBootReady = true;
+    bumpCatalog();
+    emitStoreChange();
     return false;
   }
+}
+
+function applySessionState(session) {
+  if (!session) return false;
+  let changed = false;
+  if (session.accounts?.length) {
+    const buyers = {};
+    const staff = [];
+    session.accounts.forEach((row) => {
+      const extra = row?.extra && typeof row.extra === "object" ? row.extra : {};
+      if (row.kind === "staff") {
+        staff.push({
+          ...extra,
+          email: row.email,
+          name: row.name || extra.name || "",
+          password: row.password || extra.password || "",
+          enabled: row.enabled !== false,
+          bootstrap: Boolean(row.bootstrap || extra.bootstrap),
+        });
+        return;
+      }
+      buyers[row.email] = {
+        ...extra,
+        email: row.email,
+        name: row.name || extra.name || "",
+        phone: row.phone || extra.phone || "",
+        companyName: row.company_name || extra.companyName || "",
+        enabled: row.enabled !== false,
+        approvalStatus: row.approval_status || extra.approvalStatus || "approved",
+      };
+    });
+    if (Object.keys(buyers).length) {
+      writeLocalOnly(ACCOUNTS_KEY, stripDeletedBuyers({ ...readJson(ACCOUNTS_KEY, {}), ...buyers }));
+      changed = true;
+    }
+    if (staff.length) {
+      writeLocalOnly(STAFF_KEY, mergeStaffLists(readJson(STAFF_KEY, []), staff));
+      changed = true;
+    }
+  }
+  const remoteRfqs = mergeRfqMaps(session.rfqs || {}, session.kv?.[RFQS_KEY] || {});
+  if (Object.keys(remoteRfqs).length) {
+    const merged = mergeRfqMaps(readJson(RFQS_KEY, {}), remoteRfqs);
+    if (JSON.stringify(merged) !== JSON.stringify(readJson(RFQS_KEY, {}))) {
+      writeLocalOnly(RFQS_KEY, merged);
+      changed = true;
+    }
+  }
+  return changed;
 }
 
 function getSuppliers() {
@@ -1258,6 +1352,9 @@ let authModalOpen = false;
 let authModalMode = "invite";
 let lastCartWhatsappResult = null;
 let catalogEpoch = 0;
+let catalogLoading = isSupabaseConfigured();
+let catalogReady = !catalogLoading;
+let catalogBootReady = !catalogLoading;
 
 function bumpCatalog() {
   catalogEpoch += 1;
@@ -1268,6 +1365,9 @@ let storeSnapshot = {
   staff: null,
   cartCount: 0,
   catalogEpoch: 0,
+  catalogLoading,
+  catalogReady,
+  catalogBootReady,
   draft: { lines: [], note: "" },
   rfqs: [],
   allRfqs: [],
@@ -1284,6 +1384,9 @@ function refreshStoreSnapshot() {
     staff: getStaffSession(),
     cartCount: cartCount(),
     catalogEpoch,
+    catalogLoading,
+    catalogReady,
+    catalogBootReady,
     draft: getDraft(),
     rfqs: getRfqs(),
     allRfqs: getAllRfqs(),
@@ -6679,7 +6782,7 @@ function leanSharedRfqsMap(map) {
 }
 
 function enqueueSharedPost(body) {
-  if (typeof fetch === "undefined") return Promise.resolve();
+  if (typeof fetch === "undefined" || isSupabaseConfigured()) return Promise.resolve();
   sharedPostChain = sharedPostChain
     .then(() =>
       fetch("/api/shared-store", {
@@ -6879,24 +6982,26 @@ async function pullSupabaseSharedStore() {
 
 async function pullSharedStore({ bootstrap = false } = {}) {
   try {
-    const res = await fetch("/api/shared-store");
-    if (res.ok) {
-      const data = await res.json();
-      const rev = Number(data?.rev) || 0;
-      if (bootstrap) {
-        if (data?.kv && Object.keys(data.kv).length) applySharedStore(data.kv);
-        const localKv = dumpLocalSharedKv();
-        if (Object.keys(localKv).length) {
-          await fetch("/api/shared-store", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ kv: localKv, bootstrap: true }),
-          });
+    if (!isSupabaseConfigured()) {
+      const res = await fetch("/api/shared-store");
+      if (res.ok) {
+        const data = await res.json();
+        const rev = Number(data?.rev) || 0;
+        if (bootstrap) {
+          if (data?.kv && Object.keys(data.kv).length) applySharedStore(data.kv);
+          const localKv = dumpLocalSharedKv();
+          if (Object.keys(localKv).length) {
+            await fetch("/api/shared-store", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ kv: localKv, bootstrap: true }),
+            });
+          }
+          sharedStoreRev = rev;
+        } else if (rev !== sharedStoreRev) {
+          applySharedStore(data.kv);
+          sharedStoreRev = rev;
         }
-        sharedStoreRev = rev;
-      } else if (rev !== sharedStoreRev) {
-        applySharedStore(data.kv);
-        sharedStoreRev = rev;
       }
     }
   } catch {
@@ -6905,11 +7010,52 @@ async function pullSharedStore({ bootstrap = false } = {}) {
   await pullSupabaseSharedStore();
 }
 
+let rfqRefreshChain = Promise.resolve();
+
+function refreshRemoteRfqs() {
+  if (!isSupabaseConfigured()) return pullSharedStore();
+  rfqRefreshChain = rfqRefreshChain
+    .then(async () => {
+      const [tableRfqs, kv] = await Promise.all([fetchRemoteRfqs(), fetchRemoteKv([RFQS_KEY])]);
+      const remoteRfqs = mergeRfqMaps(tableRfqs || {}, kv?.[RFQS_KEY] || {});
+      if (!Object.keys(remoteRfqs).length) return;
+      const merged = mergeRfqMaps(readJson(RFQS_KEY, {}), remoteRfqs);
+      if (JSON.stringify(merged) === JSON.stringify(readJson(RFQS_KEY, {}))) return;
+      writeLocalOnly(RFQS_KEY, merged);
+      emitStoreChange();
+    })
+    .catch((error) => {
+      console.warn("rfq refresh", error?.message || error);
+    });
+  return rfqRefreshChain;
+}
+
+function ensureBuyerSession() {
+  if (!isSupabaseConfigured() || isPortalSurface() || !getUser()) return Promise.resolve(false);
+  rfqRefreshChain = rfqRefreshChain
+    .then(async () => {
+      const session = await fetchSessionState();
+      if (applySessionState(session)) emitStoreChange();
+    })
+    .catch((error) => {
+      console.warn("buyer session", error?.message || error);
+    });
+  return rfqRefreshChain;
+}
+
 function startSharedStoreSync() {
   if (typeof window === "undefined") return;
-  pullSharedStore({ bootstrap: true });
   window.clearInterval(sharedStoreTimer);
-  sharedStoreTimer = window.setInterval(() => pullSharedStore(), 1000);
+  if (!isSupabaseConfigured()) {
+    pullSharedStore({ bootstrap: true });
+    sharedStoreTimer = window.setInterval(() => pullSharedStore(), 1000);
+    return;
+  }
+  if (!isPortalSurface()) return;
+  sharedStoreTimer = window.setInterval(() => {
+    if (!getStaffSession()) return;
+    refreshRemoteRfqs();
+  }, 15000);
 }
 
 applySavedProductPatches();
@@ -6950,6 +7096,8 @@ export {
   hydrateStore,
   startSharedStoreSync,
   pullSharedStore,
+  refreshRemoteRfqs,
+  ensureBuyerSession,
   isSupabaseConfigured,
   canDirectBuy,
   isDiscontinued,

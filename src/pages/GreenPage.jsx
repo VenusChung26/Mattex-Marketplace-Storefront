@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import ProductCard from "../components/ProductCard";
+import ProductCard, { ProductCardSkeleton } from "../components/ProductCard";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
 import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
+import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
 import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { seoCopy } from "../lib/seoCopy";
@@ -11,6 +12,7 @@ import { addFromStorefront, getGreenProducts, searchProducts } from "../lib/stor
 
 export default function GreenPage() {
   const { t, lang } = useLanguage();
+  const { catalogEpoch, catalogLoading } = useStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState("");
   const [catalogShown, setCatalogShown] = useState(24);
@@ -25,7 +27,7 @@ export default function GreenPage() {
     const q = searchQuery.trim();
     const list = q ? searchProducts(q).filter((p) => p.green) : getGreenProducts();
     return list;
-  }, [searchQuery]);
+  }, [searchQuery, catalogEpoch]);
 
   useEffect(() => {
     setCatalogShown(24);
@@ -79,7 +81,11 @@ export default function GreenPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-mute mb-2">{t("catalog")}</p>
             <h2 className="font-display text-2xl sm:text-3xl font-semibold text-brand-800">{t("greenProducts")}</h2>
             <p className="mt-2 text-sm text-mute">
-              {products.length === 1 ? t("productLabelOne") : t("productsLabel", { n: products.length })}
+              {catalogLoading && !products.length
+                ? t("loadingCatalog")
+                : products.length === 1
+                  ? t("productLabelOne")
+                  : t("productsLabel", { n: products.length })}
             </p>
           </div>
           <label className="relative max-w-md w-full sm:w-80 block">
@@ -95,9 +101,13 @@ export default function GreenPage() {
           </label>
         </div>
 
-        {products.length ? (
+        {catalogLoading && !products.length ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4" aria-busy="true">
+            <ProductCardSkeleton count={6} />
+          </div>
+        ) : products.length ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
               {products.slice(0, catalogShown).map((p) => (
                 <ProductCard key={p.id} product={p} onAdd={handleAdd} />
               ))}

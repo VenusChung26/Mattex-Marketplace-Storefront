@@ -163,20 +163,20 @@
         .mattex-boot-logo,
         .mattex-boot-bar span { animation: none; }
       }
+      .mattex-boot[hidden] { display: none !important; }
     </style>
   </head>
   <body class="bg-paper text-ink font-sans antialiased">
-    <div id="root"><!--app-root-->
-      <div data-ssr="mattex" class="mattex-boot">
-        <div class="mattex-boot-orb" aria-hidden="true">
-          <img class="mattex-boot-logo" src="/assets/mattex-logo.webp" alt="" />
-        </div>
-        <h1>Mattex Marketplace</h1>
-        <p>Engineering products, ready to quote. Specs first, then a clear quote path for construction buyers.</p>
-        <div class="mattex-boot-bar" aria-hidden="true"><span></span></div>
-        <p class="mattex-boot-status">Loading catalog</p>
+    <div id="root"><!--app-root--><!--/app-root--></div>
+    <div data-boot="mattex" class="mattex-boot">
+      <div class="mattex-boot-orb" aria-hidden="true">
+        <img class="mattex-boot-logo" src="/assets/mattex-logo.webp" alt="" />
       </div>
-    <!--/app-root--></div>
+      <h1>Mattex Marketplace</h1>
+      <p>Engineering products, ready to quote. Specs first, then a clear quote path for construction buyers.</p>
+      <div class="mattex-boot-bar" aria-hidden="true"><span></span></div>
+      <p class="mattex-boot-status">Loading catalog</p>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

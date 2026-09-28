@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import CategorySideNav from "../components/CategorySideNav";
-import ProductCard, { ProductListRow } from "../components/ProductCard";
+import ProductCard, { ProductCardSkeleton, ProductListRow } from "../components/ProductCard";
 import SupplierLogo from "../components/SupplierLogo";
 import CustomProductModal from "../components/CustomProductModal";
 import CatalogViewToggle from "../components/CatalogViewToggle";
@@ -73,7 +73,7 @@ function readCatalogView() {
  * Subbie storefront landing.
  */
 export default function HomePage() {
-  const { user, cartCount, catalogEpoch } = useStore();
+  const { user, cartCount, catalogEpoch, catalogLoading } = useStore();
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -414,7 +414,7 @@ export default function HomePage() {
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-2.5">
             {visibleCategories.map((c) => (
               <Link
                 key={c.id}
@@ -428,7 +428,7 @@ export default function HomePage() {
                     {c.name}
                   </span>
                   <span className="shrink-0 inline-flex h-5 min-w-[1.2rem] items-center justify-center bg-white/95 text-brand-800 text-[10px] font-bold px-1.5">
-                    {c.count}
+                    {catalogLoading ? "…" : c.count}
                   </span>
                 </span>
               </Link>
@@ -462,10 +462,12 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 xl:gap-4">
-            {greens.map((p) => (
-              <ProductCard key={p.id} product={p} compact onAdd={handleAdd} />
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+            {catalogLoading && !greens.length ? (
+              <ProductCardSkeleton compact count={4} />
+            ) : (
+              greens.map((p) => <ProductCard key={p.id} product={p} compact onAdd={handleAdd} />)
+            )}
           </div>
         </section>
 
@@ -486,10 +488,12 @@ export default function HomePage() {
               {t("fullCatalog")} →
             </a>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 xl:gap-4">
-            {top.map((p) => (
-              <ProductCard key={p.id} product={p} compact rank={p.featuredRank} onAdd={handleAdd} />
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+            {catalogLoading && !top.length ? (
+              <ProductCardSkeleton compact count={4} />
+            ) : (
+              top.map((p) => <ProductCard key={p.id} product={p} compact rank={p.featuredRank} onAdd={handleAdd} />)
+            )}
           </div>
         </section>
 
@@ -762,9 +766,11 @@ export default function HomePage() {
                   id="catalog-results"
                   className="font-display text-2xl font-semibold text-brand-800"
                 >
-                  {products.length === 1
-                    ? t("productLabelOne")
-                    : t("productsLabel", { n: products.length })}
+                  {catalogLoading && !products.length
+                    ? t("loadingCatalog")
+                    : products.length === 1
+                      ? t("productLabelOne")
+                      : t("productsLabel", { n: products.length })}
                 </h3>
                 {hasFilters ? (
                   <button
@@ -780,7 +786,15 @@ export default function HomePage() {
                 {t("openRfqDraft")} →
               </Link>
             </div>
-            {products.length === 0 ? (
+            {catalogLoading && !products.length ? (
+              <div
+                className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4"}
+                aria-busy="true"
+                aria-live="polite"
+              >
+                <ProductCardSkeleton count={6} />
+              </div>
+            ) : products.length === 0 ? (
               <div className="border border-dashed border-line bg-white/60 px-6 py-12 text-center">
                 <p className="text-base font-semibold text-brand-800">{t("noProducts")}</p>
                 <p className="mt-2 text-sm text-mute">{t("noProductsHint")}</p>
@@ -795,7 +809,7 @@ export default function HomePage() {
               </div>
             ) : (
               <>
-                <div className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"}>
+                <div className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4"}>
                   {visibleCatalog.map((p) =>
                     catalogView === "list" ? (
                       <ProductListRow key={p.id} product={p} onAdd={handleAdd} />

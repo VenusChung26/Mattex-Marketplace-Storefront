@@ -3,7 +3,7 @@
  */
 import { Link, useSearchParams } from "react-router-dom";
 import { useStore } from "../hooks/useStore";
-import { buildSupplierBankInfo, formatPrice, getProduct, inboxStatus, requestRfqCancel, requestRfqReverse, canBuyerRequestCancel, canBuyerReverse, resubmitRfq, rfqDiscussEmailHref, rfqDiscussWhatsappText, openWhatsappChat, rfqProjectName, createBuyerPurchaseOrder, quoteVersionList, quoteEffectiveVersionNo, getEffectiveQuoteVersion, rfqActivityLog, rfqLastActivity, rfqActivityLabel, formatQuoteVersionStamp, hydrateRfqDecisionActivity, updateBuyerRfqDetails, rfqRequestVersionList, rfqRequestEffectiveVersionNo, applyRfqRequestVersion } from "../lib/store";
+import { buildSupplierBankInfo, formatPrice, getProduct, inboxStatus, requestRfqCancel, requestRfqReverse, canBuyerRequestCancel, canBuyerReverse, resubmitRfq, rfqDiscussEmailHref, rfqDiscussWhatsappText, openWhatsappChat, rfqProjectName, createBuyerPurchaseOrder, quoteVersionList, quoteEffectiveVersionNo, getEffectiveQuoteVersion, rfqActivityLog, rfqLastActivity, rfqActivityLabel, formatQuoteVersionStamp, hydrateRfqDecisionActivity, updateBuyerRfqDetails, rfqRequestVersionList, rfqRequestEffectiveVersionNo, applyRfqRequestVersion, ensureBuyerSession } from "../lib/store";
 import { useEffect, useMemo, useRef, useState } from "react";
 import SiteHeader from "../components/SiteHeader";
 import Seo from "../components/Seo";
@@ -596,6 +596,10 @@ function RfqDocSwitcher({ list, selectedId, onSelect, onViewQuote, acceptedByRfq
 export default function RfqsPage() {
   const { user, rfqs } = useStore();
   const { t, lang } = useLanguage();
+  useEffect(() => {
+    if (!user?.email) return;
+    ensureBuyerSession();
+  }, [user?.email]);
   const [params] = useSearchParams();
   const storedList = rfqs || [];
   const usingDemo = SHOW_RFQ_QUOTES && storedList.length === 0;

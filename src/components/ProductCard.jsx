@@ -47,19 +47,71 @@ const ACTION_BTN =
 const TAG_PILL =
   "inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 tracking-[0.08em] uppercase";
 
-export function ProductImage({ src, alt, className = "", imgClassName = "", compact = false }) {
+function EmptyImage({ compact }) {
   const { t } = useLanguage();
   return (
-    <span className={`relative block overflow-hidden ${className}`}>
-      <img src={src} alt={alt} className={imgClassName} loading="lazy" decoding="async" />
-      <span
-        className={`absolute bottom-0 inset-x-0 pointer-events-none bg-charcoal/75 text-white text-center ${
-          compact ? "text-[8px] leading-tight px-1 py-0.5" : "text-[10px] px-1.5 py-1"
-        }`}
-      >
-        {t("imageForReference")}
-      </span>
+    <span className={`flex h-full w-full flex-col items-center justify-center gap-1.5 bg-[#f3f5f4] text-mute ${compact ? "min-h-[4.5rem]" : "min-h-[12rem]"}`}>
+      <svg viewBox="0 0 24 24" className={compact ? "h-5 w-5" : "h-8 w-8"} fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="m8 13 2.2-2.2a1 1 0 0 1 1.4 0L15 14" strokeLinecap="round" />
+        <path d="m14 13 1.2-1.2a1 1 0 0 1 1.4 0L19 14" strokeLinecap="round" />
+        <circle cx="9" cy="9" r="1" fill="currentColor" stroke="none" />
+      </svg>
+      <span className={compact ? "text-[9px] font-medium" : "text-xs font-medium"}>{t("noProductImage")}</span>
     </span>
+  );
+}
+
+export function ProductImage({ src, alt, className = "", imgClassName = "", compact = false }) {
+  const { t } = useLanguage();
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+  const show = Boolean(String(src || "").trim()) && !failed;
+  return (
+    <span className={`relative block overflow-hidden bg-[#f3f5f4] ${className}`}>
+      {show ? (
+        <img
+          src={src}
+          alt={alt}
+          className={imgClassName}
+          loading="lazy"
+          decoding="async"
+          fetchPriority="low"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <EmptyImage compact={compact} />
+      )}
+      {show ? (
+        <span
+          className={`absolute bottom-0 inset-x-0 pointer-events-none bg-charcoal/75 text-white text-center ${
+            compact ? "text-[8px] leading-tight px-1 py-0.5" : "text-[10px] px-1.5 py-1"
+          }`}
+        >
+          {t("imageForReference")}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+export function ProductCardSkeleton({ compact = false, count = 6 }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} className="product-tile catalog-skeleton overflow-hidden" aria-hidden>
+          <div className={`bg-[#e6ebe8] ${compact ? "aspect-[5/4]" : "aspect-[4/3]"}`} />
+          <div className={`space-y-2 ${compact ? "p-3" : "p-4"}`}>
+            <div className="h-2.5 w-1/3 rounded bg-[#e6ebe8]" />
+            <div className="h-4 w-4/5 rounded bg-[#e6ebe8]" />
+            <div className="h-3 w-1/2 rounded bg-[#e6ebe8]" />
+            <div className="mt-3 h-8 w-full rounded bg-[#e6ebe8]" />
+          </div>
+        </div>
+      ))}
+    </>
   );
 }
 

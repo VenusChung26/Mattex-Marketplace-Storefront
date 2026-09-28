@@ -45,13 +45,27 @@ export function isSupabaseConfigured() {
   return Boolean(url && (anon || service));
 }
 
+let anonClient = null;
+let serviceClient = null;
+
 export function getSupabase(preferService = false) {
   const { url, anon, service } = supabaseConfig();
   const key = preferService && service ? service : anon || service;
   if (!url || !key) return null;
-  return createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  if (preferService && service) {
+    if (!serviceClient) {
+      serviceClient = createClient(url, service, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+    }
+    return serviceClient;
+  }
+  if (!anonClient) {
+    anonClient = createClient(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  }
+  return anonClient;
 }
 
 const SKIP_KV_KEYS = new Set([
@@ -149,51 +163,91 @@ export async function fetchRemoteRfqs() {
   }
 }
 
-export async function fetchRemoteState() {
+function productsFromRows(rows) {
+  return (rows || [])
+    .map((row) => {
+      const payload = row?.payload;
+      if (!payload?.id) return null;
+      const imageUrl = String(row.image_url || "").trim();
+      const image = imageUrl.startsWith("http") ? imageUrl : payload.image;
+      return { ...payload, image, imageUrl };
+    })
+    .filter(Boolean);
+}
+
+function metricsFromRows(rows) {
+  const metrics = {};
+  for (const row of rows || []) {
+    metrics[row.slug] = {
+      rating: Number(row.rating) || 0,
+      completionRate: Number(row.completion_rate) || 0,
+      onTimeRate: Number(row.on_time_rate) || 0,
+      searchCount: Number(row.search_count) || 0,
+      foundCount: Number(row.found_count) || 0,
+      rfqCount: Number(row.rfq_count) || 0,
+      empty: Boolean(row.empty),
+    };
+  }
+  return metrics;
+}
+
+export async function fetchCatalogState() {
   const sb = getSupabase();
   if (!sb) return null;
   try {
-    const [kvRes, productRes, metricRes, rfqRes, accountRes] = await Promise.all([
-      sb.from("app_kv").select("key,value").not("key", "like", "subbie_drafts%"),
+    const [kvRes, productRes, metricRes] = await Promise.all([
+      sb.from("app_kv").select("key,value").not("key", "like", "subbie_drafts%").neq("key", "subbie_rfqs_by_user"),
       sb.from("products").select("id,payload,image_url"),
       sb.from("supplier_metrics").select("*"),
-      sb.from("rfqs").select("buyer_key,payload"),
-      sb.from("user_accounts").select("email,kind,name,phone,company_name,password,enabled,approval_status,bootstrap,extra"),
     ]);
     if (kvRes.error && productRes.error) {
       console.warn("supabase hydrate", kvRes.error.message || productRes.error.message);
       return null;
     }
+    return {
+      kv: kvFromRows(kvRes.data),
+      products: productsFromRows(productRes.data),
+      metrics: metricsFromRows(metricRes.data),
+    };
+  } catch (error) {
+    console.warn("supabase hydrate", error?.message || error);
+    return null;
+  }
+}
+
+export async function fetchSessionState() {
+  const sb = getSupabase();
+  if (!sb) return null;
+  try {
+    const [kvRes, rfqRes, accountRes] = await Promise.all([
+      sb.from("app_kv").select("key,value").eq("key", "subbie_rfqs_by_user"),
+      sb.from("rfqs").select("buyer_key,payload"),
+      sb.from("user_accounts").select("email,kind,name,phone,company_name,password,enabled,approval_status,bootstrap,extra"),
+    ]);
     if (rfqRes.error) console.warn("supabase rfqs", rfqRes.error.message);
     if (accountRes.error) console.warn("supabase accounts", accountRes.error.message);
-    const kv = kvFromRows(kvRes.data);
-    const products = (productRes.data || [])
-      .map((row) => {
-        const payload = row?.payload;
-        if (!payload?.id) return null;
-        const imageUrl = String(row.image_url || "").trim();
-        const image = imageUrl.startsWith("http") ? imageUrl : payload.image;
-        return { ...payload, image, imageUrl };
-      })
-      .filter(Boolean);
-    const metrics = {};
-    for (const row of metricRes.data || []) {
-      metrics[row.slug] = {
-        rating: Number(row.rating) || 0,
-        completionRate: Number(row.completion_rate) || 0,
-        onTimeRate: Number(row.on_time_rate) || 0,
-        searchCount: Number(row.search_count) || 0,
-        foundCount: Number(row.found_count) || 0,
-        rfqCount: Number(row.rfq_count) || 0,
-        empty: Boolean(row.empty),
-      };
-    }
     return {
-      kv,
-      products,
-      metrics,
+      kv: kvFromRows(kvRes.data),
       rfqs: rfqsMapFromRows(rfqRes.data),
       accounts: accountRes.data || [],
+    };
+  } catch (error) {
+    console.warn("supabase session", error?.message || error);
+    return null;
+  }
+}
+
+export async function fetchRemoteState() {
+  const sb = getSupabase();
+  if (!sb) return null;
+  try {
+    const [catalog, session] = await Promise.all([fetchCatalogState(), fetchSessionState()]);
+    if (!catalog) return null;
+    return {
+      ...catalog,
+      kv: { ...catalog.kv, ...(session?.kv || {}) },
+      rfqs: session?.rfqs,
+      accounts: session?.accounts || [],
     };
   } catch (error) {
     console.warn("supabase hydrate", error?.message || error);

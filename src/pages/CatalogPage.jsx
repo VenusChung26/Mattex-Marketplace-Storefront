@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import CategorySideNav from "../components/CategorySideNav";
 import CopyLinkButton from "../components/CopyLinkButton";
-import ProductCard, { ProductListRow } from "../components/ProductCard";
+import ProductCard, { ProductCardSkeleton, ProductListRow } from "../components/ProductCard";
 import CatalogViewToggle from "../components/CatalogViewToggle";
 import SearchFieldsSelect from "../components/SearchFieldsSelect";
 import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
@@ -35,7 +35,7 @@ function readCatalogView() {
 
 export default function CatalogPage() {
   const { t, lang } = useLanguage();
-  const { catalogEpoch } = useStore();
+  const { catalogEpoch, catalogLoading } = useStore();
   const { slug } = useParams();
   const [params] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(() => params.get("q") || "");
@@ -221,7 +221,11 @@ export default function CatalogPage() {
             <div id="catalog-results" className="mb-4 flex items-end justify-between gap-3">
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <h2 className="font-display text-2xl font-semibold text-brand-800">
-                  {products.length === 1 ? t("productLabelOne") : t("productsLabel", { n: products.length })}
+                  {catalogLoading && !products.length
+                    ? t("loadingCatalog")
+                    : products.length === 1
+                      ? t("productLabelOne")
+                      : t("productsLabel", { n: products.length })}
                 </h2>
                 {hasFilters ? (
                   <button
@@ -234,9 +238,17 @@ export default function CatalogPage() {
                 ) : null}
               </div>
             </div>
-            {products.length ? (
+            {catalogLoading && !products.length ? (
+              <div
+                className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4"}
+                aria-busy="true"
+                aria-live="polite"
+              >
+                <ProductCardSkeleton count={6} />
+              </div>
+            ) : products.length ? (
               <>
-                <div className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"}>
+                <div className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4"}>
                   {products.slice(0, catalogShown).map((p) =>
                     catalogView === "list" ? (
                       <ProductListRow key={p.id} product={p} onAdd={handleAdd} />

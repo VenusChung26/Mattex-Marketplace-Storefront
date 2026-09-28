@@ -29,6 +29,7 @@ import {
   requireBuyerAuth,
   openAuthModal,
   isLoggedIn,
+  ensureBuyerSession,
   isAuthInviteHidden,
   setPendingCartWhatsappSubmit,
   completeCartWhatsappSubmit,
@@ -47,6 +48,10 @@ import { useRevealFormIssue } from "../lib/formFocus";
 export default function RfqPage() {
   const { user, draft, lastCartWhatsappResult } = useStore();
   const { t, lang } = useLanguage();
+  useEffect(() => {
+    if (!user?.email) return;
+    ensureBuyerSession();
+  }, [user?.email]);
   const [params] = useSearchParams();
   const variant = String(params.get("variant") || "A").toUpperCase();
   const customPlacement = CUSTOM_PLACEMENT[variant] || "inline";

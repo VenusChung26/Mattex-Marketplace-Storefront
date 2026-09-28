@@ -4,10 +4,10 @@ import "./index.css";
 import App from "./App.jsx";
 import { hydrateStore, startSharedStoreSync } from "./lib/store";
 
-hydrateStore().finally(() => startSharedStoreSync());
-
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <App />
   </StrictMode>
 );
+
+hydrateStore().finally(() => startSharedStoreSync());
