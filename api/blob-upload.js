@@ -34,7 +34,16 @@ export async function handleRfqBlobUpload(body, request) {
       body,
       request,
       onBeforeGenerateToken: async (pathname) => {
-        if (!String(pathname || "").startsWith("rfq/")) {
+        const path = String(pathname || "");
+        if (path.startsWith("products/")) {
+          return {
+            allowedContentTypes: ["image/webp", "image/jpeg"],
+            addRandomSuffix: true,
+            maximumSizeInBytes: 1024 * 1024,
+            cacheControlMaxAge: 31536000,
+          };
+        }
+        if (!path.startsWith("rfq/")) {
           throw new Error("Invalid upload path");
         }
         return {

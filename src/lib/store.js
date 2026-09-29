@@ -2359,11 +2359,10 @@ function persistDeletedBuyers(set) {
 
 function mergeDeletedBuyers(remoteList) {
   const next = getDeletedBuyerSet();
-  (Array.isArray(remoteList) ? remoteList : []).forEach((email) => {
-    const key = normalizeEmail(email);
-    if (key) next.add(key);
-  });
-  persistDeletedBuyers(next);
+  const remote = new Set((Array.isArray(remoteList) ? remoteList : []).map(normalizeEmail).filter(Boolean));
+  remote.forEach((key) => next.add(key));
+  if (next.size === remote.size) writeLocalOnly(DELETED_BUYERS_KEY, [...next]);
+  else persistDeletedBuyers(next);
   return next;
 }
 

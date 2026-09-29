@@ -186,27 +186,14 @@ export async function fetchRfqStamp() {
   }
 }
 
-// Catalog images uploaded from public/assets are served same-origin by Vercel; cms-* only exist in Storage.
-const STORAGE_CATALOG_PATH = "/storage/v1/object/public/product-images/catalog/";
-
-export function localAssetUrl(url) {
-  const value = String(url || "").trim();
-  const at = value.indexOf(STORAGE_CATALOG_PATH);
-  if (at < 0) return value;
-  const name = decodeURIComponent(value.slice(at + STORAGE_CATALOG_PATH.length).split("?")[0]);
-  if (!name || name.includes("/") || name.startsWith("cms-")) return value;
-  return `/assets/${name.replace(/\.(png|jpe?g)$/i, ".webp")}`;
-}
-
 function productsFromRows(rows) {
   return (rows || [])
     .map((row) => {
       const payload = row?.payload;
       if (!payload?.id) return null;
-      const imageUrl = localAssetUrl(row.image_url);
-      const image = imageUrl.startsWith("http") || imageUrl.startsWith("/assets/") ? imageUrl : localAssetUrl(payload.image);
-      const images = Array.isArray(payload.images) ? payload.images.map(localAssetUrl) : payload.images;
-      return { ...payload, image, imageUrl, images };
+      const imageUrl = String(row.image_url || "").trim();
+      const image = imageUrl.startsWith("http") ? imageUrl : payload.image;
+      return { ...payload, image, imageUrl };
     })
     .filter(Boolean);
 }

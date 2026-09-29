@@ -4,6 +4,7 @@ import { useStore } from "../../hooks/useStore";
 import { PasswordInput } from "../../components/AccountForm";
 import { buildQuotePdf, downloadBlob } from "../../lib/quotePdf";
 import { compressImageFile, PRODUCT_IMAGE_MAX, productImageList } from "../../lib/compressImage";
+import { uploadProductImage } from "../../lib/rfqBlob";
 import { marketplaceHomeHref } from "../../lib/origins";
 import {
   addAdminCategory,
@@ -1863,17 +1864,29 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
       setFormError("You can upload up to 5 images.");
       return;
     }
-    try {
-      const added = [];
-      for (const file of picked.slice(0, remaining)) {
-        added.push(await compressImageFile(file));
+    const draft = form || toForm(product);
+    const added = [];
+    let error = "";
+    for (const file of picked.slice(0, remaining)) {
+      let dataUrl;
+      try {
+        dataUrl = await compressImageFile(file);
+      } catch {
+        error = "Each image must be under 800 KB after compress (max 1,600px).";
+        break;
       }
+      try {
+        added.push(await uploadProductImage(dataUrl, draft.productNo || product?.id));
+      } catch {
+        error = "Photo upload failed. Check the connection and try again.";
+        break;
+      }
+    }
+    if (added.length) {
       const next = [...current, ...added].slice(0, PRODUCT_IMAGE_MAX);
       fields({ image: next[0] || "", images: next, imageSource: "upload" });
-      setFormError("");
-    } catch {
-      setFormError("Each image must be under 800 KB after compress (max 1,600px).");
     }
+    setFormError(error);
   }
 
   function openCreate() {
