@@ -53,10 +53,9 @@ function envSiteUrl() {
 export function siteOrigin() {
   const viteUrl = envSiteUrl();
   if (viteUrl) return viteUrl;
-  if (typeof process !== "undefined" && process.env?.VERCEL_URL) {
-    const host = String(process.env.VERCEL_URL).replace(/^https?:\/\//, "").replace(/\/$/, "");
-    return `https://${host}`;
-  }
+  const env = typeof process !== "undefined" ? process.env || {} : {};
+  const host = env.VERCEL_ENV === "production" && env.VERCEL_PROJECT_PRODUCTION_URL ? env.VERCEL_PROJECT_PRODUCTION_URL : env.VERCEL_URL;
+  if (host) return `https://${String(host).replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
   if (typeof window !== "undefined" && window.location?.origin) return window.location.origin;
   return "http://localhost:5176";
 }
