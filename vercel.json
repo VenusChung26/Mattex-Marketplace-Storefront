@@ -39,6 +39,24 @@
     { "source": "/en/catalog", "destination": "/en", "statusCode": 301 },
     { "source": "/zh/catalog", "destination": "/zh", "statusCode": 301 }
   ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    },
+    {
+      "source": "/:lang(en|zh)/:page(login|signup|forgot-password|reset-password|rfq|rfqs|whatsapp|whatsapp-chat|email-sent|quote)/:rest*",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/:lang(en|zh)/:page(login|signup|forgot-password|reset-password|rfq|rfqs|whatsapp|whatsapp-chat|email-sent|quote)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    }
+  ],
   "rewrites": [
     { "source": "/:lang(en|zh)", "destination": "/api/ssr?p=/:lang" },
     { "source": "/:lang(en|zh)/green", "destination": "/api/ssr?p=/:lang/green" },

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { absAsset, absUrl, siteOrigin, stripLocale, withLocale } from "../lib/locale";
-import { OG_HEIGHT, OG_WIDTH, ogImagePath } from "../lib/ogImage";
+import { OG_HEIGHT, OG_WIDTH, isSizedOgImage, ogImagePath } from "../lib/ogImage";
 
 export { breadcrumbJsonLd, orgJsonLd, productJsonLd } from "../lib/seoJsonLd";
 
@@ -90,8 +90,9 @@ export default function Seo({
       upsertMeta('meta[property="og:image:secure_url"]', { property: "og:image:secure_url", content: secure });
     }
     upsertMeta('meta[property="og:image:type"]', { property: "og:image:type", content: "image/webp" });
-    upsertMeta('meta[property="og:image:width"]', { property: "og:image:width", content: String(OG_WIDTH) });
-    upsertMeta('meta[property="og:image:height"]', { property: "og:image:height", content: String(OG_HEIGHT) });
+    const sized = isSizedOgImage(ogImagePath(image));
+    upsertMeta('meta[property="og:image:width"]', { property: "og:image:width", content: sized ? String(OG_WIDTH) : "" });
+    upsertMeta('meta[property="og:image:height"]', { property: "og:image:height", content: sized ? String(OG_HEIGHT) : "" });
     upsertMeta('meta[property="og:image:alt"]', { property: "og:image:alt", content: title || "Mattex Marketplace" });
     upsertMeta('meta[property="og:site_name"]', { property: "og:site_name", content: "Mattex Marketplace" });
     upsertMeta('meta[property="og:locale"]', {

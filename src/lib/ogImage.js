@@ -27,8 +27,14 @@ export function ogImagePath(src) {
   if (!value || value.includes("og-default") || value.includes("mattex-logo") || value.includes("mattex-favicon")) {
     return OG_DEFAULT;
   }
-  const file = value.split("/").pop() || "";
+  const file = value.split("?")[0].split("/").pop() || "";
   const stem = file.replace(/\.[^.]+$/, "");
-  if (!OG_STEMS.has(stem)) return OG_DEFAULT;
-  return `/og/${stem}.webp`;
+  if (OG_STEMS.has(stem)) return `/og/${stem}.webp`;
+  if (/^https:\/\//i.test(value)) return value;
+  return OG_DEFAULT;
+}
+
+export function isSizedOgImage(src) {
+  const value = String(src || "");
+  return value.startsWith("/og/") || value === OG_DEFAULT;
 }

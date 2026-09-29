@@ -1,6 +1,6 @@
 import "./ssrNodePolyfill.js";
 import { absAsset, absUrl, siteOrigin, stripLocale, withLocale } from "./locale.js";
-import { OG_HEIGHT, OG_WIDTH, categoryOgPath, ogImagePath } from "./ogImage.js";
+import { OG_HEIGHT, OG_WIDTH, categoryOgPath, isSizedOgImage, ogImagePath } from "./ogImage.js";
 import { seoCopy } from "./seoCopy.js";
 import { breadcrumbJsonLd, orgJsonLd, productJsonLd } from "./seoJsonLd.js";
 import {
@@ -201,7 +201,9 @@ function headSnippet(page, origin) {
   const url = absUrl(origin, page.path);
   const enUrl = absUrl(origin, withLocale("en", stripLocale(page.path)));
   const zhUrl = absUrl(origin, withLocale("zh", stripLocale(page.path)));
-  const img = absAsset(origin, ogImagePath(page.image || "/og-default.webp"));
+  const ogPath = ogImagePath(page.image || "/og-default.webp");
+  const img = absAsset(origin, ogPath);
+  const sized = isSizedOgImage(ogPath);
   const robots = page.noindex ? "noindex, nofollow" : "index, follow";
   const payload = Array.isArray(page.jsonLd) ? page.jsonLd.filter(Boolean) : page.jsonLd ? [page.jsonLd] : [];
   const json = payload.length
@@ -223,8 +225,8 @@ function headSnippet(page, origin) {
     `<meta property="og:image:url" content="${esc(img)}" />`,
     img.startsWith("https://") ? `<meta property="og:image:secure_url" content="${esc(img)}" />` : "",
     `<meta property="og:image:type" content="image/webp" />`,
-    `<meta property="og:image:width" content="${OG_WIDTH}" />`,
-    `<meta property="og:image:height" content="${OG_HEIGHT}" />`,
+    sized ? `<meta property="og:image:width" content="${OG_WIDTH}" />` : "",
+    sized ? `<meta property="og:image:height" content="${OG_HEIGHT}" />` : "",
     `<meta property="og:image:alt" content="${esc(page.title)}" />`,
     `<link rel="image_src" href="${esc(img)}" />`,
     `<meta property="og:site_name" content="Mattex Marketplace" />`,
