@@ -26,27 +26,27 @@ const SYNTHETIC_CATEGORY_IDS = new Set(["service", "computer", "hardware"]);
 const CATEGORY_DEFS = [
   { id: "reinforcement-mesh", name: "鋼筋網, Reinforcement Mesh", nameEn: "Reinforcement Mesh", image: "/assets/prod-mesh.webp", count: 12, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: reinforcement mesh", "Size: 2.1m × 4.8m / custom", "Standard: BS4483 / BS4449", "Use: road / slab"] },
   { id: "safety-net", name: "密目防燃安全網, Dense Mesh Flame Retardant Safety Net", nameEn: "Dense Mesh Flame Retardant Safety Net", image: "/assets/prod-safetynet.webp", count: 7, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: dense mesh FR net", "Color: green / orange", "Use: edge protection", "Stock: HK / site lead"] },
-  { id: "gypsum-block", name: "石膏磚, Gypsum Block", nameEn: "Gypsum Block", image: "/assets/type-gypsum.webp", count: 3, unit: "m²", base: 100, supplier: "Mattex", specs: ["Material: gypsum block", "Size: 500 mm series", "Density: 1100–1200 kg/m³", "Use: partition"] },
-  { id: "xps-foam-board", name: "擠塑板, XPS Foam Board", nameEn: "XPS Foam Board", image: "/assets/type-xps.webp", count: 21, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: XPS foam board", "Grade: JL150–JL900", "Thickness: 50–100 mm", "Fire: B1 / B2"] },
+  { id: "gypsum-block", name: "石膏磚, Gypsum Block", nameEn: "Gypsum Block", image: "/assets/type-gypsum.webp?v=20260929b", count: 3, unit: "m²", base: 100, supplier: "Mattex", specs: ["Material: gypsum block", "Size: 500 mm series", "Density: 1100–1200 kg/m³", "Use: partition"] },
+  { id: "xps-foam-board", name: "擠塑板, XPS Foam Board", nameEn: "XPS Foam Board", image: "/assets/type-xps.webp?v=20260929c", count: 21, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: XPS foam board", "Grade: JL150–JL900", "Thickness: 50–100 mm", "Fire: B1 / B2"] },
   { id: "tiles", name: "瓷磚, Tiles", nameEn: "Tiles", image: "/assets/prod-tile.webp", count: 152, unit: "m²", base: 100, supplier: "Mattex", specs: ["Material: sintered stone / porcelain", "Size: 600×600–1200×3000", "Finish: marble / texture / artistic", "Use: floor / wall"] },
-  { id: "vinyl", name: "膠地板, Vinyl", nameEn: "Vinyl", image: "/assets/type-vinyl.webp", count: 2, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: homogeneous / heterogeneous vinyl", "Size: 2×20 m", "Thickness: 2–3 mm", "Use: flooring"] },
+  { id: "vinyl", name: "膠地板, Vinyl", nameEn: "Vinyl", image: "/assets/type-vinyl.webp?v=20260929d", count: 2, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: homogeneous / heterogeneous vinyl", "Size: 2×20 m", "Thickness: 2–3 mm", "Use: flooring"] },
   { id: "precasted-concrete", name: "預製混凝土, Precasted Concrete", nameEn: "Precasted Concrete", image: "/assets/prod-precast.webp", count: 40, unit: "m³", base: 100, supplier: "Mattex", specs: ["Type: precast block", "Size: modular / custom", "Finish: structural", "Use: civil / building"] },
-  { id: "cat-ladder", name: "貓梯, Cat Ladder", nameEn: "Cat Ladder", image: "/assets/type-ladder.webp", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: cat ladder", "Finish: galvanized", "Custom: by drawing"] },
+  { id: "cat-ladder", name: "貓梯, Cat Ladder", nameEn: "Cat Ladder", image: "/assets/type-ladder.webp?v=20260929b", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: cat ladder", "Finish: galvanized", "Custom: by drawing"] },
   { id: "steel-shelving", name: "貨台同鋼層架, Logistics Storage Platform & Steel Shelving", nameEn: "Logistics Storage Platform & Steel Shelving", image: "/assets/prod-ironwork.webp", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: storage platform / shelving", "Custom: by drawing"] },
-  { id: "handrails", name: "扶手, Handrails", nameEn: "Handrails", image: "/assets/type-balustrade.webp", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: ball joint handrail", "Custom: by drawing"] },
-  { id: "balustrades", name: "欄河, Balustrades", nameEn: "Balustrades", image: "/assets/type-balustrade.webp", count: 4, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: carbon / stainless / disability", "Custom: by drawing"] },
-  { id: "forge-welded-grating", name: "焊接鋼格板, Forge-welded Grating", nameEn: "Forge-welded Grating", image: "/assets/type-channel.webp", count: 5, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: forge-welded", "Material: galvanized steel", "Load: by drawing"] },
-  { id: "press-lock-grating", name: "壓鎖鋼格板, Press-Lock Grating", nameEn: "Press-Lock Grating", image: "/assets/type-channel.webp", count: 6, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: press-lock", "Material: galvanized steel", "Load: by drawing"] },
-  { id: "gu-gratings", name: "GU型去水溝蓋, GU Type Drainage Gratings", nameEn: "GU Type Drainage Gratings", image: "/assets/type-gully.webp", count: 15, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: GU drainage grating", "Material: galvanized steel"] },
-  { id: "gt-gratings", name: "GT型去水溝蓋, GT Type Drainage Gratings", nameEn: "GT Type Drainage Gratings", image: "/assets/type-gully.webp", count: 24, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: GT drainage grating", "Material: galvanized steel"] },
+  { id: "handrails", name: "扶手, Handrails", nameEn: "Handrails", image: "/assets/type-balustrade-alt.webp?v=20260929d", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: ball joint handrail", "Custom: by drawing"] },
+  { id: "balustrades", name: "欄河, Balustrades", nameEn: "Balustrades", image: "/assets/type-balustrade.webp?v=20260929d", count: 4, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: carbon / stainless / disability", "Custom: by drawing"] },
+  { id: "forge-welded-grating", name: "焊接鋼格板, Forge-welded Grating", nameEn: "Forge-welded Grating", image: "/assets/type-channel.webp?v=20260929b", count: 5, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: forge-welded", "Material: galvanized steel", "Load: by drawing"] },
+  { id: "press-lock-grating", name: "壓鎖鋼格板, Press-Lock Grating", nameEn: "Press-Lock Grating", image: "/assets/type-channel.webp?v=20260929b", count: 6, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: press-lock", "Material: galvanized steel", "Load: by drawing"] },
+  { id: "gu-gratings", name: "GU型去水溝蓋, GU Type Drainage Gratings", nameEn: "GU Type Drainage Gratings", image: "/assets/type-gully.webp?v=20260929b", count: 15, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: GU drainage grating", "Material: galvanized steel"] },
+  { id: "gt-gratings", name: "GT型去水溝蓋, GT Type Drainage Gratings", nameEn: "GT Type Drainage Gratings", image: "/assets/type-gully.webp?v=20260929b", count: 24, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: GT drainage grating", "Material: galvanized steel"] },
   { id: "gypsum-board", name: "石膏板, Gypsum Board", nameEn: "Gypsum Board", image: "/assets/prod-gypsum-board.webp", count: 4, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: fire-resistant gypsum board", "Size: 1220×2440", "Thickness: 9.5–15 mm"] },
-  { id: "oxygen-chamber", name: "氧氣艙, Oxygen Chamber", nameEn: "Oxygen Chamber", image: "/assets/type-oxygen.webp", count: 9, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: oxygen chamber", "Use: medical / site"] },
-  { id: "dowel-bar", name: "傳力桿, Dowel Bar", nameEn: "Dowel Bar", image: "/assets/type-dowel.webp", count: 27, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: dowel bar", "Material: mild / stainless steel"] },
-  { id: "paint", name: "油漆, Paint", nameEn: "Paint", image: "/assets/type-paint.webp", count: 30, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: interior / exterior paint"] },
-  { id: "raised-access-floors", name: "架空地板, Raised Access Floors", nameEn: "Raised Access Floors", image: "/assets/type-floor.webp", count: 17, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: raised access floor"] },
-  { id: "aluminum-cladding", name: "鋁板飾面, Aluminum Cladding", nameEn: "Aluminum Cladding", image: "/assets/type-aluminium.webp", count: 13, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: aluminum cladding"] },
-  { id: "cable", name: "電線電纜, Cable", nameEn: "Cable", image: "/assets/type-cable.webp", count: 5, unit: "m", base: 100, supplier: "Mattex", specs: ["Type: power cable"] },
-  { id: "shoe-washing-machines", name: "洗鞋機, Shoe Washing Machines", nameEn: "Shoe Washing Machines", image: "/assets/type-shoe.webp", count: 6, unit: "set", base: 100, supplier: "Mattex", specs: ["Type: shoe washing machine"] },
+  { id: "oxygen-chamber", name: "氧氣艙, Oxygen Chamber", nameEn: "Oxygen Chamber", image: "/assets/type-oxygen.webp?v=20260929b", count: 9, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: oxygen chamber", "Use: medical / site"] },
+  { id: "dowel-bar", name: "傳力桿, Dowel Bar", nameEn: "Dowel Bar", image: "/assets/type-dowel.webp?v=20260929b", count: 27, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: dowel bar", "Material: mild / stainless steel"] },
+  { id: "paint", name: "油漆, Paint", nameEn: "Paint", image: "/assets/type-paint.webp?v=20260929b", count: 30, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: interior / exterior paint"] },
+  { id: "raised-access-floors", name: "架空地板, Raised Access Floors", nameEn: "Raised Access Floors", image: "/assets/type-floor.webp?v=20260929e", count: 17, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: raised access floor"] },
+  { id: "aluminum-cladding", name: "鋁板飾面, Aluminum Cladding", nameEn: "Aluminum Cladding", image: "/assets/type-aluminium.webp?v=20260929b", count: 13, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: aluminum cladding"] },
+  { id: "cable", name: "電線電纜, Cable", nameEn: "Cable", image: "/assets/type-cable.webp?v=20260929b", count: 5, unit: "m", base: 100, supplier: "Mattex", specs: ["Type: power cable"] },
+  { id: "shoe-washing-machines", name: "洗鞋機, Shoe Washing Machines", nameEn: "Shoe Washing Machines", image: "/assets/type-shoe.webp?v=20260929e", count: 6, unit: "set", base: 100, supplier: "Mattex", specs: ["Type: shoe washing machine"] },
   { id: "service", name: "Service", nameEn: "Service", image: "/assets/sensor.webp", count: 3, unit: "lot", base: 1800, supplier: "SiteServe Contracting", specs: ["Type: survey / install / inspect", "Scope: labour + report", "Lead: scheduled", "Use: site support"] },
   { id: "computer", name: "Computer", nameEn: "Computer", image: "/assets/plc.webp", count: 3, unit: "pc", base: 920, supplier: "BuildIT Workstations", specs: ["Type: desktop / rugged laptop", "OS: Windows", "Use: site office / BIM", "Warranty: 3 year"] },
   { id: "hardware", name: "Hardware", nameEn: "Hardware", image: "/assets/gearbox.webp", count: 4, unit: "pack", base: 48, supplier: "FixRight Hardware Co.", specs: ["Type: fixings / tools", "Grade: commercial", "Finish: zinc / stainless", "Use: install"] },
@@ -1090,6 +1090,87 @@ function isPortalSurface() {
   return import.meta.env?.VITE_SURFACE === "admin";
 }
 
+async function fetchHostCatalog() {
+  if (typeof window === "undefined" || typeof fetch !== "function") return null;
+  try {
+    const res = await fetch("/catalog.json", { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data?.products) || !data.products.length) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function applyHostCategoryImages(categories) {
+  if (!Array.isArray(categories) || !categories.length) return;
+  const builtin = new Set(CATEGORY_DEFS.flatMap((def) => categoryAliases(def).map(categoryKey)));
+  const extra = [];
+  for (const item of categories) {
+    const name = String(item?.name || "").trim();
+    if (!name || builtin.has(categoryKey(name))) continue;
+    extra.push({
+      id: slugifyCategory(name),
+      name,
+      image: item.image || "/assets/prod-mesh.webp",
+      custom: true,
+    });
+  }
+  if (extra.length) writeLocalOnly(CUSTOM_CATEGORIES_KEY, extra);
+}
+
+function restoreHostImages(hostImages) {
+  for (const product of PRODUCTS) {
+    const image = hostImages.get(product.id);
+    if (!image || !String(image).startsWith("/assets/")) continue;
+    product.image = image;
+    product.imageUrl = image;
+    product.images = [image];
+  }
+}
+
+async function publishCatalogProducts(list) {
+  const rows = Array.isArray(list) ? list : [];
+  const hostImages = new Map(rows.map((row) => [row.id, row.image || row.imageUrl || ""]));
+  PRODUCTS.splice(0, PRODUCTS.length);
+  const CHUNK = 64;
+  let releasedBoot = false;
+  const releaseBoot = () => {
+    if (releasedBoot) return;
+    releasedBoot = true;
+    applySavedProductPatches();
+    restoreHostImages(hostImages);
+    catalogBootReady = true;
+    bumpCatalog();
+    emitStoreChange();
+  };
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    for (const row of rows.slice(i, i + CHUNK)) {
+      PRODUCTS.push(
+        normalizeProductRecord({
+          ...row,
+          imageUrl: row.imageUrl || row.image || "",
+        })
+      );
+    }
+    if (i === 0) releaseBoot();
+    else {
+      bumpCatalog();
+      emitStoreChange();
+    }
+    if (i + CHUNK < rows.length) await yieldToBrowser();
+  }
+  if (!releasedBoot) releaseBoot();
+  applySavedProductPatches();
+  restoreHostImages(hostImages);
+  catalogLoading = false;
+  catalogReady = true;
+  catalogBootReady = true;
+  bumpCatalog();
+  emitStoreChange();
+}
+
 function yieldToBrowser() {
   return new Promise((resolve) => {
     if (typeof requestAnimationFrame === "function") {
@@ -1106,6 +1187,21 @@ async function hydrateStore() {
     catalogReady = !catalogLoading;
     if (catalogLoading) emitStoreChange();
     await yieldToBrowser();
+
+    const host = await fetchHostCatalog();
+    if (host) {
+      applyHostCategoryImages(host.categories);
+      await publishCatalogProducts(host.products);
+      if (isPortalSurface()) {
+        const [stamp, session] = await Promise.all([
+          fetchRfqStamp(),
+          fetchSessionState({ includeRfqs: false }),
+        ]);
+        if (session) rfqStamp = stamp;
+        if (applySessionState(session)) emitStoreChange();
+      }
+      return true;
+    }
 
     const remote = await fetchCatalogState(CATALOG_KV_KEYS);
     if (!remote) {
@@ -1214,7 +1310,10 @@ async function hydrateStore() {
     emitStoreChange();
 
     if (isPortalSurface()) {
-      const [stamp, session] = await Promise.all([fetchRfqStamp(), fetchSessionState()]);
+      const [stamp, session] = await Promise.all([
+        fetchRfqStamp(),
+        fetchSessionState({ includeRfqs: false }),
+      ]);
       if (session) rfqStamp = stamp;
       if (applySessionState(session)) emitStoreChange();
     }
@@ -7107,15 +7206,7 @@ function startSharedStoreSync() {
   if (!isSupabaseConfigured()) {
     pullSharedStore({ bootstrap: true });
     sharedStoreTimer = window.setInterval(() => pullSharedStore(), 1000);
-    return;
   }
-  if (!isPortalSurface()) return;
-  const tick = () => {
-    if (document.hidden || !getStaffSession()) return;
-    refreshRemoteRfqs();
-  };
-  sharedStoreTimer = window.setInterval(tick, 15000);
-  document.addEventListener("visibilitychange", tick);
 }
 
 applySavedProductPatches();

@@ -31,11 +31,11 @@ export function supabaseConfig() {
     readEnv("SUPABASE_URL") ||
     readEnv("NEXT_PUBLIC_SUPABASE_URL");
   const anon =
-    readEnv("VITE_SUPABASE_ANON_KEY") ||
     readEnv("VITE_SUPABASE_PUBLISHABLE_KEY") ||
+    readEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") ||
+    readEnv("VITE_SUPABASE_ANON_KEY") ||
     readEnv("SUPABASE_ANON_KEY") ||
-    readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY") ||
-    readEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
+    readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
   const service = readEnv("SUPABASE_SERVICE_ROLE_KEY");
   return { url, anon, service };
 }
@@ -282,18 +282,21 @@ export async function fetchCatalogState(keys = []) {
   }
 }
 
-export async function fetchSessionState({ buyerEmail = "" } = {}) {
+export async function fetchSessionState({ includeRfqs = true, buyerEmail = "" } = {}) {
   const sb = getSupabase();
   if (!sb) return null;
   try {
-    let rfqQuery = sb.from("rfqs").select("buyer_key,payload");
     let accountQuery = sb
       .from("user_accounts")
       .select("email,kind,name,phone,company_name,password,enabled,approval_status,bootstrap,extra");
-    if (buyerEmail) {
-      rfqQuery = rfqQuery.eq("buyer_key", buyerEmail);
-      accountQuery = accountQuery.eq("email", buyerEmail);
+    if (buyerEmail) accountQuery = accountQuery.eq("email", buyerEmail);
+    if (!includeRfqs) {
+      const accountRes = await accountQuery;
+      if (accountRes.error) console.warn("supabase accounts", accountRes.error.message);
+      return { kv: {}, rfqs: {}, accounts: accountRes.data || [] };
     }
+    let rfqQuery = sb.from("rfqs").select("buyer_key,payload");
+    if (buyerEmail) rfqQuery = rfqQuery.eq("buyer_key", buyerEmail);
     const [kvRes, rfqRes, accountRes] = await Promise.all([
       sb.from("app_kv").select("key,value").eq("key", "subbie_rfqs_by_user"),
       rfqQuery,

@@ -462,8 +462,10 @@ export default function AdminPortal() {
   }, [staff]);
 
   useEffect(() => {
-    if (!staff?.email || page !== "rfqs") return;
+    if (!staff?.email || page !== "rfqs") return undefined;
     refreshRemoteRfqs();
+    const timer = window.setInterval(() => refreshRemoteRfqs(), 15000);
+    return () => window.clearInterval(timer);
   }, [staff?.email, page]);
 
   useEffect(() => {
