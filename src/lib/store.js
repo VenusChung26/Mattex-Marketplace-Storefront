@@ -1,6 +1,6 @@
 import { collectAttachmentUrls, collectProductImageUrls, fitWhatsappUrls, uploadRfqPdf } from "./rfqBlob.js";
 import { buildQuotePdf, canSharePdfFile, downloadBlob, sharePdfFile } from "./quotePdf.js";
-import { fetchCatalogState, fetchRemoteKv, fetchRemoteRfqs, fetchSessionState, isSupabaseConfigured, persistCatalogTables, persistKv, persistKvNow } from "./supabasePersist.js";
+import { fetchCatalogState, fetchRemoteKv, fetchRemoteRfqs, fetchRfqStamp, fetchSessionState, isSupabaseConfigured, persistCatalogTables, persistKv, persistKvNow } from "./supabasePersist.js";
 import { adminOrigin, marketplaceOrigin } from "./origins.js";
 import {
   accountCreatedEmailHtml,
@@ -1107,7 +1107,7 @@ async function hydrateStore() {
     if (catalogLoading) emitStoreChange();
     await yieldToBrowser();
 
-    const remote = await fetchCatalogState();
+    const remote = await fetchCatalogState(CATALOG_KV_KEYS);
     if (!remote) {
       catalogLoading = false;
       catalogReady = true;
@@ -1214,7 +1214,8 @@ async function hydrateStore() {
     emitStoreChange();
 
     if (isPortalSurface()) {
-      const session = await fetchSessionState();
+      const [stamp, session] = await Promise.all([fetchRfqStamp(), fetchSessionState()]);
+      if (session) rfqStamp = stamp;
       if (applySessionState(session)) emitStoreChange();
     }
     return true;
@@ -6807,14 +6808,19 @@ function persistShared(key, value) {
 }
 
 let rfqRemoteChain = Promise.resolve();
+let rfqRemoteTimer = null;
+let rfqRemotePending = null;
 
-function persistRfqsRemote(map) {
-  const next = leanSharedRfqsMap(map);
-  persistShared(RFQS_KEY, next);
+function flushRfqsRemote() {
+  clearTimeout(rfqRemoteTimer);
+  rfqRemoteTimer = null;
+  const latest = rfqRemotePending;
+  rfqRemotePending = null;
+  if (!latest) return rfqRemoteChain;
   rfqRemoteChain = rfqRemoteChain
     .then(async () => {
       const remote = await fetchRemoteKv([RFQS_KEY]);
-      const merged = mergeRfqMaps(next, remote?.[RFQS_KEY] || {});
+      const merged = mergeRfqMaps(latest, remote?.[RFQS_KEY] || {});
       writeLocalOnly(RFQS_KEY, merged);
       await persistKvNow(RFQS_KEY, leanSharedRfqsMap(merged));
       emitStoreChange();
@@ -6825,6 +6831,23 @@ function persistRfqsRemote(map) {
   return rfqRemoteChain;
 }
 
+function persistRfqsRemote(map, { now = false } = {}) {
+  const next = leanSharedRfqsMap(map);
+  persistShared(RFQS_KEY, next);
+  if (!isSupabaseConfigured()) return rfqRemoteChain;
+  rfqRemotePending = next;
+  if (now) return flushRfqsRemote();
+  clearTimeout(rfqRemoteTimer);
+  rfqRemoteTimer = setTimeout(flushRfqsRemote, 800);
+  return rfqRemoteChain;
+}
+
+if (typeof document !== "undefined" && typeof document.addEventListener === "function") {
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) flushRfqsRemote();
+  });
+}
+
 function persistSharedRfq(buyerKey, rfq) {
   if (!rfq?.id) return;
   enqueueSharedPost({
@@ -6832,7 +6855,7 @@ function persistSharedRfq(buyerKey, rfq) {
     buyerKey: buyerKey || GUEST_KEY,
     rfq: leanSharedRfq(rfq),
   });
-  persistRfqsRemote(getRfqsMap());
+  persistRfqsRemote(getRfqsMap(), { now: true });
 }
 
 function dumpLocalSharedKv() {
@@ -7010,13 +7033,49 @@ async function pullSharedStore({ bootstrap = false } = {}) {
   await pullSupabaseSharedStore();
 }
 
+const CATALOG_KV_KEYS = [
+  CUSTOM_CATEGORIES_KEY,
+  CATEGORY_ADMIN_KEY,
+  REPORTS_KEY,
+  ADMIN_ALERTS_KEY,
+  STAFF_KEY,
+  PRODUCT_PATCH_KEY,
+  REPORT_SEQ_KEY,
+  TMP_SEQ_KEY,
+  TMS_SEQ_KEY,
+  DELETED_BUYERS_KEY,
+  ACCOUNTS_KEY,
+  QUOTE_SNAPSHOTS_KEY,
+  SEQ_KEY,
+];
+
+async function pullQuoteSnapshots() {
+  if (!isSupabaseConfigured()) return pullSharedStore();
+  const kv = await fetchRemoteKv([QUOTE_SNAPSHOTS_KEY]);
+  if (kv) applySharedStore(kv);
+}
+
 let rfqRefreshChain = Promise.resolve();
+let rfqStamp = null;
 
 function refreshRemoteRfqs() {
   if (!isSupabaseConfigured()) return pullSharedStore();
   rfqRefreshChain = rfqRefreshChain
     .then(async () => {
-      const [tableRfqs, kv] = await Promise.all([fetchRemoteRfqs(), fetchRemoteKv([RFQS_KEY])]);
+      const stamp = await fetchRfqStamp();
+      if (!stamp) return;
+      const prev = rfqStamp;
+      const tableChanged = !prev || stamp.table !== prev.table;
+      const kvChanged = !prev || stamp.kv !== prev.kv;
+      if (!tableChanged && !kvChanged) return;
+      const [tableRfqs, kv] = await Promise.all([
+        tableChanged ? fetchRemoteRfqs(prev?.table || "") : null,
+        kvChanged ? fetchRemoteKv([RFQS_KEY]) : null,
+      ]);
+      rfqStamp = {
+        table: tableChanged && !tableRfqs ? prev?.table || "" : stamp.table,
+        kv: kvChanged && !kv ? prev?.kv || "" : stamp.kv,
+      };
       const remoteRfqs = mergeRfqMaps(tableRfqs || {}, kv?.[RFQS_KEY] || {});
       if (!Object.keys(remoteRfqs).length) return;
       const merged = mergeRfqMaps(readJson(RFQS_KEY, {}), remoteRfqs);
@@ -7034,7 +7093,7 @@ function ensureBuyerSession() {
   if (!isSupabaseConfigured() || isPortalSurface() || !getUser()) return Promise.resolve(false);
   rfqRefreshChain = rfqRefreshChain
     .then(async () => {
-      const session = await fetchSessionState();
+      const session = await fetchSessionState({ buyerEmail: normalizeEmail(getUser()?.email) });
       if (applySessionState(session)) emitStoreChange();
     })
     .catch((error) => {
@@ -7052,10 +7111,12 @@ function startSharedStoreSync() {
     return;
   }
   if (!isPortalSurface()) return;
-  sharedStoreTimer = window.setInterval(() => {
-    if (!getStaffSession()) return;
+  const tick = () => {
+    if (document.hidden || !getStaffSession()) return;
     refreshRemoteRfqs();
-  }, 15000);
+  };
+  sharedStoreTimer = window.setInterval(tick, 15000);
+  document.addEventListener("visibilitychange", tick);
 }
 
 applySavedProductPatches();
@@ -7096,6 +7157,7 @@ export {
   hydrateStore,
   startSharedStoreSync,
   pullSharedStore,
+  pullQuoteSnapshots,
   refreshRemoteRfqs,
   ensureBuyerSession,
   isSupabaseConfigured,

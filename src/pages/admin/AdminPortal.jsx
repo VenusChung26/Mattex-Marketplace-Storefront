@@ -3892,10 +3892,8 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
       if (!cancelled) setRfqPulling(false);
     };
     tick();
-    const timer = window.setInterval(tick, 15000);
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
     };
   }, [focusId, focused]);
 

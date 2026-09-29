@@ -147,11 +147,13 @@ function rfqsMapFromRows(rows) {
   return out;
 }
 
-export async function fetchRemoteRfqs() {
+export async function fetchRemoteRfqs(since = "") {
   const sb = getSupabase();
   if (!sb) return null;
   try {
-    const { data, error } = await sb.from("rfqs").select("buyer_key,payload");
+    let query = sb.from("rfqs").select("buyer_key,payload");
+    if (since) query = query.gt("updated_at", since);
+    const { data, error } = await query;
     if (error) {
       console.warn("supabase rfqs", error.message);
       return null;
@@ -163,14 +165,48 @@ export async function fetchRemoteRfqs() {
   }
 }
 
+function latestUpdatedAt(sb, table, filter) {
+  let query = sb.from(table).select("updated_at").order("updated_at", { ascending: false }).limit(1);
+  if (filter) query = filter(query);
+  return query;
+}
+
+export async function fetchRfqStamp() {
+  const sb = getSupabase();
+  if (!sb) return null;
+  try {
+    const [table, kv] = await Promise.all([
+      latestUpdatedAt(sb, "rfqs"),
+      latestUpdatedAt(sb, "app_kv", (q) => q.eq("key", "subbie_rfqs_by_user")),
+    ]);
+    if (table.error && kv.error) return null;
+    return { table: table.data?.[0]?.updated_at || "", kv: kv.data?.[0]?.updated_at || "" };
+  } catch {
+    return null;
+  }
+}
+
+// Catalog images uploaded from public/assets are served same-origin by Vercel; cms-* only exist in Storage.
+const STORAGE_CATALOG_PATH = "/storage/v1/object/public/product-images/catalog/";
+
+export function localAssetUrl(url) {
+  const value = String(url || "").trim();
+  const at = value.indexOf(STORAGE_CATALOG_PATH);
+  if (at < 0) return value;
+  const name = decodeURIComponent(value.slice(at + STORAGE_CATALOG_PATH.length).split("?")[0]);
+  if (!name || name.includes("/") || name.startsWith("cms-")) return value;
+  return `/assets/${name.replace(/\.(png|jpe?g)$/i, ".webp")}`;
+}
+
 function productsFromRows(rows) {
   return (rows || [])
     .map((row) => {
       const payload = row?.payload;
       if (!payload?.id) return null;
-      const imageUrl = String(row.image_url || "").trim();
-      const image = imageUrl.startsWith("http") ? imageUrl : payload.image;
-      return { ...payload, image, imageUrl };
+      const imageUrl = localAssetUrl(row.image_url);
+      const image = imageUrl.startsWith("http") || imageUrl.startsWith("/assets/") ? imageUrl : localAssetUrl(payload.image);
+      const images = Array.isArray(payload.images) ? payload.images.map(localAssetUrl) : payload.images;
+      return { ...payload, image, imageUrl, images };
     })
     .filter(Boolean);
 }
@@ -191,12 +227,54 @@ function metricsFromRows(rows) {
   return metrics;
 }
 
-export async function fetchCatalogState() {
+const CATALOG_CACHE_KEY = "subbie_catalog_cache_v1";
+
+function readCatalogCache() {
+  try {
+    return JSON.parse(window.localStorage.getItem(CATALOG_CACHE_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function writeCatalogCache(stamp, state) {
+  try {
+    window.localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify({ stamp, state }));
+  } catch {
+    try {
+      window.localStorage.removeItem(CATALOG_CACHE_KEY);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+async function catalogStamp(sb, keys) {
+  const [products, count, kv, metrics] = await Promise.all([
+    latestUpdatedAt(sb, "products"),
+    sb.from("products").select("id", { count: "exact", head: true }),
+    latestUpdatedAt(sb, "app_kv", (q) => q.in("key", keys)),
+    latestUpdatedAt(sb, "supplier_metrics"),
+  ]);
+  if (products.error || count.error || kv.error) return "";
+  return [products.data?.[0]?.updated_at, count.count, kv.data?.[0]?.updated_at, metrics.data?.[0]?.updated_at].join("|");
+}
+
+export async function fetchCatalogState(keys = []) {
   const sb = getSupabase();
   if (!sb) return null;
+  const kvKeys = keys.filter((key) => !skipPersistKey(key));
   try {
+    const browser = typeof document !== "undefined" && kvKeys.length > 0;
+    const stamp = browser ? await catalogStamp(sb, kvKeys) : "";
+    const cached = stamp ? readCatalogCache() : null;
+    if (cached?.stamp === stamp && cached.state) return cached.state;
+
+    const kvQuery = kvKeys.length
+      ? sb.from("app_kv").select("key,value").in("key", kvKeys)
+      : sb.from("app_kv").select("key,value").not("key", "like", "subbie_drafts%").neq("key", "subbie_rfqs_by_user");
     const [kvRes, productRes, metricRes] = await Promise.all([
-      sb.from("app_kv").select("key,value").not("key", "like", "subbie_drafts%").neq("key", "subbie_rfqs_by_user"),
+      kvQuery,
       sb.from("products").select("id,payload,image_url"),
       sb.from("supplier_metrics").select("*"),
     ]);
@@ -204,25 +282,35 @@ export async function fetchCatalogState() {
       console.warn("supabase hydrate", kvRes.error.message || productRes.error.message);
       return null;
     }
-    return {
+    const state = {
       kv: kvFromRows(kvRes.data),
       products: productsFromRows(productRes.data),
       metrics: metricsFromRows(metricRes.data),
     };
+    if (stamp && !kvRes.error && !productRes.error && !metricRes.error) writeCatalogCache(stamp, state);
+    return state;
   } catch (error) {
     console.warn("supabase hydrate", error?.message || error);
     return null;
   }
 }
 
-export async function fetchSessionState() {
+export async function fetchSessionState({ buyerEmail = "" } = {}) {
   const sb = getSupabase();
   if (!sb) return null;
   try {
+    let rfqQuery = sb.from("rfqs").select("buyer_key,payload");
+    let accountQuery = sb
+      .from("user_accounts")
+      .select("email,kind,name,phone,company_name,password,enabled,approval_status,bootstrap,extra");
+    if (buyerEmail) {
+      rfqQuery = rfqQuery.eq("buyer_key", buyerEmail);
+      accountQuery = accountQuery.eq("email", buyerEmail);
+    }
     const [kvRes, rfqRes, accountRes] = await Promise.all([
       sb.from("app_kv").select("key,value").eq("key", "subbie_rfqs_by_user"),
-      sb.from("rfqs").select("buyer_key,payload"),
-      sb.from("user_accounts").select("email,kind,name,phone,company_name,password,enabled,approval_status,bootstrap,extra"),
+      rfqQuery,
+      accountQuery,
     ]);
     if (rfqRes.error) console.warn("supabase rfqs", rfqRes.error.message);
     if (accountRes.error) console.warn("supabase accounts", accountRes.error.message);

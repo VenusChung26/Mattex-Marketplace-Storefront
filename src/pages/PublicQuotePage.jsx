@@ -5,7 +5,7 @@ import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
 import { withLocale } from "../lib/locale";
 import { buildQuotePdf, downloadBlob } from "../lib/quotePdf";
-import { formatPrice, getGuestQuoteSnapshot, pullSharedStore, snapshotQuotePdfItems } from "../lib/store";
+import { formatPrice, getGuestQuoteSnapshot, pullQuoteSnapshots, snapshotQuotePdfItems } from "../lib/store";
 
 export default function PublicQuotePage() {
   const { token } = useParams();
@@ -17,7 +17,7 @@ export default function PublicQuotePage() {
 
   useEffect(() => {
     let cancelled = false;
-    pullSharedStore()
+    pullQuoteSnapshots()
       .catch(() => {})
       .finally(() => {
         if (!cancelled) setReady(true);
