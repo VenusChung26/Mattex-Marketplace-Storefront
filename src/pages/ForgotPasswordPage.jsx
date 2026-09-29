@@ -15,14 +15,14 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState("");
   const { formRef, revealIssue } = useRevealFormIssue();
 
-  function onSubmit(e) {
+  async function onSubmit(e) {
     e.preventDefault();
     if (!String(email || "").trim()) {
       setError(t("signupFixRequired"));
       revealIssue();
       return;
     }
-    const result = requestBuyerPasswordReset(email);
+    const result = await requestBuyerPasswordReset(email);
     if (!result.ok) {
       setError(t("signupFixEmail"));
       revealIssue();

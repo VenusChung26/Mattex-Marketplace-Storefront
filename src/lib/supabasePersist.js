@@ -288,7 +288,7 @@ export async function fetchSessionState({ includeRfqs = true, buyerEmail = "" } 
   try {
     let accountQuery = sb
       .from("user_accounts")
-      .select("email,kind,name,phone,company_name,password,enabled,approval_status,bootstrap,extra");
+      .select("email,kind,name,phone,company_name,enabled,approval_status,bootstrap,extra");
     if (buyerEmail) accountQuery = accountQuery.eq("email", buyerEmail);
     if (!includeRfqs) {
       const accountRes = await accountQuery;

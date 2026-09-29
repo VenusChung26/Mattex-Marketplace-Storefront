@@ -302,10 +302,20 @@ function statusCounts(products) {
   return counts;
 }
 
+async function inviteSentLabel(result, who) {
+  if (!result?.href) return `Invite email sent to ${who}.`;
+  try {
+    await navigator.clipboard.writeText(result.href);
+    return `Invite sent to ${who}. Link copied — paste it to them if the email does not arrive.`;
+  } catch {
+    return `Invite sent to ${who}.`;
+  }
+}
+
 function accountStatusKey(u) {
   if (u.approvalStatus === "rejected") return "rejected";
   if (u.enabled === false) return "disabled";
-  if (u.inviteToken || (!u.approvalStatus && !u.bootstrap && !String(u.password || "").trim())) return "invited";
+  if (u.invitePending) return "invited";
   return "active";
 }
 
@@ -313,7 +323,7 @@ function accountStatusLabel(u) {
   if (!u) return "No marketplace account";
   if (u.approvalStatus === "rejected") return "Rejected";
   if (u.enabled === false) return "Disabled";
-  if (u.inviteToken || (!u.approvalStatus && !u.bootstrap && !String(u.password || "").trim())) return "Invited";
+  if (u.invitePending) return "Invited";
   return "Active";
 }
 
@@ -541,11 +551,11 @@ export default function AdminPortal() {
           <p className="mt-2 text-sm text-white/60">Product ops, Excel, buyer accounts, RFQ review, TMS upload.</p>
           <form
             className="mt-8 space-y-4 rounded-2xl bg-white p-6 text-ink"
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
               setLoginBusy(true);
               setError("");
-              const result = loginStaff({ email, password });
+              const result = await loginStaff({ email, password });
               if (!result.ok) {
                 setLoginBusy(false);
                 setError(
@@ -933,7 +943,7 @@ export default function AdminPortal() {
               <button
                 type="button"
                 className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
-                onClick={() => {
+                onClick={async () => {
                   const length = pwNext.length >= 8;
                   const letter = /[A-Za-z]/.test(pwNext);
                   const number = /\d/.test(pwNext);
@@ -952,7 +962,7 @@ export default function AdminPortal() {
                     setPwError("Passwords do not match.");
                     return;
                   }
-                  const result = changeOwnStaffPassword({ currentPassword: pwCurrent, nextPassword: pwNext });
+                  const result = await changeOwnStaffPassword({ currentPassword: pwCurrent, nextPassword: pwNext });
                   if (!result.ok) {
                     setPwOk("");
                     setPwError(
@@ -4907,9 +4917,9 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
     setRejectReason("");
   }
 
-  function saveStaff() {
+  async function saveStaff() {
     if (modal?.type === "invite") {
-      const result = createStaff({ email: formEmail, name: formName });
+      const result = await createStaff({ email: formEmail, name: formName });
       if (!result?.ok) {
         setFormError(
           result?.error === "taken"
@@ -4923,7 +4933,7 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
         staffNote(result);
         return;
       }
-      staffNote(result, `Invite email sent to ${normalizeStaffLabel(formName, formEmail)}.`);
+      staffNote(result, await inviteSentLabel(result, normalizeStaffLabel(formName, formEmail)));
       closeModal();
       return;
     }
@@ -4998,7 +5008,7 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
                     <>
                       <td className="px-3 py-2 font-medium">{u.name}</td>
                       <td className="px-3 py-2 text-mute">{u.email}</td>
-                      <td className="px-3 py-2">{u.bootstrap ? "Bootstrap" : u.inviteToken ? "Invited" : "Staff"}</td>
+                      <td className="px-3 py-2">{u.bootstrap ? "Bootstrap" : u.invitePending ? "Invited" : "Staff"}</td>
                     </>
                   ) : (
                     <>
@@ -5027,11 +5037,14 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
                           Edit
                         </button>
                       ) : null}
-                      {isSales && u.inviteToken ? (
+                      {isSales && u.invitePending ? (
                         <button
                           type="button"
                           className="text-xs font-semibold text-brand-700 hover:underline"
-                          onClick={() => staffNote(resendStaffInvite(u.email), "Invite email sent")}
+                          onClick={async () => {
+                            const result = await resendStaffInvite(u.email);
+                            staffNote(result, await inviteSentLabel(result, u.name || u.email));
+                          }}
                         >
                           Resend invite
                         </button>
@@ -5222,7 +5235,7 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
         >
           <p className="text-sm text-mute">
             {editing
-              ? editing.inviteToken
+              ? editing.invitePending
                 ? "Update the display name. They still set a password from the invite email."
                 : "Update the display name. Email cannot be changed."
               : "We'll open an email so they can set their own password. No temporary password is created."}

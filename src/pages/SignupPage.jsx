@@ -42,6 +42,7 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [submittedEmail, setSubmittedEmail] = useState("");
+  const [busy, setBusy] = useState(false);
   const { formRef, revealIssue } = useRevealFormIssue();
 
   useEffect(() => {
@@ -79,8 +80,9 @@ export default function SignupPage() {
     return errors;
   }
 
-  function onSubmit(e) {
+  async function onSubmit(e) {
     e.preventDefault();
+    if (busy) return;
     const errors = collectSignupErrors(form);
     if (Object.keys(errors).length) {
       setFieldErrors(errors);
@@ -88,7 +90,9 @@ export default function SignupPage() {
       revealIssue();
       return;
     }
-    const result = registerUser(form);
+    setBusy(true);
+    const result = await registerUser(form);
+    setBusy(false);
     if (!result.ok) {
       const fieldMap = {
         email: "email",
@@ -301,7 +305,7 @@ export default function SignupPage() {
                   </AccountField>
                 </AccountSection>
 
-                <button type="submit" className="btn-primary w-full !py-3">
+                <button type="submit" disabled={busy} className="btn-primary w-full !py-3 disabled:opacity-60">
                   {t("createAccount")}
                 </button>
               </form>

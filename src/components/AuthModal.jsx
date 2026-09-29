@@ -16,6 +16,7 @@ export default function AuthModal({ open, onClose }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [dontShow, setDontShow] = useState(false);
+  const [busy, setBusy] = useState(false);
   const closeReady = useRef(false);
   const { formRef, revealIssue } = useRevealFormIssue();
   const cartInvite = authModalMode === "cart-invite";
@@ -65,9 +66,12 @@ export default function AuthModal({ open, onClose }) {
     onClose?.();
   }
 
-  function onSubmit(e) {
+  async function onSubmit(e) {
     e.preventDefault();
-    const result = loginUser({ email, password });
+    if (busy) return;
+    setBusy(true);
+    const result = await loginUser({ email, password });
+    setBusy(false);
     if (!result.ok) {
       setError(
         result.error === "password"
@@ -175,7 +179,7 @@ export default function AuthModal({ open, onClose }) {
                 autoComplete="current-password"
               />
             </label>
-            <button type="submit" className="btn-primary w-full !py-2.5">
+            <button type="submit" disabled={busy} className="btn-primary w-full !py-2.5 disabled:opacity-60">
               {t("login")}
             </button>
           </form>

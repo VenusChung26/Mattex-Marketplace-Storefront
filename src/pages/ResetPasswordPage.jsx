@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import SiteHeader from "../components/SiteHeader";
 import Seo from "../components/Seo";
@@ -14,21 +14,24 @@ import { useLanguage } from "../i18n";
 import { withLocale } from "../lib/locale";
 import { getBuyerReset, resetBuyerPassword } from "../lib/store";
 import { useRevealFormIssue } from "../lib/formFocus";
+import { useAsyncValue } from "../hooks/useAsyncValue";
 
 export default function ResetPasswordPage() {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const token = String(params.get("token") || "").trim();
-  const reset = useMemo(() => getBuyerReset(token), [token]);
+  const { loading, value: reset } = useAsyncValue(getBuyerReset, token);
+  const [busy, setBusy] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const pwd = passwordChecks(password, confirm);
   const { formRef, revealIssue } = useRevealFormIssue();
 
-  function onSubmit(e) {
+  async function onSubmit(e) {
     e.preventDefault();
+    if (busy) return;
     if (!pwd.length || !pwd.letter || !pwd.number) {
       setError(t("signupFixPassword"));
       revealIssue();
@@ -39,7 +42,9 @@ export default function ResetPasswordPage() {
       revealIssue();
       return;
     }
-    const result = resetBuyerPassword({ token, password });
+    setBusy(true);
+    const result = await resetBuyerPassword({ token, password });
+    setBusy(false);
     if (!result.ok) {
       setError(result.error === "expired" ? t("resetLinkExpired") : t("resetLinkInvalid"));
       revealIssue();
@@ -55,7 +60,9 @@ export default function ResetPasswordPage() {
       <main className="max-w-md mx-auto px-4 py-8 sm:py-10">
         <AccountFormCard>
           <AccountFormHeader eyebrow={t("account")} title={t("resetPasswordTitle")} hint={t("resetPasswordHint")} />
-          {!reset ? (
+          {loading ? (
+            <p className="mt-6 text-sm text-mute">…</p>
+          ) : !reset ? (
             <p className="mt-6 text-sm text-mute">{t("resetLinkInvalid")}</p>
           ) : reset.expired ? (
             <p className="mt-6 text-sm text-mute">{t("resetLinkExpired")}</p>
@@ -94,7 +101,7 @@ export default function ResetPasswordPage() {
                 />
               </AccountField>
               <PasswordChecklist password={password} confirmPassword={confirm} />
-              <button type="submit" className="btn-primary w-full !py-3">
+              <button type="submit" disabled={busy} className="btn-primary w-full !py-3 disabled:opacity-60">
                 {t("resetPasswordSubmit")}
               </button>
             </form>

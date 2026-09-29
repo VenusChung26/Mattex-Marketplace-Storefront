@@ -35,6 +35,7 @@ export default function LoginPage() {
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState(() => profileFromUser(user));
   const [saveMsg, setSaveMsg] = useState("");
+  const [busy, setBusy] = useState(false);
   const { formRef, revealIssue } = useRevealFormIssue();
 
   useEffect(() => {
@@ -61,8 +62,9 @@ export default function LoginPage() {
     });
   }
 
-  function onSubmit(e) {
+  async function onSubmit(e) {
     e.preventDefault();
+    if (busy) return;
     const nextErrors = {};
     if (!String(email || "").trim()) nextErrors.email = t("signupFixRequired");
     if (!String(password || "").trim()) nextErrors.password = t("signupFixRequired");
@@ -72,7 +74,9 @@ export default function LoginPage() {
       revealIssue();
       return;
     }
-    const result = loginUser({ email, password });
+    setBusy(true);
+    const result = await loginUser({ email, password });
+    setBusy(false);
     if (!result.ok) {
       setFieldErrors({});
       setError(
@@ -350,7 +354,7 @@ export default function LoginPage() {
                     autoComplete="current-password"
                   />
                 </AccountField>
-                <button type="submit" className="btn-primary w-full !py-3">
+                <button type="submit" disabled={busy} className="btn-primary w-full !py-3 disabled:opacity-60">
                   {t("login")}
                 </button>
               </form>

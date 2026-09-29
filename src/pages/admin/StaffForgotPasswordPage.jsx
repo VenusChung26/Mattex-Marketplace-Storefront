@@ -10,14 +10,14 @@ export default function StaffForgotPasswordPage() {
   const [error, setError] = useState("");
   const { formRef, revealIssue } = useRevealFormIssue();
 
-  function onSubmit(e) {
+  async function onSubmit(e) {
     e.preventDefault();
     if (!String(email || "").trim()) {
       setError("Enter your work email.");
       revealIssue();
       return;
     }
-    const result = requestStaffPasswordReset(email);
+    const result = await requestStaffPasswordReset(email);
     if (!result.ok) {
       setError("Enter a valid email.");
       revealIssue();

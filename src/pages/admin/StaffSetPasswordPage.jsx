@@ -1,22 +1,25 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { acceptStaffPasswordLink, getStaffPasswordLink } from "../../lib/store";
 import { useRevealFormIssue } from "../../lib/formFocus";
 import { PasswordInput, passwordChecks } from "../../components/AccountForm";
+import { useAsyncValue } from "../../hooks/useAsyncValue";
 
 export default function StaffSetPasswordPage() {
   const [params] = useSearchParams();
   const token = String(params.get("token") || "").trim();
-  const invite = useMemo(() => getStaffPasswordLink(token), [token]);
+  const { loading, value: invite } = useAsyncValue(getStaffPasswordLink, token);
   const reset = invite?.kind === "reset";
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const pwd = passwordChecks(password, confirm);
   const { formRef, revealIssue } = useRevealFormIssue();
 
-  function onSubmit(e) {
+  async function onSubmit(e) {
     e.preventDefault();
+    if (busy) return;
     if (!pwd.length || !pwd.letter || !pwd.number) {
       setError("Password needs 8+ characters, a letter, and a number.");
       revealIssue();
@@ -27,7 +30,9 @@ export default function StaffSetPasswordPage() {
       revealIssue();
       return;
     }
-    const result = acceptStaffPasswordLink({ token, password });
+    setBusy(true);
+    const result = await acceptStaffPasswordLink({ token, password });
+    setBusy(false);
     if (!result.ok) {
       setError(
         result.error === "expired"
@@ -52,7 +57,9 @@ export default function StaffSetPasswordPage() {
           </span>
         </div>
         <h1 className="mt-5 font-display text-2xl text-brand-900">{reset ? "Reset your password" : "Set your password"}</h1>
-        {!invite ? (
+        {loading ? (
+          <p className="mt-3 text-sm text-mute">Checking link…</p>
+        ) : !invite ? (
           <p className="mt-3 text-sm text-mute">This link is not valid. Ask a teammate to send a new invite or reset email.</p>
         ) : invite.expired ? (
           <p className="mt-3 text-sm text-mute">This link has expired. Request a new reset email from the sign-in page.</p>
@@ -102,7 +109,7 @@ export default function StaffSetPasswordPage() {
                   {error}
                 </p>
               ) : null}
-              <button type="submit" className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white">
+              <button type="submit" disabled={busy} className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
                 {reset ? "Save password and enter portal" : "Save password and enter portal"}
               </button>
             </form>

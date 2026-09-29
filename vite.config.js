@@ -4,6 +4,7 @@ import { handleRfqBlobUpload } from "./api/blob-upload.js";
 import { handleSharedStoreGet, handleSharedStorePost } from "./api/shared-store.js";
 import { handleTmsLogin, handleTmsStatus, handleTmsSubmit } from "./api/tms-submit.js";
 import { handleSendEmail } from "./api/send-email.js";
+import { handleAuth } from "./api/auth.js";
 
 const GA_MEASUREMENT_ID = "G-F89GE7J3CR";
 
@@ -46,6 +47,13 @@ async function readJsonBody(req) {
   return { raw, body: JSON.parse(raw) };
 }
 
+function localRequest(req, path) {
+  return new Request(`http://${req.headers.host || "localhost:5178"}${path}`, {
+    method: "POST",
+    headers: { cookie: String(req.headers.cookie || "") },
+  });
+}
+
 function jsonPlugin() {
   return {
     name: "subbie-local-api",
@@ -65,6 +73,20 @@ function jsonPlugin() {
           res.end(JSON.stringify(handleSharedStoreGet()));
           return;
         }
+        if (path === "/api/auth" && req.method === "POST") {
+          let authBody = {};
+          try {
+            ({ body: authBody } = await readJsonBody(req));
+          } catch {
+            authBody = {};
+          }
+          const result = await handleAuth(authBody, localRequest(req, path));
+          res.statusCode = result.status || 200;
+          res.setHeader("Content-Type", "application/json");
+          if (result.cookie) res.setHeader("Set-Cookie", result.cookie);
+          res.end(JSON.stringify(result.body));
+          return;
+        }
         if (path === "/api/send-email" && req.method === "POST") {
           let mailBody = {};
           try {
@@ -75,7 +97,7 @@ function jsonPlugin() {
             res.end(JSON.stringify({ ok: false, error: "invalid json" }));
             return;
           }
-          const json = await handleSendEmail(mailBody);
+          const json = await handleSendEmail(mailBody, localRequest(req, path));
           res.statusCode = json.ok ? 200 : 400;
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify(json));
@@ -176,7 +198,9 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   if (env.BLOB_READ_WRITE_TOKEN) process.env.BLOB_READ_WRITE_TOKEN = env.BLOB_READ_WRITE_TOKEN;
   for (const [key, value] of Object.entries(env)) {
-    if (key.startsWith("TMS_") || key.startsWith("RESEND_")) process.env[key] = value;
+    if (key.startsWith("TMS_") || key.startsWith("RESEND_") || key === "SUPABASE_SERVICE_ROLE_KEY" || key === "SESSION_SECRET") {
+      process.env[key] = value;
+    }
   }
   const supabaseUrl =
     process.env.VITE_SUPABASE_URL ||
