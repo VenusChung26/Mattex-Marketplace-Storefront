@@ -5,6 +5,7 @@ import { handleSharedStoreGet, handleSharedStorePost } from "./api/shared-store.
 import { handleTmsLogin, handleTmsStatus, handleTmsSubmit } from "./api/tms-submit.js";
 import { handleSendEmail } from "./api/send-email.js";
 import { handleAuth } from "./api/auth.js";
+import { handleData } from "./api/data.js";
 
 const GA_MEASUREMENT_ID = "G-F89GE7J3CR";
 
@@ -73,14 +74,15 @@ function jsonPlugin() {
           res.end(JSON.stringify(handleSharedStoreGet()));
           return;
         }
-        if (path === "/api/auth" && req.method === "POST") {
+        if ((path === "/api/auth" || path === "/api/data") && req.method === "POST") {
           let authBody = {};
           try {
             ({ body: authBody } = await readJsonBody(req));
           } catch {
             authBody = {};
           }
-          const result = await handleAuth(authBody, localRequest(req, path));
+          const handler = path === "/api/auth" ? handleAuth : handleData;
+          const result = await handler(authBody, localRequest(req, path));
           res.statusCode = result.status || 200;
           res.setHeader("Content-Type", "application/json");
           if (result.cookie) res.setHeader("Set-Cookie", result.cookie);

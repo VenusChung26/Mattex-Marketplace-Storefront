@@ -17,7 +17,7 @@ export default function PublicQuotePage() {
 
   useEffect(() => {
     let cancelled = false;
-    pullQuoteSnapshots()
+    pullQuoteSnapshots(decodeURIComponent(token || ""))
       .catch(() => {})
       .finally(() => {
         if (!cancelled) setReady(true);

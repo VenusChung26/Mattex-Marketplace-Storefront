@@ -1,6 +1,6 @@
 import { collectAttachmentUrls, collectProductImageUrls, fitWhatsappUrls, uploadRfqPdf } from "./rfqBlob.js";
 import { buildQuotePdf, canSharePdfFile, downloadBlob, sharePdfFile } from "./quotePdf.js";
-import { fetchCatalogState, fetchRemoteKv, fetchRemoteRfqs, fetchRfqStamp, fetchSessionState, isSupabaseConfigured, persistCatalogTables, persistKv, persistKvNow } from "./supabasePersist.js";
+import { fetchCatalogState, fetchQuoteSnapshot, fetchRemoteKv, fetchRemoteRfqs, fetchRfqStamp, fetchSessionState, isSupabaseConfigured, persistCatalogTables, persistKv, persistKvNow } from "./supabasePersist.js";
 import { adminOrigin, marketplaceOrigin } from "./origins.js";
 import {
   accountCreatedEmailHtml,
@@ -1179,6 +1179,39 @@ function yieldToBrowser() {
   });
 }
 
+function hasLocalSession() {
+  return Boolean(getUser()?.email || getStaffSession()?.email);
+}
+
+function raiseLocalSeq(key, remoteValue) {
+  const remoteN = Number(remoteValue || 0);
+  try {
+    if (remoteN > Number(localStorage.getItem(key) || 0)) localStorage.setItem(key, String(remoteN));
+  } catch {
+    /* ignore */
+  }
+}
+
+function applyCatalogKv(kv, { overlays = true } = {}) {
+  if (!kv) return;
+  const localOverlays = overlays ? [CUSTOM_CATEGORIES_KEY, CATEGORY_ADMIN_KEY, REPORTS_KEY, ADMIN_ALERTS_KEY] : [REPORTS_KEY, ADMIN_ALERTS_KEY];
+  localOverlays.forEach((key) => {
+    if (kv[key] != null) writeLocalOnly(key, kv[key]);
+  });
+  if (kv[STAFF_KEY] != null) writeLocalOnly(STAFF_KEY, mergeStaffLists(readJson(STAFF_KEY, []), kv[STAFF_KEY]));
+  if (overlays && kv[PRODUCT_PATCH_KEY] != null) {
+    writeLocalOnly(PRODUCT_PATCH_KEY, mergeProductPatchMaps(readJson(PRODUCT_PATCH_KEY, {}), kv[PRODUCT_PATCH_KEY]));
+  }
+  [SEQ_KEY, REPORT_SEQ_KEY, TMP_SEQ_KEY, TMS_SEQ_KEY].forEach((key) => raiseLocalSeq(key, kv[key]));
+  if (kv[DELETED_BUYERS_KEY]) mergeDeletedBuyers(kv[DELETED_BUYERS_KEY]);
+  if (kv[ACCOUNTS_KEY]) {
+    writeLocalOnly(ACCOUNTS_KEY, accountsWithoutSecrets(stripDeletedBuyers({ ...readJson(ACCOUNTS_KEY, {}), ...kv[ACCOUNTS_KEY] })));
+  }
+  if (kv[QUOTE_SNAPSHOTS_KEY]) {
+    writeLocalOnly(QUOTE_SNAPSHOTS_KEY, mergeQuoteSnapshots(kv[QUOTE_SNAPSHOTS_KEY], readJson(QUOTE_SNAPSHOTS_KEY, {})));
+  }
+}
+
 async function hydrateStore() {
   try {
     catalogLoading = isSupabaseConfigured();
@@ -1190,6 +1223,11 @@ async function hydrateStore() {
     if (host) {
       applyHostCategoryImages(host.categories);
       await publishCatalogProducts(host.products);
+      const kv = await fetchRemoteKv(CATALOG_KV_KEYS, { withPrivate: hasLocalSession() });
+      if (kv) {
+        applyCatalogKv(kv, { overlays: false });
+        emitStoreChange();
+      }
       if (isPortalSurface()) {
         const [stamp, session] = await Promise.all([
           fetchRfqStamp(),
@@ -1201,7 +1239,7 @@ async function hydrateStore() {
       return true;
     }
 
-    const remote = await fetchCatalogState(CATALOG_KV_KEYS);
+    const remote = await fetchCatalogState(CATALOG_KV_KEYS, { withPrivate: hasLocalSession() });
     if (!remote) {
       catalogLoading = false;
       catalogReady = true;
@@ -1209,23 +1247,6 @@ async function hydrateStore() {
       bumpCatalog();
       emitStoreChange();
       return false;
-    }
-
-    const overlayKeys = [
-      CUSTOM_CATEGORIES_KEY,
-      CATEGORY_ADMIN_KEY,
-      REPORTS_KEY,
-      ADMIN_ALERTS_KEY,
-    ];
-    overlayKeys.forEach((key) => {
-      if (remote.kv[key] == null) return;
-      writeLocalOnly(key, remote.kv[key]);
-    });
-    if (remote.kv[STAFF_KEY] != null) {
-      writeLocalOnly(STAFF_KEY, mergeStaffLists(readJson(STAFF_KEY, []), remote.kv[STAFF_KEY]));
-    }
-    if (remote.kv[PRODUCT_PATCH_KEY] != null) {
-      writeLocalOnly(PRODUCT_PATCH_KEY, mergeProductPatchMaps(readJson(PRODUCT_PATCH_KEY, {}), remote.kv[PRODUCT_PATCH_KEY]));
     }
 
     await yieldToBrowser();
@@ -1259,47 +1280,11 @@ async function hydrateStore() {
       if (i + CHUNK < list.length) await yieldToBrowser();
     }
     if (!releasedBoot) releaseBoot();
-    [REPORT_SEQ_KEY, TMP_SEQ_KEY, TMS_SEQ_KEY].forEach((key) => {
-      const remoteN = Number(remote.kv[key] || 0);
-      let localN = 0;
-      try {
-        localN = Number(localStorage.getItem(key) || 0);
-      } catch {
-        localN = 0;
-      }
-      if (remoteN > localN) {
-        try {
-          localStorage.setItem(key, String(remoteN));
-        } catch {
-          /* ignore */
-        }
-      }
-    });
     supplierMetricsBySlug.clear();
     Object.entries(remote.metrics || {}).forEach(([slug, metrics]) => {
       supplierMetricsBySlug.set(slug, metrics);
     });
-    if (remote.kv[DELETED_BUYERS_KEY]) mergeDeletedBuyers(remote.kv[DELETED_BUYERS_KEY]);
-    if (remote.kv[ACCOUNTS_KEY]) {
-      writeLocalOnly(ACCOUNTS_KEY, accountsWithoutSecrets(stripDeletedBuyers({ ...readJson(ACCOUNTS_KEY, {}), ...remote.kv[ACCOUNTS_KEY] })));
-    }
-    if (remote.kv[QUOTE_SNAPSHOTS_KEY]) {
-      writeLocalOnly(QUOTE_SNAPSHOTS_KEY, mergeQuoteSnapshots(remote.kv[QUOTE_SNAPSHOTS_KEY], readJson(QUOTE_SNAPSHOTS_KEY, {})));
-    }
-    const remoteSeq = Number(remote.kv[SEQ_KEY] || 0);
-    let localSeq = 0;
-    try {
-      localSeq = Number(localStorage.getItem(SEQ_KEY) || 0);
-    } catch {
-      localSeq = 0;
-    }
-    if (remoteSeq > localSeq) {
-      try {
-        localStorage.setItem(SEQ_KEY, String(remoteSeq));
-      } catch {
-        /* ignore */
-      }
-    }
+    applyCatalogKv(remote.kv);
     applySavedProductPatches();
     catalogLoading = false;
     catalogReady = true;
@@ -2774,6 +2759,17 @@ async function loginUser({ email, password }) {
   setSessionUser(publicUserFromAccount(account));
   mergeGuestCartIntoUser();
   return { ok: true, user: publicUserFromAccount(account) };
+}
+
+async function verifyBuyerSession() {
+  const local = getUser();
+  if (!local?.email) return false;
+  const result = await authApi("session", { kind: "buyer" });
+  if (result.error === "network") return true;
+  if (result.ok && normalizeEmail(result.account?.email) === normalizeEmail(local.email)) return true;
+  localStorage.removeItem(AUTH_KEY);
+  emitStoreChange();
+  return false;
 }
 
 function logoutUser() {
@@ -7006,9 +7002,9 @@ const CATALOG_KV_KEYS = [
   SEQ_KEY,
 ];
 
-async function pullQuoteSnapshots() {
+async function pullQuoteSnapshots(token) {
   if (!isSupabaseConfigured()) return pullSharedStore();
-  const kv = await fetchRemoteKv([QUOTE_SNAPSHOTS_KEY]);
+  const kv = await fetchQuoteSnapshot(token);
   if (kv) applySharedStore(kv);
 }
 
@@ -7050,7 +7046,8 @@ function ensureBuyerSession() {
   if (!isSupabaseConfigured() || isPortalSurface() || !getUser()) return Promise.resolve(false);
   rfqRefreshChain = rfqRefreshChain
     .then(async () => {
-      const session = await fetchSessionState({ buyerEmail: normalizeEmail(getUser()?.email) });
+      if (!(await verifyBuyerSession())) return;
+      const session = await fetchSessionState();
       if (applySessionState(session)) emitStoreChange();
     })
     .catch((error) => {

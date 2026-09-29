@@ -67,7 +67,7 @@ function withStore(mutator) {
   }
 }
 
-function mergeRfqMaps(incoming, existing) {
+export function mergeRfqMaps(incoming, existing) {
   const keys = new Set([
     ...Object.keys(existing && typeof existing === "object" ? existing : {}),
     ...Object.keys(incoming && typeof incoming === "object" ? incoming : {}),

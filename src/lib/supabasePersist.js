@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { isPublicKvKey } from "./kvKeys.js";
 
 const timers = new Map();
 
@@ -82,16 +83,27 @@ function skipPersistKey(key) {
   return !name || SKIP_KV_KEYS.has(name) || name.startsWith("subbie_drafts");
 }
 
+const inBrowser = () => typeof document !== "undefined" && typeof fetch === "function";
+
+async function dataApi(op, payload = {}) {
+  if (!inBrowser()) return null;
+  try {
+    const res = await fetch("/api/data", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ op, ...payload }),
+    });
+    const data = await res.json().catch(() => null);
+    return data?.ok ? data : null;
+  } catch {
+    return null;
+  }
+}
+
 export function persistKvNow(key, value) {
   if (skipPersistKey(key) || !isSupabaseConfigured()) return Promise.resolve();
-  const sb = getSupabase();
-  if (!sb) return Promise.resolve();
-  return sb
-    .from("app_kv")
-    .upsert({ key, value, updated_at: new Date().toISOString() })
-    .then(({ error }) => {
-      if (error) console.warn("supabase persist", key, error.message);
-    });
+  return dataApi("write", { key, value });
 }
 
 export function persistKv(key, value) {
@@ -116,19 +128,24 @@ function kvFromRows(rows) {
   return kv;
 }
 
-export async function fetchRemoteKv(keys) {
+async function fetchPublicKv(sb, keys) {
+  if (!keys.length) return {};
+  const { data, error } = await sb.from("app_kv").select("key,value").in("key", keys);
+  if (error) throw error;
+  return kvFromRows(data);
+}
+
+export async function fetchRemoteKv(keys, { withPrivate = true } = {}) {
   const sb = getSupabase();
-  if (!sb) return null;
+  if (!sb || !Array.isArray(keys)) return null;
+  const wanted = keys.filter((key) => !skipPersistKey(key));
+  const privateKeys = wanted.filter((key) => !isPublicKvKey(key));
   try {
-    let query = sb.from("app_kv").select("key,value").not("key", "like", "subbie_drafts%");
-    if (Array.isArray(keys) && keys.length === 1) query = query.eq("key", keys[0]);
-    else if (Array.isArray(keys) && keys.length) query = query.in("key", keys);
-    const { data, error } = await query;
-    if (error) {
-      console.warn("supabase kv", error.message);
-      return null;
-    }
-    return kvFromRows(data);
+    const [publicKv, privateRes] = await Promise.all([
+      fetchPublicKv(sb, wanted.filter(isPublicKvKey)),
+      withPrivate && privateKeys.length ? dataApi("read", { keys: privateKeys }) : null,
+    ]);
+    return { ...publicKv, ...(privateRes?.kv || {}) };
   } catch (error) {
     console.warn("supabase kv", error?.message || error);
     return null;
@@ -148,21 +165,8 @@ function rfqsMapFromRows(rows) {
 }
 
 export async function fetchRemoteRfqs(since = "") {
-  const sb = getSupabase();
-  if (!sb) return null;
-  try {
-    let query = sb.from("rfqs").select("buyer_key,payload");
-    if (since) query = query.gt("updated_at", since);
-    const { data, error } = await query;
-    if (error) {
-      console.warn("supabase rfqs", error.message);
-      return null;
-    }
-    return rfqsMapFromRows(data);
-  } catch (error) {
-    console.warn("supabase rfqs", error?.message || error);
-    return null;
-  }
+  const res = await dataApi("rfqs", { since });
+  return res ? rfqsMapFromRows(res.rows) : null;
 }
 
 function latestUpdatedAt(sb, table, filter) {
@@ -172,18 +176,8 @@ function latestUpdatedAt(sb, table, filter) {
 }
 
 export async function fetchRfqStamp() {
-  const sb = getSupabase();
-  if (!sb) return null;
-  try {
-    const [table, kv] = await Promise.all([
-      latestUpdatedAt(sb, "rfqs"),
-      latestUpdatedAt(sb, "app_kv", (q) => q.eq("key", "subbie_rfqs_by_user")),
-    ]);
-    if (table.error && kv.error) return null;
-    return { table: table.data?.[0]?.updated_at || "", kv: kv.data?.[0]?.updated_at || "" };
-  } catch {
-    return null;
-  }
+  const res = await dataApi("rfq-stamp");
+  return res ? { table: res.table || "", kv: res.kv || "" } : null;
 }
 
 function productsFromRows(rows) {
@@ -247,96 +241,55 @@ async function catalogStamp(sb, keys) {
   return [products.data?.[0]?.updated_at, count.count, kv.data?.[0]?.updated_at, metrics.data?.[0]?.updated_at].join("|");
 }
 
-export async function fetchCatalogState(keys = []) {
+async function fetchPublicCatalog(sb, publicKeys) {
+  const stamp = inBrowser() && publicKeys.length ? await catalogStamp(sb, publicKeys) : "";
+  const cached = stamp ? readCatalogCache() : null;
+  if (cached?.stamp === stamp && cached.state) return cached.state;
+  const [kvRes, productRes, metricRes] = await Promise.all([
+    sb.from("app_kv").select("key,value").in("key", publicKeys),
+    sb.from("products").select("id,payload,image_url"),
+    sb.from("supplier_metrics").select("*"),
+  ]);
+  if (productRes.error) {
+    console.warn("supabase hydrate", productRes.error.message);
+    return null;
+  }
+  const state = {
+    kv: kvFromRows(kvRes.data),
+    products: productsFromRows(productRes.data),
+    metrics: metricsFromRows(metricRes.data),
+  };
+  if (stamp && !kvRes.error && !metricRes.error) writeCatalogCache(stamp, state);
+  return state;
+}
+
+export async function fetchCatalogState(keys = [], { withPrivate = false } = {}) {
   const sb = getSupabase();
   if (!sb) return null;
   const kvKeys = keys.filter((key) => !skipPersistKey(key));
+  const privateKeys = kvKeys.filter((key) => !isPublicKvKey(key));
   try {
-    const browser = typeof document !== "undefined" && kvKeys.length > 0;
-    const stamp = browser ? await catalogStamp(sb, kvKeys) : "";
-    const cached = stamp ? readCatalogCache() : null;
-    if (cached?.stamp === stamp && cached.state) return cached.state;
-
-    const kvQuery = kvKeys.length
-      ? sb.from("app_kv").select("key,value").in("key", kvKeys)
-      : sb.from("app_kv").select("key,value").not("key", "like", "subbie_drafts%").neq("key", "subbie_rfqs_by_user");
-    const [kvRes, productRes, metricRes] = await Promise.all([
-      kvQuery,
-      sb.from("products").select("id,payload,image_url"),
-      sb.from("supplier_metrics").select("*"),
+    const [state, privateRes] = await Promise.all([
+      fetchPublicCatalog(sb, kvKeys.filter(isPublicKvKey)),
+      withPrivate && privateKeys.length ? dataApi("read", { keys: privateKeys }) : null,
     ]);
-    if (kvRes.error && productRes.error) {
-      console.warn("supabase hydrate", kvRes.error.message || productRes.error.message);
-      return null;
-    }
-    const state = {
-      kv: kvFromRows(kvRes.data),
-      products: productsFromRows(productRes.data),
-      metrics: metricsFromRows(metricRes.data),
-    };
-    if (stamp && !kvRes.error && !productRes.error && !metricRes.error) writeCatalogCache(stamp, state);
-    return state;
+    if (!state) return null;
+    return { ...state, kv: { ...state.kv, ...(privateRes?.kv || {}) } };
   } catch (error) {
     console.warn("supabase hydrate", error?.message || error);
     return null;
   }
 }
 
-export async function fetchSessionState({ includeRfqs = true, buyerEmail = "" } = {}) {
-  const sb = getSupabase();
-  if (!sb) return null;
-  try {
-    let accountQuery = sb
-      .from("user_accounts")
-      .select("email,kind,name,phone,company_name,enabled,approval_status,bootstrap,extra");
-    if (buyerEmail) accountQuery = accountQuery.eq("email", buyerEmail);
-    if (!includeRfqs) {
-      const accountRes = await accountQuery;
-      if (accountRes.error) console.warn("supabase accounts", accountRes.error.message);
-      return { kv: {}, rfqs: {}, accounts: accountRes.data || [] };
-    }
-    let rfqQuery = sb.from("rfqs").select("buyer_key,payload");
-    if (buyerEmail) rfqQuery = rfqQuery.eq("buyer_key", buyerEmail);
-    const [kvRes, rfqRes, accountRes] = await Promise.all([
-      sb.from("app_kv").select("key,value").eq("key", "subbie_rfqs_by_user"),
-      rfqQuery,
-      accountQuery,
-    ]);
-    if (rfqRes.error) console.warn("supabase rfqs", rfqRes.error.message);
-    if (accountRes.error) console.warn("supabase accounts", accountRes.error.message);
-    return {
-      kv: kvFromRows(kvRes.data),
-      rfqs: rfqsMapFromRows(rfqRes.data),
-      accounts: accountRes.data || [],
-    };
-  } catch (error) {
-    console.warn("supabase session", error?.message || error);
-    return null;
-  }
+export async function fetchSessionState({ includeRfqs = true } = {}) {
+  const res = await dataApi("session-state", { includeRfqs });
+  if (!res) return null;
+  return { kv: res.kv || {}, rfqs: rfqsMapFromRows(res.rows), accounts: res.accounts || [] };
 }
 
-export async function fetchRemoteState() {
-  const sb = getSupabase();
-  if (!sb) return null;
-  try {
-    const [catalog, session] = await Promise.all([fetchCatalogState(), fetchSessionState()]);
-    if (!catalog) return null;
-    return {
-      ...catalog,
-      kv: { ...catalog.kv, ...(session?.kv || {}) },
-      rfqs: session?.rfqs,
-      accounts: session?.accounts || [],
-    };
-  } catch (error) {
-    console.warn("supabase hydrate", error?.message || error);
-    return null;
-  }
-}
-
-function chunk(list, size) {
-  const out = [];
-  for (let i = 0; i < (list || []).length; i += size) out.push(list.slice(i, i + size));
-  return out;
+export async function fetchQuoteSnapshot(token) {
+  const res = await dataApi("quote", { token });
+  return res?.kv || null;
 }
 
 let catalogTimer = null;
@@ -354,37 +307,7 @@ export function persistCatalogTables(products) {
 }
 
 export async function persistCatalogTablesNow(products) {
-  const sb = getSupabase();
-  if (!sb || !Array.isArray(products)) return;
-  const rows = products
-    .filter((p) => p && p.id)
-    .map((p) => ({
-      id: p.id,
-      payload: p,
-      updated_at: new Date().toISOString(),
-    }));
-  for (const part of chunk(rows, 80)) {
-    const { error } = await sb.from("products").upsert(part);
-    if (error) throw error;
-  }
-  const ids = rows.map((row) => row.id);
-  const existing = new Set();
-  for (const part of chunk(ids, 80)) {
-    const { data, error } = await sb.from("product_images").select("product_id").in("product_id", part);
-    if (error) throw error;
-    (data || []).forEach((row) => existing.add(row.product_id));
-  }
-  const imageRows = products
-    .filter((p) => p?.id && p.image && !existing.has(p.id))
-    .map((p) => ({
-      product_id: p.id,
-      url: p.image,
-      sort_order: 0,
-      is_primary: true,
-      source: "catalog",
-    }));
-  for (const part of chunk(imageRows, 80)) {
-    const { error } = await sb.from("product_images").upsert(part, { onConflict: "product_id,sort_order" });
-    if (error) throw error;
-  }
+  if (!Array.isArray(products)) return;
+  const res = await dataApi("catalog", { products });
+  if (!res) throw new Error("catalog save failed");
 }
