@@ -23,6 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+supabase/.temp
 .env*
 .local-shared-store.json
 .local-shared-store.lock
