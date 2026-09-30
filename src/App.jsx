@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import GoogleAnalytics from "./components/GoogleAnalytics";
 import ScrollToTop from "./components/ScrollToTop";
 import { LanguageProvider } from "./i18n.jsx";
-import { SHOW_RFQ } from "./lib/flags";
+import { SHOW_RFQ, SHOW_SPEC_MATCH } from "./lib/flags";
 import HomePage from "./pages/HomePage";
 import GreenPage from "./pages/GreenPage";
 import CatalogPage from "./pages/CatalogPage";
@@ -149,7 +149,7 @@ export default function App() {
           <Route path="/forgot-password" element={<Navigate to="/en/forgot-password" replace />} />
           <Route path="/reset-password" element={<Navigate to="/en/reset-password" replace />} />
           <Route path="/rfq" element={<Navigate to="/en/rfq" replace />} />
-          <Route path="/spec-match" element={<Navigate to="/en/spec-match" replace />} />
+          <Route path="/spec-match" element={<Navigate to={SHOW_SPEC_MATCH ? "/en/spec-match" : "/en"} replace />} />
           <Route path="/rfqs" element={<Navigate to={SHOW_RFQ ? "/en/rfqs" : "/en"} replace />} />
           <Route path="/whatsapp" element={<Navigate to="/en/whatsapp" replace />} />
           <Route path="/whatsapp-chat" element={<Navigate to="/en/whatsapp-chat" replace />} />
@@ -175,7 +175,7 @@ export default function App() {
             <Route path="details/:id" element={<DetailsPage />} />
             <Route path="supplier/:slug" element={<SupplierPage />} />
             <Route path="rfq" element={<RfqPage />} />
-            <Route path="spec-match" element={<SpecMatchPage />} />
+            <Route path="spec-match" element={SHOW_SPEC_MATCH ? <SpecMatchPage /> : <Navigate to=".." replace />} />
             <Route path="rfqs" element={<RfqsRoute />} />
             <Route path="whatsapp" element={<WhatsappPage />} />
             <Route path="whatsapp/:id" element={<WhatsappPage />} />

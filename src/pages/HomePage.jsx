@@ -11,6 +11,7 @@ import SiteHeader from "../components/SiteHeader";
 import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
 import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
+import { SHOW_SPEC_MATCH } from "../lib/flags";
 import { siteOrigin, withLocale } from "../lib/locale";
 import { seoCopy } from "../lib/seoCopy";
 import {
@@ -380,9 +381,11 @@ export default function HomePage() {
               <Link to={withLocale(lang, "/rfq")} className="btn-ghost !px-6 !py-3.5">
                 {t("openRfqDraft")}
               </Link>
-              <Link to={withLocale(lang, "/spec-match")} className="btn-ghost !px-6 !py-3.5">
-                {t("uploadSpecMatch")}
-              </Link>
+              {SHOW_SPEC_MATCH ? (
+                <Link to={withLocale(lang, "/spec-match")} className="btn-ghost !px-6 !py-3.5">
+                  {t("uploadSpecMatch")}
+                </Link>
+              ) : null}
             </div>
           </div>
         </section>
@@ -732,12 +735,14 @@ export default function HomePage() {
                   >
                     {t("priceFilterHot")}
                   </button>
-                  <Link
-                    to={withLocale(lang, "/spec-match")}
-                    className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide bg-white text-charcoal rounded-full"
-                  >
-                    {t("uploadSpecMatch")}
-                  </Link>
+                  {SHOW_SPEC_MATCH ? (
+                    <Link
+                      to={withLocale(lang, "/spec-match")}
+                      className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide bg-white text-charcoal rounded-full"
+                    >
+                      {t("uploadSpecMatch")}
+                    </Link>
+                  ) : null}
                 </div>
               </div>
             </div>
