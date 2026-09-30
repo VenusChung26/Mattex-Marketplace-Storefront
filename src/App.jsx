@@ -22,7 +22,9 @@ import StaffSetPasswordPage from "./pages/admin/StaffSetPasswordPage";
 import StaffForgotPasswordPage from "./pages/admin/StaffForgotPasswordPage";
 import PublicQuotePage from "./pages/PublicQuotePage";
 import SpecMatchPage from "./pages/SpecMatchPage";
+import MidAutumnPage from "./pages/MidAutumnPage";
 import CatalogUpdateBanner from "./components/CatalogUpdateBanner";
+import FloatingActions from "./components/FloatingActions";
 import { getCategoryByName, ensureBuyerSession } from "./lib/store";
 import { adminOrigin, isAdminSurface } from "./lib/origins";
 import { useStore } from "./hooks/useStore";
@@ -56,6 +58,7 @@ function LangLayout() {
       <BuyerSessionGuard />
       <CatalogUpdateBanner />
       <Outlet />
+      <FloatingActions />
     </>
   );
 }
@@ -149,6 +152,8 @@ export default function App() {
           <Route path="/forgot-password" element={<Navigate to="/en/forgot-password" replace />} />
           <Route path="/reset-password" element={<Navigate to="/en/reset-password" replace />} />
           <Route path="/rfq" element={<Navigate to="/en/rfq" replace />} />
+          <Route path="/mid-autumn" element={<Navigate to="/zh/promo" replace />} />
+          <Route path="/promo" element={<Navigate to="/zh/promo" replace />} />
           <Route path="/spec-match" element={<Navigate to={SHOW_SPEC_MATCH ? "/en/spec-match" : "/en"} replace />} />
           <Route path="/rfqs" element={<Navigate to={SHOW_RFQ ? "/en/rfqs" : "/en"} replace />} />
           <Route path="/whatsapp" element={<Navigate to="/en/whatsapp" replace />} />
@@ -165,6 +170,8 @@ export default function App() {
           <Route path="/:lang" element={<LangLayout />}>
             <Route index element={<HomePage />} />
             <Route path="green" element={<GreenPage />} />
+            <Route path="mid-autumn" element={<Navigate to="../promo" replace />} />
+            <Route path="promo" element={<MidAutumnPage />} />
             <Route path="sales" element={<Navigate to=".." replace />} />
             <Route path="catalog" element={<CatalogIndexRedirect />} />
             <Route path="catalog/:slug" element={<CatalogPage />} />

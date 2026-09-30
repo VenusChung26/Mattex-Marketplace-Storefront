@@ -22,8 +22,21 @@ function db() {
 
 function secret() {
   const value = process.env.SESSION_SECRET || "";
-  if (value.length < 32) throw new Error("auth_not_configured");
-  return value;
+  if (value.length >= 32) return value;
+  if (!process.env.VERCEL_ENV) return "local-dev-only-session-secret-mattex-32";
+  throw new Error("auth_not_configured");
+}
+
+function localStaffMatch(email, password) {
+  if (process.env.VERCEL_ENV) return false;
+  const allowEmail = normalizeEmail(process.env.LOCAL_STAFF_EMAIL || "");
+  const allowPassword = String(process.env.LOCAL_STAFF_PASSWORD || "");
+  if (!allowEmail || !allowPassword) return false;
+  return normalizeEmail(email) === allowEmail && String(password || "") === allowPassword;
+}
+
+function localStaffAccount(email) {
+  return { email: normalizeEmail(email), name: "Sales", enabled: true, kind: "staff" };
 }
 
 const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
@@ -151,7 +164,17 @@ async function sendMail(to, subject, innerHtml, fontBase) {
 const actions = {
   async login({ kind, email, password }) {
     if (!isKind(kind)) return { status: 400, body: { ok: false, error: "invalid" } };
-    const account = await findAccount(email, kind);
+    let account;
+    try {
+      account = await findAccount(email, kind);
+    } catch (error) {
+      if (error?.message === "auth_not_configured" && kind === "staff" && !process.env.VERCEL_ENV && process.env.LOCAL_STAFF_PASSWORD) {
+        if (!localStaffMatch(email, password)) return { body: { ok: false, error: "password" } };
+        const address = normalizeEmail(email);
+        return { cookie: sessionCookie(kind, address), body: { ok: true, account: localStaffAccount(address) } };
+      }
+      throw error;
+    }
     if (!account) return { body: { ok: false, error: kind === "buyer" ? "missing" : "password" } };
     if (kind === "buyer" && account.approval_status === "rejected") return { body: { ok: false, error: "rejected" } };
     if (!account.enabled) return { body: { ok: false, error: kind === "buyer" ? "disabled" : "password" } };
@@ -176,6 +199,15 @@ const actions = {
         name: String(profile.name || "").trim(),
         phone: String(profile.phone || "").trim(),
         company_name: String(profile.companyName || "").trim(),
+        job_title: String(profile.jobTitle || "").trim(),
+        company_reg: String(profile.companyReg || "").trim(),
+        company_phone: String(profile.companyPhone || "").trim(),
+        company_address: String(profile.companyAddress || "").trim(),
+        extra: {
+          phoneRegion: String(profile.phoneRegion || "").trim(),
+          wechat: String(profile.wechat || "").trim(),
+          roles: Array.isArray(profile.roles) ? profile.roles : [],
+        },
         created_at: new Date().toISOString(),
       });
       if (error) return { body: { ok: false, error: "exists" } };
@@ -282,11 +314,45 @@ const actions = {
     return { body: { ok: true, kind: "buyer", email: row.email } };
   },
 
+  async "update-profile"({ profile = {} }, request) {
+    const session = readSession(request, "buyer");
+    if (!session) return { status: 401, body: { ok: false, error: "auth" } };
+    const current = await findAccount(session.email, "buyer");
+    const extra = current?.extra && typeof current.extra === "object" ? current.extra : {};
+    const { error } = await db()
+      .from("user_accounts")
+      .update({
+        phone: String(profile.phone || current?.phone || "").trim(),
+        job_title: String(profile.jobTitle || current?.job_title || "").trim(),
+        company_phone: String(profile.companyPhone || current?.company_phone || "").trim(),
+        company_address: String(profile.companyAddress || current?.company_address || "").trim(),
+        extra: {
+          ...extra,
+          phoneRegion: String(profile.phoneRegion || extra.phoneRegion || "").trim(),
+          wechat: String(profile.wechat || "").trim(),
+          roles: Array.isArray(profile.roles) ? profile.roles : extra.roles || [],
+        },
+      })
+      .eq("email", session.email)
+      .eq("kind", "buyer");
+    if (error) return { status: 400, body: { ok: false, error: "save" } };
+    return { body: { ok: true } };
+  },
+
   async session({ kind }, request) {
     if (!isKind(kind)) return { status: 400, body: { ok: false } };
     const session = readSession(request, kind);
-    const account = session ? await findAccount(session.email, kind) : null;
-    if (!account?.enabled) return { cookie: session ? clearCookie(kind) : undefined, body: { ok: false } };
+    if (!session) return { body: { ok: false } };
+    let account;
+    try {
+      account = await findAccount(session.email, kind);
+    } catch (error) {
+      if (error?.message === "auth_not_configured" && kind === "staff" && localStaffMatch(session.email, process.env.LOCAL_STAFF_PASSWORD || "")) {
+        return { body: { ok: true, account: localStaffAccount(session.email) } };
+      }
+      throw error;
+    }
+    if (!account?.enabled) return { cookie: clearCookie(kind), body: { ok: false } };
     return { body: { ok: true, account } };
   },
 

@@ -122,13 +122,29 @@ async function readAllProducts(sb) {
 async function commitNow(body, request) {
   const staff = readSession(request, "staff");
   if (!staff) return { status: 401, body: { ok: false, error: "auth" } };
-  const sb = db();
-  if (!sb) return { status: 503, body: { ok: false, error: "config" } };
 
   const incoming = Array.isArray(body?.products) ? body.products.filter((product) => product?.id) : [];
   const removed = [...new Set((Array.isArray(body?.removed) ? body.removed : []).map(String).filter(Boolean))];
   const categories = Array.isArray(body?.categories) ? body.categories : [];
   if (!incoming.length && !removed.length) return { status: 200, body: { ok: true, etag: (await handleCatalogVersion()).etag } };
+
+  const sb = db();
+  if (!sb) {
+    const existing = await readJson(SNAPSHOT_FILE);
+    let products = Array.isArray(existing?.products) ? existing.products : [];
+    if (!products.length) {
+      const host = await readJson(path.join(process.cwd(), "public", "catalog.json"));
+      products = Array.isArray(host?.products) ? host.products : [];
+    }
+    const byId = new Map(products.map((product) => [String(product.id), product]));
+    for (const product of incoming) byId.set(String(product.id), product);
+    for (const id of removed) byId.delete(id);
+    const written = await writeSnapshot({
+      products: [...byId.values()],
+      categories: categories.length ? categories : existing?.categories || [],
+    });
+    return { status: 200, body: { ok: true, etag: written.etag, snapshot: true } };
+  }
 
   if (incoming.length) {
     const saved = await upsertProducts(sb, incoming);

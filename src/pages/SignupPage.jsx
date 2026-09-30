@@ -20,6 +20,8 @@ import {
   registerUser,
 } from "../lib/store";
 import ProjectListEditor from "../components/ProjectListEditor";
+import { BuyerContactFields } from "../components/BuyerContactFields";
+import { composePhone, normalizeRoles } from "../lib/phone";
 
 const EMPTY_FORM = {
   email: "",
@@ -28,6 +30,11 @@ const EMPTY_FORM = {
   name: "",
   jobTitle: "",
   phone: "",
+  phoneRegion: "852",
+  phoneOtherCode: "",
+  phoneNational: "",
+  wechat: "",
+  roles: ["buyer"],
   companyName: "",
   companyReg: "",
   companyPhone: "",
@@ -71,7 +78,8 @@ export default function SignupPage() {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = t("signupFixEmail");
     if (!String(nextForm.name || "").trim()) errors.name = t("signupFixRequired");
     if (!String(nextForm.jobTitle || "").trim()) errors.jobTitle = t("signupFixRequired");
-    if (!String(nextForm.phone || "").trim()) errors.phone = t("signupFixRequired");
+    if (!composePhone(nextForm.phoneRegion, nextForm.phoneOtherCode, nextForm.phoneNational)) errors.phone = t("signupFixRequired");
+    if (!normalizeRoles(nextForm.roles).length) errors.roles = t("signupFixRole");
     if (!pwd.length || !pwd.letter || !pwd.number) errors.password = t("signupFixPassword");
     if (!pwd.match) errors.confirmPassword = t("signupFixPasswordMatch");
     if (!String(nextForm.companyName || "").trim()) errors.companyName = t("signupFixRequired");
@@ -91,7 +99,13 @@ export default function SignupPage() {
       return;
     }
     setBusy(true);
-    const result = await registerUser(form);
+    const phone = composePhone(form.phoneRegion, form.phoneOtherCode, form.phoneNational);
+    const result = await registerUser({
+      ...form,
+      phone,
+      phoneRegion: form.phoneRegion === "other" ? form.phoneOtherCode : form.phoneRegion,
+      roles: normalizeRoles(form.roles),
+    });
     setBusy(false);
     if (!result.ok) {
       const fieldMap = {
@@ -214,16 +228,7 @@ export default function SignupPage() {
                       autoComplete="organization-title"
                     />
                   </AccountField>
-                  <AccountField label={t("mobilePhone")} required error={fieldErrors.phone}>
-                    <input
-                      type="tel"
-                      value={form.phone}
-                      onChange={(e) => setField("phone", e.target.value)}
-                      placeholder={t("phMobilePhone")}
-                      className="field-input"
-                      autoComplete="tel"
-                    />
-                  </AccountField>
+                  <BuyerContactFields t={t} value={form} onChange={setField} errors={fieldErrors} />
                 </AccountSection>
 
                 <AccountSection title={t("password")}>

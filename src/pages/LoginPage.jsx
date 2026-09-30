@@ -10,11 +10,26 @@ import { withLocale } from "../lib/locale";
 import { SHOW_RFQ } from "../lib/flags";
 import { consumePendingAfterAuth, closeAuthModal, loginUser, logoutUser, takeDisabledKick, updateUserProfile } from "../lib/store";
 import ProjectListEditor from "../components/ProjectListEditor";
+import { BuyerContactFields } from "../components/BuyerContactFields";
+import { composePhone, normalizeRoles, splitPhone } from "../lib/phone";
+
+function roleLabel(roles, t) {
+  return normalizeRoles(roles)
+    .map((role) => (role === "contractor" ? t("roleContractor") : t("roleBuyer")))
+    .join(" · ");
+}
 
 function profileFromUser(user) {
+  const phone = splitPhone(user?.phone);
+  const roles = normalizeRoles(user?.roles);
   return {
     name: user?.name || "",
     phone: user?.phone || "",
+    phoneRegion: phone.region,
+    phoneOtherCode: phone.otherCode,
+    phoneNational: phone.national,
+    wechat: user?.wechat || "",
+    roles: roles.length ? roles : ["buyer"],
     jobTitle: user?.jobTitle || "",
     companyName: user?.companyName || "",
     companyReg: user?.companyReg || "",
@@ -100,9 +115,11 @@ export default function LoginPage() {
     navigate(withLocale(lang, consumePendingAfterAuth() || "/"));
   }
 
-  function onSaveProfile(e) {
+  async function onSaveProfile(e) {
     e.preventDefault();
     const errors = {};
+    if (!composePhone(profile.phoneRegion, profile.phoneOtherCode, profile.phoneNational)) errors.phone = t("signupFixRequired");
+    if (!normalizeRoles(profile.roles).length) errors.roles = t("signupFixRole");
     if (!String(profile.companyAddress || "").trim()) errors.companyAddress = t("signupFixRequired");
     if (Object.keys(errors).length) {
       setFieldErrors(errors);
@@ -110,7 +127,12 @@ export default function LoginPage() {
       revealIssue();
       return;
     }
-    const result = updateUserProfile(profile);
+    const result = await updateUserProfile({
+      ...profile,
+      phone: composePhone(profile.phoneRegion, profile.phoneOtherCode, profile.phoneNational),
+      phoneRegion: profile.phoneRegion === "other" ? profile.phoneOtherCode : profile.phoneRegion,
+      roles: normalizeRoles(profile.roles),
+    });
     if (!result.ok) {
       const messages = {
         name: t("fullName"),
@@ -178,16 +200,7 @@ export default function LoginPage() {
                         autoComplete="organization-title"
                       />
                     </AccountField>
-                    <AccountField label={t("mobilePhone")}>
-                      <input
-                        type="tel"
-                        value={profile.phone}
-                        onChange={(e) => setProfileField("phone", e.target.value)}
-                        placeholder={t("phMobilePhone")}
-                        className="field-input"
-                        autoComplete="tel"
-                      />
-                    </AccountField>
+                    <BuyerContactFields t={t} value={profile} onChange={setProfileField} errors={fieldErrors} />
                   </AccountSection>
 
                   <AccountSection title={t("companyDetails")}>
@@ -276,6 +289,8 @@ export default function LoginPage() {
                     <ProfileValue label={t("fullName")} value={user.name} />
                     <ProfileValue label={t("jobTitle")} value={user.jobTitle} />
                     <ProfileValue label={t("mobilePhone")} value={user.phone} />
+                    <ProfileValue label={t("wechat")} value={user.wechat} />
+                    <ProfileValue label={t("accountRoles")} value={roleLabel(user.roles, t)} />
                   </AccountSection>
 
                   <AccountSection title={t("companyDetails")}>

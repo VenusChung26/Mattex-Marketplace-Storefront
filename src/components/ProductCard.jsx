@@ -140,26 +140,35 @@ export function ProductCardSkeleton({ compact = false, count = 6 }) {
   );
 }
 
+function TagLink({ to, title, className, children }) {
+  return (
+    <Link to={to} title={title} className={className} onClick={(event) => event.stopPropagation()}>
+      {children}
+    </Link>
+  );
+}
+
 export function ProductTagPills({ product, className = "" }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const hit = isHitProduct(product);
   if (!product?.green && !hit && !product?.tailorMade) return null;
+  const home = withLocale(lang, "/");
   return (
     <span className={`inline-flex flex-wrap items-center gap-1 ${className}`}>
       {hit ? (
-        <span className={`${TAG_PILL} bg-charcoal text-white`}>{t("hitBadge")}</span>
+        <TagLink to={`${home}#top`} title={t("topLabelHint")} className={`${TAG_PILL} bg-charcoal text-white`}>{t("hitBadge")}</TagLink>
       ) : null}
       {product.green ? (
-        <span className={`${TAG_PILL} bg-[#1f8a45] text-white`}>
+        <TagLink to={`${home}#green`} title={t("greenLabelHint")} className={`${TAG_PILL} bg-[#1f8a45] text-white`}>
           <LeavesIcon />
           {t("greenBadge")}
-        </span>
+        </TagLink>
       ) : null}
       {product.tailorMade ? (
-        <span className={`${TAG_PILL} bg-brand-700 text-white`}>
+        <TagLink to={`${home}#custom`} title={t("tailorLabelHint")} className={`${TAG_PILL} bg-brand-700 text-white`}>
           <TickIcon className="h-3 w-3" />
           {t("tailorMadeBadge")}
-        </span>
+        </TagLink>
       ) : null}
     </span>
   );
@@ -192,30 +201,31 @@ export function ProductMetaChips({ product, className = "", showTags = false }) 
 }
 
 export function ProductBadges({ product, rank = null }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const hit = isHitProduct(product);
   const showRank = rank != null;
   if (!product?.green && !hit && !showRank && !product?.tailorMade) return null;
+  const home = withLocale(lang, "/");
   return (
-    <div className="absolute top-2.5 right-2.5 z-10 flex flex-wrap items-start justify-end gap-1 pointer-events-none">
+    <div className="absolute top-2.5 right-2.5 z-10 flex flex-wrap items-start justify-end gap-1">
       {showRank ? (
         <span className="bg-charcoal/90 text-white text-[11px] font-bold px-2 py-1">#{rank}</span>
       ) : hit ? (
-        <span className="bg-charcoal/90 text-white text-[10px] font-bold px-2 py-1 tracking-[0.08em]">
+        <TagLink to={`${home}#top`} title={t("topLabelHint")} className="bg-charcoal/90 text-white text-[10px] font-bold px-2 py-1 tracking-[0.08em]">
           {t("hitBadge")}
-        </span>
+        </TagLink>
       ) : null}
       {product.green ? (
-        <span className="inline-flex items-center gap-1 bg-[#1f8a45] text-white text-[10px] font-bold px-2 py-1 tracking-[0.08em]">
+        <TagLink to={`${home}#green`} title={t("greenLabelHint")} className="inline-flex items-center gap-1 bg-[#1f8a45] text-white text-[10px] font-bold px-2 py-1 tracking-[0.08em]">
           <LeavesIcon />
           {t("greenBadge")}
-        </span>
+        </TagLink>
       ) : null}
       {product.tailorMade ? (
-        <span className="inline-flex items-center gap-1 bg-brand-700 text-white text-[10px] font-bold px-2 py-1 tracking-[0.08em]">
+        <TagLink to={`${home}#custom`} title={t("tailorLabelHint")} className="inline-flex items-center gap-1 bg-brand-700 text-white text-[10px] font-bold px-2 py-1 tracking-[0.08em]">
           <TickIcon className="h-3 w-3" />
           {t("tailorMadeBadge")}
-        </span>
+        </TagLink>
       ) : null}
     </div>
   );
@@ -339,7 +349,7 @@ export function QtyStepper({ value, min = 1, unit = "", onChange, size = "card",
           <span
             className={`flex shrink-0 items-center border-l px-2.5 text-mute ${
               underMin ? "border-amber-200" : "border-line"
-            } ${compact ? "text-[11px]" : "text-xs"}`}
+            } ${compact ? "text-sm font-semibold text-ink" : "text-base font-semibold text-ink"}`}
           >
             {unit}
           </span>

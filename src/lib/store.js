@@ -2,6 +2,8 @@ import { collectAttachmentUrls, collectProductImageUrls, fitWhatsappUrls, upload
 import { buildQuotePdf, canSharePdfFile, downloadBlob, sharePdfFile } from "./quotePdf.js";
 import { fetchCatalogState, fetchQuoteSnapshot, fetchRemoteKv, fetchRemoteRfqs, fetchRfqStamp, fetchSessionState, isSupabaseConfigured, persistCatalogTables, persistKv, persistKvNow } from "./supabasePersist.js";
 import { adminOrigin, marketplaceOrigin } from "./origins.js";
+import { foldHan } from "./han.js";
+import { normalizeRoles } from "./phone.js";
 import {
   accountCreatedEmailHtml,
   buyerRejectedEmailHtml,
@@ -375,8 +377,10 @@ function isQuoteActive(quote) {
 }
 
 function getEffectivePrice(product) {
-  if (!product) return { displayPrice: null, status: "none", quote: null };
-  return { displayPrice: null, status: "none", quote: null };
+  if (!product || product.priceUponRequest) return { displayPrice: null, status: "none", quote: null };
+  const amount = Number(product.price);
+  if (!Number.isFinite(amount) || amount <= 0) return { displayPrice: null, status: "none", quote: null };
+  return { displayPrice: amount, status: "list", quote: null };
 }
 
 function formatQuoteDate(iso, lang) {
@@ -806,14 +810,12 @@ function productSearchText(product, fields) {
   }
   if (selected.includes("supplier")) parts.push(product.supplier);
   if (selected.includes("remarks")) parts.push(getProductRemarks(product).join(" "), (product.purposes || []).join(" "));
-  return parts.filter(Boolean).join(" ").toLowerCase();
+  return foldHan(parts.filter(Boolean).join(" ")).toLowerCase();
 }
 
 function searchProducts(query, category, options = {}) {
   const base = getProductsByCategory(category);
-  const q = String(query || "")
-    .trim()
-    .toLowerCase();
+  const q = foldHan(String(query || "").trim()).toLowerCase();
   if (!q) return base;
   const tokens = q.split(/\s+/).filter(Boolean);
   return base.filter((p) => {
@@ -1150,9 +1152,9 @@ async function commitCatalogProducts(changedIds, removedIds) {
   const ids = [...new Set((changedIds || []).map(String).filter(Boolean))];
   const removed = [...new Set((removedIds || []).map(String).filter(Boolean))];
   const products = PRODUCTS.filter((product) => ids.includes(String(product.id)));
-  if (!products.length && !removed.length) return;
+  if (!products.length && !removed.length) return { ok: true };
   const categories = getCategoryDefs().map((category) => ({ name: category.name, image: category.image || "" }));
-  catalogCommitChain = catalogCommitChain.then(async () => {
+  const run = catalogCommitChain.then(async () => {
     const res = await fetch("/api/catalog/commit", {
       method: "POST",
       credentials: "same-origin",
@@ -1168,7 +1170,10 @@ async function commitCatalogProducts(changedIds, removedIds) {
     }
     if (!failed && data?.etag && data.etag !== "seed") catalogEtag = data.etag;
     emitStoreChange();
-  }).catch(() => {});
+    return failed ? { ok: false, error: data?.error || "save" } : { ok: true, etag: data?.etag || "" };
+  }).catch(() => ({ ok: false, error: "save" }));
+  catalogCommitChain = run.then(() => {}).catch(() => {});
+  return run;
 }
 
 async function fetchHostCatalog() {
@@ -1230,7 +1235,7 @@ async function publishCatalogProducts(list) {
   const releaseBoot = () => {
     if (releasedBoot) return;
     releasedBoot = true;
-    applySavedProductPatches();
+    if (isPortalSurface()) applySavedProductPatches();
     restoreHostImages(rows);
     catalogBootReady = true;
     bumpCatalog();
@@ -1253,7 +1258,7 @@ async function publishCatalogProducts(list) {
     if (i + CHUNK < rows.length) await yieldToBrowser();
   }
   if (!releasedBoot) releaseBoot();
-  applySavedProductPatches();
+  if (isPortalSurface()) applySavedProductPatches();
   restoreHostImages(rows);
   catalogLoading = false;
   catalogReady = true;
@@ -2667,6 +2672,9 @@ function publicUserFromAccount(account) {
     email: account.email,
     name: account.name,
     phone: account.phone || "",
+    phoneRegion: account.phoneRegion || "",
+    wechat: account.wechat || "",
+    roles: normalizeRoles(account.roles),
     phoneWhatsapp: Boolean(account.phoneWhatsapp),
     jobTitle: account.jobTitle || "",
     companyName: account.companyName || "",
@@ -2754,6 +2762,7 @@ async function registerUser(profile) {
   if (getStaffAccount(email)) return { ok: false, error: "staff" };
   if (!String(profile.name || "").trim()) return { ok: false, error: "name" };
   if (!String(profile.phone || "").trim()) return { ok: false, error: "phone" };
+  if (!normalizeRoles(profile.roles).length) return { ok: false, error: "roles" };
   if (!String(profile.jobTitle || "").trim()) return { ok: false, error: "jobTitle" };
   if (!String(profile.companyName || "").trim()) return { ok: false, error: "companyName" };
   if (!String(profile.companyReg || "").trim()) return { ok: false, error: "companyReg" };
@@ -2765,7 +2774,18 @@ async function registerUser(profile) {
   const signup = await authApi("signup", {
     email,
     password: String(profile.password),
-    profile: { name: profile.name, phone: profile.phone, companyName: profile.companyName },
+    profile: {
+      name: profile.name,
+      phone: profile.phone,
+      companyName: profile.companyName,
+      phoneRegion: profile.phoneRegion,
+      wechat: profile.wechat,
+      roles: normalizeRoles(profile.roles),
+      jobTitle: profile.jobTitle,
+      companyReg: profile.companyReg,
+      companyPhone: profile.companyPhone,
+      companyAddress: profile.companyAddress,
+    },
   });
   if (!signup.ok) return { ok: false, error: signup.error || "server" };
   forgetDeletedBuyer(email);
@@ -2776,6 +2796,9 @@ async function registerUser(profile) {
     email,
     name: String(profile.name).trim(),
     phone: String(profile.phone).trim(),
+    phoneRegion: String(profile.phoneRegion || "").trim(),
+    wechat: String(profile.wechat || "").trim(),
+    roles: normalizeRoles(profile.roles),
     phoneWhatsapp: Boolean(String(profile.phone || "").trim()),
     jobTitle: String(profile.jobTitle).trim(),
     companyName: String(profile.companyName).trim(),
@@ -2813,7 +2836,7 @@ async function registerUser(profile) {
   return { ok: true, pending: false, loggedIn: true, email };
 }
 
-function updateUserProfile(patch = {}) {
+async function updateUserProfile(patch = {}) {
   const current = getUser();
   if (!current?.email) return { ok: false, error: "not_logged_in" };
   const email = normalizeEmail(current.email);
@@ -2821,6 +2844,11 @@ function updateUserProfile(patch = {}) {
   const next = {
     name: String(current.name ?? "").trim(),
     phone: String(patch.phone ?? current.phone ?? "").trim(),
+    phoneRegion: String(patch.phoneRegion ?? current.phoneRegion ?? "").trim(),
+    wechat: String(patch.wechat ?? current.wechat ?? "").trim(),
+    roles: normalizeRoles(patch.roles ?? current.roles).length
+      ? normalizeRoles(patch.roles ?? current.roles)
+      : ["buyer"],
     phoneWhatsapp: Boolean(String(patch.phone ?? current.phone ?? "").trim()),
     jobTitle: String(patch.jobTitle ?? current.jobTitle ?? "").trim(),
     companyName: String(current.companyName ?? "").trim(),
@@ -2851,6 +2879,7 @@ function updateUserProfile(patch = {}) {
       at: Date.now(),
     });
   }
+  void authApi("update-profile", { profile: next });
   return { ok: true, user: getUser() };
 }
 
@@ -6338,7 +6367,7 @@ function mergeProductPatchMaps(local, remote) {
   return merged;
 }
 
-function persistProductPatches(changedIds, removedIds) {
+function persistProductPatches(changedIds, removedIds, { commit = true } = {}) {
   const prev = readJson(PRODUCT_PATCH_KEY, {});
   const removed = readRemovedProductIds(prev);
   const created = PRODUCTS.filter((p) => String(p.id || "").startsWith("p-new-") || String(p.id || "").startsWith("p-xls-"));
@@ -6358,6 +6387,8 @@ function persistProductPatches(changedIds, removedIds) {
       salesUnit: p.salesUnit,
       unit: p.salesUnit || p.unit,
       moq: p.moq,
+      price: p.priceUponRequest || !(Number(p.price) > 0) ? null : Number(p.price),
+      priceUponRequest: Boolean(p.priceUponRequest) || !(Number(p.price) > 0),
       leadTime: p.leadTime,
       leadTimeLabel: p.leadTimeLabel || "",
       purposes: p.purposes,
@@ -6370,6 +6401,8 @@ function persistProductPatches(changedIds, removedIds) {
       imageFallbacks: Array.isArray(p.imageFallbacks) ? p.imageFallbacks.filter(Boolean).slice(0, 5) : [],
       images: Array.isArray(p.images) ? p.images.filter(Boolean).slice(0, 5) : [],
       imageSource: p.imageSource,
+      staffEditedAt: p.staffEditedAt || 0,
+      staffEditSent: Boolean(p.staffEditSent),
       needsChainImage: p.needsChainImage,
       discontinued: p.discontinued,
       createdAt: p.createdAt || 0,
@@ -6380,8 +6413,9 @@ function persistProductPatches(changedIds, removedIds) {
   writeJson(PRODUCT_PATCH_KEY, patches);
   const ids = Array.isArray(changedIds) ? changedIds.map(String).filter(Boolean) : [];
   const dropped = Array.isArray(removedIds) ? removedIds.map(String).filter(Boolean) : [];
-  if (ids.length || dropped.length) commitCatalogProducts(ids, dropped);
   bumpCatalog();
+  if (commit && (ids.length || dropped.length)) return commitCatalogProducts(ids, dropped);
+  return Promise.resolve({ ok: true });
 }
 
 function applySavedProductPatches() {
@@ -6457,7 +6491,7 @@ function createAdminProduct(fields) {
   return { ok: true, product };
 }
 
-function updateAdminProduct(id, fields) {
+async function updateAdminProduct(id, fields) {
   const gate = requireStaff();
   if (!gate.ok) return gate;
   const product = PRODUCTS.find((p) => p.id === id);
@@ -6490,9 +6524,18 @@ function updateAdminProduct(id, fields) {
         : product.imageSource,
     imageFallback: fields.imageFallback == null ? product.imageFallback : fields.imageFallback,
   });
-  persistProductPatches([id]);
+  const live = Boolean(product.published);
+  product.staffEditedAt = Date.now();
+  product.staffEditSent = false;
+  const sent = await persistProductPatches([id], [], { commit: live });
+  if (live && !sent?.ok) {
+    emitStoreChange();
+    return { ok: false, error: sent?.error || "save", product };
+  }
+  if (live) product.staffEditSent = true;
+  await persistProductPatches([id], [], { commit: false });
   emitStoreChange();
-  return { ok: true, product };
+  return { ok: true, product, live };
 }
 
 function productSkuId(product) {
@@ -6537,7 +6580,7 @@ function productCatalogStatus(product) {
   return "unpublished";
 }
 
-function publishAdminProduct(id) {
+async function publishAdminProduct(id) {
   const gate = requireStaff();
   if (!gate.ok) return gate;
   const product = PRODUCTS.find((p) => p.id === id);
@@ -6548,7 +6591,18 @@ function publishAdminProduct(id) {
   product.published = true;
   product.held = false;
   product.deleted = false;
-  persistProductPatches([id]);
+  product.staffEditedAt = Date.now();
+  product.staffEditSent = false;
+  const sent = await persistProductPatches([id]);
+  if (!sent?.ok) {
+    product.published = false;
+    product.staffEditSent = false;
+    await persistProductPatches([id], [], { commit: false });
+    emitStoreChange();
+    return { ok: false, error: sent?.error || "save", product };
+  }
+  product.staffEditSent = true;
+  await persistProductPatches([id], [], { commit: false });
   emitStoreChange();
   return { ok: true, product };
 }

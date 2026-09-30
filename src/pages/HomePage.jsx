@@ -13,6 +13,7 @@ import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
 import { SHOW_SPEC_MATCH } from "../lib/flags";
 import { siteOrigin, withLocale } from "../lib/locale";
+import { bannerName, promoBanners, sentenceOf, usePromo } from "../lib/promo";
 import { seoCopy } from "../lib/seoCopy";
 import {
   addCustomLine,
@@ -28,14 +29,40 @@ import {
   requireBuyerAuth,
   addFromStorefront,
   searchProducts,
-  WHATSAPP_DISPLAY,
-  WHATSAPP_HREF,
 } from "../lib/store";
 
 const CATEGORY_PREVIEW_COUNT = 8;
 const SUPPLIER_PREVIEW_COUNT = 9;
 const CATALOG_BATCH = 24;
 const CATALOG_VIEW_KEY = "subbie_catalog_view";
+
+function pickFillColumns(count, width, { minTile, maxTile, target }) {
+  const n = Math.max(0, count);
+  if (n <= 1) return 1;
+  const gap = 10;
+  const maxCols = Math.max(1, Math.min(n, Math.floor((width + gap) / (minTile + gap))));
+  const minCols = Math.max(1, Math.min(maxCols, Math.ceil((width + gap) / (maxTile + gap))));
+  const good = [];
+  for (let cols = maxCols; cols >= 1; cols -= 1) {
+    const rem = n % cols;
+    if (rem === 0 || rem > 2) good.push(cols);
+  }
+  const preferred = good.filter((cols) => cols >= minCols);
+  const pool = preferred.length ? preferred : good;
+  if (!pool.length) return 1;
+  return pool.slice().sort((a, b) => Math.abs(a - target) - Math.abs(b - target) || b - a)[0];
+}
+
+function useContentWidth() {
+  const [viewport, setViewport] = useState(1440);
+  useEffect(() => {
+    const read = () => setViewport(window.innerWidth);
+    read();
+    window.addEventListener("resize", read);
+    return () => window.removeEventListener("resize", read);
+  }, []);
+  return Math.min(1280, Math.max(280, viewport)) - 32;
+}
 
 function PitchIcon({ name }) {
   const common = "h-4 w-4 shrink-0 text-brand-600";
@@ -76,12 +103,16 @@ function readCatalogView() {
 export default function HomePage() {
   const { user, cartCount, catalogEpoch, catalogLoading } = useStore();
   const { t, lang } = useLanguage();
+  const { promo, live } = usePromo();
+  const topBanner = promoBanners(promo)[0];
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [customOpen, setCustomOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [suggestIndex, setSuggestIndex] = useState(-1);
   const [navQuery, setNavQuery] = useState("");
   const [priceFilter, setPriceFilter] = useState("all");
   const [catalogView, setCatalogView] = useState(readCatalogView);
@@ -179,6 +210,10 @@ export default function HomePage() {
     ? suppliers
     : suppliers.slice(0, SUPPLIER_PREVIEW_COUNT);
   const hiddenSupplierCount = Math.max(suppliers.length - SUPPLIER_PREVIEW_COUNT, 0);
+  const contentWidth = useContentWidth();
+  const categoryCols = pickFillColumns(visibleCategories.length, contentWidth, { minTile: 132, maxTile: 210, target: 8 });
+  const greenCols = pickFillColumns(greens.length, contentWidth, { minTile: 230, maxTile: 460, target: 4 });
+  const topCols = pickFillColumns(top.length, contentWidth, { minTile: 230, maxTile: 460, target: 4 });
 
   const products = useMemo(() => {
     let list = searchProducts(searchQuery, selectedCategories, { fields: searchFields });
@@ -314,15 +349,46 @@ export default function HomePage() {
     setCatalogView(next === "list" ? "list" : "card");
   }
 
+  const suggestions = useMemo(() => {
+    const query = searchQuery.trim();
+    if (!query) return [];
+    return searchProducts(query).slice(0, 8);
+  }, [searchQuery, catalogEpoch]);
+
+  function scrollToResults() {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el = document.getElementById("catalog-results");
+      const nav = document.getElementById("siteNav");
+      const bar = document.getElementById("catalog-toolbar");
+      if (!el) return;
+      const navH = nav ? Math.round(nav.getBoundingClientRect().height) : navHeight;
+      const barH = bar ? Math.round(bar.getBoundingClientRect().height) : toolbarHeight;
+      const top = window.scrollY + el.getBoundingClientRect().top - navH - barH - 8;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    }));
+  }
+
   function onCatalogQueryChange(value) {
     setSearchQuery(value);
     setGreenOnly(/\bgreen\b/i.test(value));
+    setSuggestOpen(Boolean(String(value || "").trim()));
+    setSuggestIndex(-1);
+  }
+
+  function runCatalogSearch(value) {
+    onCatalogQueryChange(value);
+    setSuggestOpen(false);
+    scrollToResults();
   }
 
   function submitNavSearch(event, value) {
     event?.preventDefault();
-    onCatalogQueryChange(value ?? navQuery);
-    scrollToCatalog();
+    const next = value ?? navQuery;
+    setSearchQuery(next);
+    setNavQuery(next);
+    setGreenOnly(/\bgreen\b/i.test(next));
+    setSuggestOpen(false);
+    scrollToResults();
   }
 
   return (
@@ -392,6 +458,36 @@ export default function HomePage() {
       </div>
 
       <div className="sheet relative z-10">
+        {live && topBanner ? (
+          <section className="max-w-7xl mx-auto px-4 pt-8 sm:pt-10">
+            <div className="grid overflow-hidden border border-line bg-white lg:grid-cols-[minmax(0,1.25fr)_minmax(16rem,0.75fr)]">
+              <div className="relative flex flex-col justify-center bg-brand-50/70 px-6 py-10 sm:px-10 sm:py-12">
+                <div className="absolute left-0 top-0 h-full w-1.5 bg-brand-400" aria-hidden />
+                <h2 className="font-display text-3xl font-semibold leading-[1.12] tracking-tight text-brand-800 sm:text-4xl">
+                  {t("midAutumnTitle")}
+                </h2>
+                <p className="mt-4 max-w-lg text-base leading-relaxed text-mute">{sentenceOf(promo, lang)}</p>
+                <Link
+                  to={`${withLocale(lang, "/promo")}?banner=${encodeURIComponent(topBanner.id)}`}
+                  className="mt-8 inline-flex self-start items-center justify-center gap-2 bg-brand-600 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(36,90,65,0.22)] transition-colors hover:bg-brand-700"
+                >
+                  {t("midAutumnCta")}
+                  <span aria-hidden>→</span>
+                </Link>
+              </div>
+              <Link
+                to={`${withLocale(lang, "/promo")}?banner=${encodeURIComponent(topBanner.id)}`}
+                className="relative block min-h-[18rem] overflow-hidden lg:min-h-0"
+              >
+                <img
+                  src={topBanner.src}
+                  alt={bannerName(topBanner, lang)}
+                  className="absolute inset-0 h-full w-full object-cover object-top"
+                />
+              </Link>
+            </div>
+          </section>
+        ) : null}
         <section id="categories" className="max-w-7xl mx-auto px-4 pt-9 sm:pt-11" style={{ scrollMarginTop: navHeight }}>
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5">
             <div>
@@ -420,7 +516,7 @@ export default function HomePage() {
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-2.5">
+          <div className="grid gap-2.5" style={{ gridTemplateColumns: `repeat(${categoryCols}, minmax(0, 1fr))` }}>
             {visibleCategories.map((c) => (
               <Link
                 key={c.id}
@@ -468,7 +564,7 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+          <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${greenCols}, minmax(0, 1fr))` }}>
             {catalogLoading && !greens.length ? (
               <ProductCardSkeleton compact count={4} />
             ) : (
@@ -482,6 +578,7 @@ export default function HomePage() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-mute mb-2">{t("featured")}</p>
               <h2 className="font-display text-3xl font-semibold text-brand-800">{t("topProducts")}</h2>
+              <p className="mt-2 text-sm text-mute">{t("topLabelHint")}</p>
             </div>
             <a
               href="#products"
@@ -494,7 +591,7 @@ export default function HomePage() {
               {t("fullCatalog")} →
             </a>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+          <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${topCols}, minmax(0, 1fr))` }}>
             {catalogLoading && !top.length ? (
               <ProductCardSkeleton compact count={4} />
             ) : (
@@ -665,17 +762,57 @@ export default function HomePage() {
             <div className="max-w-7xl mx-auto px-4 py-2">
               <div className="flex flex-col lg:flex-row lg:items-center gap-2">
                 <div className="flex flex-1 min-w-0 gap-2">
-                  <div className="flex flex-1 min-w-0 bg-white">
+                  <div className="relative flex flex-1 min-w-0 bg-white">
                     <input
                       id="catalog-search"
                       type="search"
                       value={searchQuery}
                       onChange={(e) => onCatalogQueryChange(e.target.value)}
+                      onFocus={() => setSuggestOpen(Boolean(searchQuery.trim()))}
+                      onBlur={() => setSuggestOpen(false)}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowDown") {
+                          e.preventDefault();
+                          setSuggestOpen(true);
+                          setSuggestIndex((index) => Math.min(index + 1, suggestions.length - 1));
+                        } else if (e.key === "ArrowUp") {
+                          e.preventDefault();
+                          setSuggestIndex((index) => Math.max(index - 1, 0));
+                        } else if (e.key === "Enter") {
+                          e.preventDefault();
+                          const picked = suggestIndex >= 0 ? suggestions[suggestIndex]?.name : searchQuery;
+                          runCatalogSearch(picked || searchQuery);
+                        } else if (e.key === "Escape") {
+                          setSuggestOpen(false);
+                        }
+                      }}
                       placeholder={t("searchPlaceholder")}
                       className="field-input flex-1 !rounded-none !border-0 !bg-transparent !text-ink !py-2"
                       autoComplete="off"
                       aria-label={t("catalog")}
+                      aria-expanded={suggestOpen && suggestions.length > 0}
+                      role="combobox"
                     />
+                    {suggestOpen && suggestions.length ? (
+                      <ul role="listbox" className="absolute left-0 right-0 top-full z-40 mt-1 max-h-80 overflow-auto border border-line bg-white text-ink shadow-lg">
+                        {suggestions.map((product, index) => (
+                          <li key={product.id}>
+                            <button
+                              type="button"
+                              role="option"
+                              aria-selected={index === suggestIndex}
+                              className={`block w-full px-3 py-2 text-left text-sm ${index === suggestIndex ? "bg-brand-50" : "hover:bg-paper"}`}
+                              onMouseDown={(event) => {
+                                event.preventDefault();
+                                runCatalogSearch(product.name);
+                              }}
+                            >
+                              {product.name}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
                     <span className="w-px self-stretch my-1.5 bg-line" aria-hidden />
                     <SearchFieldsSelect
                       selected={searchFields}
@@ -780,6 +917,9 @@ export default function HomePage() {
                   id="catalog-results"
                   className="font-display text-2xl font-semibold text-brand-800"
                 >
+                  {searchQuery.trim() ? (
+                    <p className="w-full text-sm font-semibold text-brand-700">{t("searchFor", { q: searchQuery.trim() })}</p>
+                  ) : null}
                   {catalogLoading && !products.length
                     ? t("loadingCatalog")
                     : products.length === 1
@@ -866,30 +1006,6 @@ export default function HomePage() {
           {toast}
         </div>
       ) : null}
-      <div className="fixed bottom-6 right-5 z-50 flex flex-col items-center gap-3">
-        <a
-          href={WHATSAPP_HREF}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_10px_28px_rgba(16,21,19,0.32)] hover:bg-[#1ebe57] transition-colors"
-          aria-label={`${t("whatsapp")} ${WHATSAPP_DISPLAY}`}
-          title={`${t("whatsapp")} ${WHATSAPP_DISPLAY}`}
-        >
-          <svg viewBox="0 0 24 24" className="h-8 w-8" fill="currentColor" aria-hidden="true">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-          </svg>
-        </a>
-        <button
-          type="button"
-          onClick={() => window.scrollTo({ top: 0, behavior: "auto" })}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-charcoal text-white shadow-[0_8px_20px_rgba(16,21,19,0.28)] hover:bg-brand-800 transition-colors"
-          aria-label={t("backToTop")}
-        >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true">
-            <path d="M5 15l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      </div>
     </>
   );
 }

@@ -9,6 +9,7 @@ import { handleData } from "./api/data.js";
 import { handleCatalogCommit, handleCatalogGet, handleCatalogVersion } from "./api/catalog-snapshot.js";
 import { handleProductImage } from "./api/product-image.js";
 import { handleSpecMatch, handleSpecMatchStatus } from "./api/spec-match.js";
+import { handlePromoGet, handlePromoSave } from "./api/promo.js";
 
 const GA_MEASUREMENT_ID = "G-F89GE7J3CR";
 
@@ -148,6 +149,31 @@ function jsonPlugin() {
           res.end(JSON.stringify(handleSharedStorePost(body)));
           return;
         }
+        if (path === "/api/promo" && req.method === "GET") {
+          const result = await handlePromoGet();
+          res.statusCode = result.status || 200;
+          res.setHeader("Content-Type", "application/json");
+          res.setHeader("Cache-Control", "no-store");
+          res.end(JSON.stringify(result.body));
+          return;
+        }
+        if (path === "/api/promo" && req.method === "POST") {
+          let posted = {};
+          try {
+            ({ body: posted } = await readJsonBody(req));
+          } catch {
+            res.statusCode = 400;
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ ok: false, error: "invalid json" }));
+            return;
+          }
+          const result = await handlePromoSave(posted, localRequest(req, path));
+          res.statusCode = result.status || 200;
+          res.setHeader("Content-Type", "application/json");
+          res.setHeader("Cache-Control", "no-store");
+          res.end(JSON.stringify(result.body));
+          return;
+        }
         if ((path === "/api/catalog/commit" || path === "/api/product-image" || path === "/api/spec-match") && req.method === "POST") {
           let posted = {};
           try {
@@ -250,7 +276,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   if (env.BLOB_READ_WRITE_TOKEN) process.env.BLOB_READ_WRITE_TOKEN = env.BLOB_READ_WRITE_TOKEN;
   for (const [key, value] of Object.entries(env)) {
-    if (key.startsWith("TMS_") || key.startsWith("RESEND_") || key === "SUPABASE_SERVICE_ROLE_KEY" || key === "SESSION_SECRET" || key === "OPENAI_API_KEY" || key === "SPEC_MATCH_API_KEY") {
+    if (key.startsWith("TMS_") || key.startsWith("RESEND_") || key === "SUPABASE_SERVICE_ROLE_KEY" || key === "SESSION_SECRET" || key === "OPENAI_API_KEY" || key === "SPEC_MATCH_API_KEY" || key === "LOCAL_STAFF_EMAIL" || key === "LOCAL_STAFF_PASSWORD") {
       process.env[key] = value;
     }
   }

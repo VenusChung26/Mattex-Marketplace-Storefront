@@ -8,7 +8,8 @@ import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
 import { stripLocale, withLocale } from "../lib/locale";
 import { SHOW_RFQ } from "../lib/flags";
-import { closeAuthModal, getCategoryByName, getCategoryDefs, logoutUser } from "../lib/store";
+import { usePromo } from "../lib/promo";
+import { closeAuthModal, getCategoryByName, getCategoryDefs, logoutUser, searchProducts } from "../lib/store";
 
 function CartIcon({ className = "h-4 w-4" }) {
   return (
@@ -67,10 +68,17 @@ export default function SiteHeader({
   const location = useLocation();
   const categories = useMemo(() => getCategoryDefs(), [catalogEpoch]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [suggestIndex, setSuggestIndex] = useState(-1);
   const [catsOpen, setCatsOpen] = useState(false);
   const [navSolid, setNavSolid] = useState(!overlay);
   const [query, setQuery] = useState(searchValue || "");
   const isHome = stripLocale(location.pathname) === "/";
+  const suggestions = useMemo(() => {
+    const text = String(query || "").trim();
+    if (!text) return [];
+    return searchProducts(text).slice(0, 8);
+  }, [query, catalogEpoch]);
   const lp = (path) => withLocale(lang, path);
 
   useEffect(() => {
@@ -95,14 +103,17 @@ export default function SiteHeader({
     };
   }, [menuOpen]);
 
+  const { live, ready } = usePromo();
+  const showOffer = !ready || live;
   const width = fluid ? "w-full max-w-none" : wide ? "max-w-[100rem]" : "max-w-7xl";
   const navLinks = [
+    showOffer ? { to: lp("/promo"), label: t("midAutumnCta") } : null,
     { to: lp("/green"), label: t("green") },
     { hash: "top", label: t("topProducts") },
     { hash: "suppliers", label: t("suppliers") },
     { hash: "support", label: t("howItWorks") },
     { to: { pathname: lp("/"), hash: "products" }, label: t("catalog"), allProducts: true },
-  ];
+  ].filter(Boolean);
 
   function closeMenu() {
     setMenuOpen(false);
@@ -145,6 +156,14 @@ export default function SiteHeader({
   function setSearch(value) {
     setQuery(value);
     onSearchChange?.(value);
+    setSuggestOpen(Boolean(String(value || "").trim()));
+    setSuggestIndex(-1);
+  }
+
+  function pickSuggestion(name) {
+    setSuggestOpen(false);
+    setSearch(name);
+    submitSearch(null, name);
   }
 
   function goCatalog(extra = {}) {
@@ -164,9 +183,10 @@ export default function SiteHeader({
     navigate(catalogTo(extra));
   }
 
-  function submitSearch(event) {
+  function submitSearch(event, forced) {
     event?.preventDefault();
-    const next = String(query || "").trim();
+    const next = String(forced ?? query ?? "").trim();
+    setSuggestOpen(false);
     closeMenu();
     if (onSearchSubmit) {
       onSearchSubmit(event, next);
@@ -237,16 +257,61 @@ export default function SiteHeader({
             </div>
           </Link>
 
-          <form className="hidden md:block flex-1 min-w-0 max-w-xl" onSubmit={submitSearch}>
+          <form className="relative hidden md:block flex-1 min-w-0 max-w-xl" onSubmit={submitSearch}>
             <input
               type="search"
               value={query}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setSuggestOpen(Boolean(e.target.value.trim()));
+                setSuggestIndex(-1);
+              }}
+              onFocus={() => setSuggestOpen(Boolean(String(query || "").trim()))}
+              onBlur={() => setSuggestOpen(false)}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setSuggestOpen(true);
+                  setSuggestIndex((index) => Math.min(index + 1, suggestions.length - 1));
+                } else if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setSuggestIndex((index) => Math.max(index - 1, 0));
+                } else if (e.key === "Enter" && suggestIndex >= 0 && suggestions[suggestIndex]) {
+                  e.preventDefault();
+                  const name = suggestions[suggestIndex].name;
+                  setSearch(name);
+                  submitSearch(e, name);
+                } else if (e.key === "Escape") {
+                  setSuggestOpen(false);
+                }
+              }}
               placeholder={t("navSearchPlaceholder")}
               className="w-full bg-white/10 border border-white/20 text-white placeholder:text-white/45 px-3.5 py-2 text-sm"
               autoComplete="off"
               aria-label={t("search")}
+              role="combobox"
             />
+            {suggestOpen && suggestions.length ? (
+              <ul role="listbox" className="absolute left-0 right-0 top-full z-50 mt-1 max-h-80 overflow-auto border border-line bg-white text-ink shadow-lg">
+                {suggestions.map((product, index) => (
+                  <li key={product.id}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={index === suggestIndex}
+                      className={`block w-full px-3 py-2 text-left text-sm ${index === suggestIndex ? "bg-brand-50" : "hover:bg-paper"}`}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        setSearch(product.name);
+                        submitSearch(event, product.name);
+                      }}
+                    >
+                      {product.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </form>
 
           <div className="ml-auto flex items-center gap-2">

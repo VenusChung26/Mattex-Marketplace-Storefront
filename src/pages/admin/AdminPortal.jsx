@@ -111,10 +111,12 @@ import { transactedRefsForLine } from "../../lib/tmsTransacted";
 import QuoteVersionSelect, { DRAFT_VALUE, RfqRequestVersionSelect } from "../../components/QuoteVersionSelect";
 import RfqActivityLog from "../../components/RfqActivityLog";
 import { SHOW_PRODUCT_IMPORT, SHOW_RFQ_QUOTES } from "../../lib/flags";
+import BannersPanel from "./BannersPanel";
 
 const NAV = [
   { id: "rfqs", label: "RFQ inbox" },
   { id: "products", label: "Products" },
+  { id: "banners", label: "Banners" },
   { id: "accounts", label: "Accounts" },
 ];
 
@@ -511,11 +513,17 @@ export default function AdminPortal() {
   }, [staff, adminAlerts]);
 
   useEffect(() => {
+    if (!jumpAlert) return undefined;
+    const timer = window.setTimeout(() => setJumpAlert(null), 6000);
+    return () => window.clearTimeout(timer);
+  }, [jumpAlert]);
+
+  useEffect(() => {
     if (!flash) return undefined;
     const timer = window.setTimeout(() => {
       setFlash("");
       setFlashError(false);
-    }, 4200);
+    }, 6000);
     return () => window.clearTimeout(timer);
   }, [flash]);
 
@@ -532,6 +540,8 @@ export default function AdminPortal() {
               ? "Enter a rejection reason."
               : reason === "in_use"
                 ? "Move products out of this category first."
+                : reason === "save" || reason === "quota"
+                ? "這次未送出，稍後再試"
                 : reason || "Unable to save"
       );
     } else {
@@ -572,7 +582,9 @@ export default function AdminPortal() {
                     ? "This email is a buyer account."
                     : result.error === "invite"
                       ? "This account still needs to set a password from the invite email."
-                      : "Sign-in failed."
+                      : result.error === "not_configured"
+                        ? "Portal sign-in is not configured on this server."
+                        : "Sign-in failed."
                 );
                 return;
               }
@@ -921,6 +933,7 @@ export default function AdminPortal() {
             />
           ) : null}
           {page === "products" && productSource === "chain" ? <ChainProductsPanel /> : null}
+          {page === "banners" ? <BannersPanel note={note} /> : null}
           {page === "rfqs" ? (
             <RfqPanel
               key={inboxHomeKey}
@@ -1021,7 +1034,7 @@ export default function AdminPortal() {
       ) : null}
       {flash ? (
         <div
-          className={`fixed bottom-6 right-6 z-[60] max-w-sm rounded-lg px-4 py-3 text-sm font-semibold text-white shadow-lg ${flashError ? "bg-red-700" : "bg-brand-700"}`}
+          className={`fixed top-4 left-1/2 z-[80] w-[min(36rem,calc(100%-2rem))] -translate-x-1/2 rounded-xl px-5 py-4 text-base font-semibold text-white shadow-xl ${flashError ? "bg-red-700" : "bg-brand-800"}`}
           role="status"
         >
           {flash}
@@ -1833,7 +1846,9 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
   const searchedProducts = needle
     ? products.filter((p) => matchesSearch(needle, ...productSearchHay(p)))
     : products;
-  const visibleProducts = statusTab === "all" ? searchedProducts : searchedProducts.filter((p) => productStatusKey(p) === statusTab);
+  const visibleProducts = statusTab === "all"
+    ? searchedProducts
+    : searchedProducts.filter((p) => productStatusKey(p) === statusTab);
   const selectedProducts = visibleProducts.filter((p) => selected.has(p.id));
   const allVisibleSelected = visibleProducts.length > 0 && visibleProducts.every((p) => selected.has(p.id));
   const someVisibleSelected = visibleProducts.some((p) => selected.has(p.id));
@@ -2014,7 +2029,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
     setBulkConfirm({ type, items });
   }
 
-  function requestPublish(target) {
+  async function requestPublish(target) {
     if (!target || target.deleted) {
       note({ ok: false, error: "Restore this product before Publish." });
       return;
@@ -2029,24 +2044,25 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
       setBulkConfirm({ type: "publish", items: [target] });
       return;
     }
-    const result = publishAdminProduct(target.id);
-    note(result, "Published — live on marketplace");
+    const result = await publishAdminProduct(target.id);
+    if (result?.ok) closeModal();
+    note(result, "已送到市集");
   }
 
-  function applyBulkConfirm() {
+  async function applyBulkConfirm() {
     if (!bulkConfirm) return;
     const { type, items } = bulkConfirm;
     let ok = 0;
     let fail = 0;
     let lastError = "";
-    items.forEach((p) => {
+    for (const p of items) {
       let result = { ok: false };
       if (type === "publish") {
         if (publishHardBlockers(p).length) {
           fail += 1;
-          return;
+          continue;
         }
-        result = publishAdminProduct(p.id);
+        result = await publishAdminProduct(p.id);
       } else if (type === "unpublish") result = unpublishAdminProduct(p.id);
       else if (type === "delete") result = softDeleteAdminProduct(p.id);
       else if (type === "forever") result = hardDeleteAdminProduct(p.id);
@@ -2056,7 +2072,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
         fail += 1;
         if (result?.error) lastError = result.error;
       }
-    });
+    }
     setBulkConfirm(null);
     clearSelected();
     const labels = { publish: "published", unpublish: "taken offline", delete: "removed", forever: "deleted forever", restore: "restored" };
@@ -2095,7 +2111,14 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
     ? bulkConfirm.items.filter((p) => !publishHardBlockers(p).length).length
     : 0;
 
-  function saveProduct() {
+  async function saveProduct() {
+    if (draft.priceMode === "amount") {
+      const amount = Number(String(draft.price ?? "").replace(/,/g, ""));
+      if (!Number.isFinite(amount) || amount <= 0) {
+        setFormError("Enter a price, or choose Price Upon Request.");
+        return;
+      }
+    }
     const payload = fromForm(draft);
     if (modal === "create" || !editing) {
       const result = createAdminProduct(payload);
@@ -2108,16 +2131,20 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
       closeModal();
       setForm(null);
       setEditing("");
-                    note(result, sku ? `Product added as Unpublish ${sku}.` : "Product added successfully.");
+      note(result, sku ? `已儲存，未上架 ${sku}` : "已儲存，未上架");
       return;
     }
-    const result = updateAdminProduct(editing, payload);
+    const result = await updateAdminProduct(editing, payload);
     if (!result.ok) {
-      setFormError(result.error || "Unable to save.");
+      setFormError("");
       note(result);
       return;
     }
-    note(result, "Product saved.");
+    const live = Boolean(result.live);
+    closeModal();
+    setForm(null);
+    setEditing("");
+    note(result, live ? "已更新到市集" : "已儲存，未上架");
   }
 
   return (
@@ -2264,6 +2291,9 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                           <div className="mt-1">
                             <StatusBadge product={p} />
                           </div>
+                          <p className="mt-1 text-xs font-semibold text-ink">
+                            {Number(p.price) > 0 && !p.priceUponRequest ? `$${Number(p.price).toFixed(2)}` : "Price Upon Request"}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -2522,6 +2552,31 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
               />
             </label>
             <label className="text-sm font-medium text-ink">
+              Price
+              <select
+                className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 font-normal"
+                value={draft.priceMode || "request"}
+                onChange={(e) => field("priceMode", e.target.value)}
+              >
+                <option value="request">Price Upon Request</option>
+                <option value="amount">Set price</option>
+              </select>
+            </label>
+            {draft.priceMode === "amount" ? (
+              <label className="text-sm font-medium text-ink">
+                Amount (HKD)
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  className="mt-1 w-full rounded-lg border border-line px-3 py-2 font-normal placeholder:text-mute"
+                  value={draft.price}
+                  onChange={(e) => field("price", e.target.value)}
+                  placeholder="e.g. 125"
+                />
+              </label>
+            ) : null}
+            <label className="text-sm font-medium text-ink">
               MOQ
               <input
                 className="mt-1 w-full rounded-lg border border-line px-3 py-2 font-normal placeholder:text-mute"
@@ -2689,6 +2744,8 @@ function toForm(p) {
       category: getAdminCategories()[0] || "",
       productNo: "",
       salesUnit: "",
+      priceMode: "request",
+      price: "",
       moq: "",
       leadTime: "",
       sizeDesc: "",
@@ -2711,6 +2768,8 @@ function toForm(p) {
     category: p.category || getAdminCategories()[0] || "",
     productNo: p.productNo || "",
     salesUnit: p.salesUnit || p.unit || "",
+    priceMode: Number(p.price) > 0 && !p.priceUponRequest ? "amount" : "request",
+    price: Number(p.price) > 0 && !p.priceUponRequest ? String(p.price) : "",
     moq: String(p.moq ?? ""),
     leadTime: leadLabel(p),
     sizeDesc: p.sizeDesc || "",
@@ -2730,10 +2789,16 @@ function toForm(p) {
 }
 
 function fromForm(draft) {
+  const upon = draft.priceMode !== "amount";
+  const amount = Number(String(draft.price ?? "").replace(/,/g, ""));
+  const price = !upon && Number.isFinite(amount) && amount > 0 ? Math.round(amount * 100) / 100 : null;
+  const { priceMode, ...rest } = draft;
   return {
-    ...draft,
+    ...rest,
     moq: draft.moq,
     purposes: draft.purposes,
+    price,
+    priceUponRequest: price == null,
   };
 }
 
@@ -3864,6 +3929,15 @@ function RfqDetail({
             <div className="mt-3">
               <RfqFollowUpContact rfq={rfq} account={account} note={note} />
             </div>
+            {account?.wechat || (Array.isArray(account?.roles) && account.roles.length) ? (
+              <p className="mt-3 text-sm text-ink">
+                {account?.wechat ? `WeChat ${account.wechat}` : ""}
+                {account?.wechat && account?.roles?.length ? " · " : ""}
+                {Array.isArray(account?.roles)
+                  ? account.roles.map((role) => (role === "contractor" ? "Contractor" : "Buyer")).join(" · ")
+                  : ""}
+              </p>
+            ) : null}
           </section>
           <RfqActivityLog rfq={rfq} lang="en" audience="staff" title="Activity" />
           <section className="rounded-xl border border-line bg-white p-4">
@@ -4820,6 +4894,12 @@ function BuyerInfoModal({ email, note, onClose, onOpenRfq, onReject, onForever }
             </BuyerInfoField>
             <BuyerInfoField label="Phone">
               <BuyerPhoneLink phone={buyer?.phone} />
+            </BuyerInfoField>
+            <BuyerInfoField label="WeChat">{buyer?.wechat}</BuyerInfoField>
+            <BuyerInfoField label="Roles">
+              {Array.isArray(buyer?.roles) && buyer.roles.length
+                ? buyer.roles.map((role) => (role === "contractor" ? "Contractor" : "Buyer")).join(" · ")
+                : ""}
             </BuyerInfoField>
           </div>
         </section>

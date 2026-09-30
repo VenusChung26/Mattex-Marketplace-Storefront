@@ -143,7 +143,7 @@ export default function GreenPage() {
       <SiteFooter />
       {toast ? (
         <div
-          className="fixed bottom-24 right-6 z-50 max-w-sm border border-brand-700 bg-charcoal text-white px-4 py-3 text-sm toast shadow-lg"
+          className="fixed bottom-44 right-6 z-50 max-w-sm border border-brand-700 bg-charcoal text-white px-4 py-3 text-sm toast shadow-lg"
           role="status"
         >
           {toast}
