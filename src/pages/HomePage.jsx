@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import CategorySideNav from "../components/CategorySideNav";
-import ProductCard, { ProductCardSkeleton, ProductListRow } from "../components/ProductCard";
+import ProductCard, { FallbackImage, ProductCardSkeleton, ProductListRow } from "../components/ProductCard";
 import SupplierLogo from "../components/SupplierLogo";
 import CustomProductModal from "../components/CustomProductModal";
 import CatalogViewToggle from "../components/CatalogViewToggle";
@@ -380,6 +380,9 @@ export default function HomePage() {
               <Link to={withLocale(lang, "/rfq")} className="btn-ghost !px-6 !py-3.5">
                 {t("openRfqDraft")}
               </Link>
+              <Link to={withLocale(lang, "/spec-match")} className="btn-ghost !px-6 !py-3.5">
+                {t("uploadSpecMatch")}
+              </Link>
             </div>
           </div>
         </section>
@@ -422,7 +425,7 @@ export default function HomePage() {
                 title={c.name}
                 className="cat-tile group"
               >
-                <img src={c.image} alt="" loading="lazy" />
+                <FallbackImage src={c.image} fallback={c.imageFallback} alt="" loading="lazy" />
                 <span className="cat-tile-body">
                   <span className="min-w-0 text-left text-[11px] sm:text-xs font-semibold text-white leading-snug line-clamp-2">
                     {c.name}
@@ -729,6 +732,12 @@ export default function HomePage() {
                   >
                     {t("priceFilterHot")}
                   </button>
+                  <Link
+                    to={withLocale(lang, "/spec-match")}
+                    className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide bg-white text-charcoal rounded-full"
+                  >
+                    {t("uploadSpecMatch")}
+                  </Link>
                 </div>
               </div>
             </div>

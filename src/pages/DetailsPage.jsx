@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import CopyLinkButton from "../components/CopyLinkButton";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
@@ -21,10 +21,32 @@ import {
   getProduct,
   isBuyerVisible,
   productSkuId,
+  specificationRows,
   stockStatusKey,
   supplierDisplayName,
   supplierPath,
 } from "../lib/store";
+
+function BackToCatalog({ product }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { t, lang } = useLanguage();
+  return (
+    <button
+      type="button"
+      className="btn-soft !px-5 !py-3"
+      onClick={() => {
+        if (location.key !== "default") {
+          navigate(-1);
+          return;
+        }
+        navigate(withLocale(lang, catalogPathForCategory(product.category)));
+      }}
+    >
+      {t("backToCatalog")}
+    </button>
+  );
+}
 
 const STOCK_TONE = {
   in_stock: "bg-brand-50 text-brand-800",
@@ -48,7 +70,7 @@ export default function DetailsPage() {
     setQty(product?.moq || 1);
     const next = productImageList(product);
     setActiveImage(next[0] || product?.image || "");
-  }, [product?.id, product?.moq]);
+  }, [product?.id, product?.moq, product?.image, product?.images]);
 
   useEffect(() => {
     if (params.get("tailor") !== "1") return;
@@ -104,7 +126,9 @@ export default function DetailsPage() {
     { label: t("standard"), value: product.standard },
   ];
 
-  const purposes = (product.purposes || []).map((term) => String(term).trim()).filter(Boolean);
+  const purposes = (product.purposes || [])
+    .map((term) => String(term).trim())
+    .filter((term) => term && !/^\d+\.\s/.test(term));
   const remark = String(product.remark || "").trim();
 
   function goToRfq(intent, nextQty = qty) {
@@ -153,6 +177,7 @@ export default function DetailsPage() {
             <ProductBadges product={product} />
             <ProductImage
               src={activeImage || product.image}
+              fallback={activeImage === product.image ? product.imageFallback : ""}
               alt={product.name}
               className="block w-full"
               imgClassName="block w-full h-auto"
@@ -246,18 +271,29 @@ export default function DetailsPage() {
             </p>
 
             <div className="mt-4 hidden lg:block">
-              <Link to={allProductsTo(lang)} className="btn-soft !px-5 !py-3">
-                {t("backToCatalog")}
-              </Link>
+              <BackToCatalog product={product} />
             </div>
 
             <h2 className="mt-8 text-sm font-semibold text-ink">{t("specifications")}</h2>
             <ul className="mt-3 divide-y divide-line border-y border-line">
-              {(product.specs || []).map((s) => (
-                <li key={s} className="py-2.5 text-sm text-mute">
-                  {s}
-                </li>
-              ))}
+              {specificationRows(product).map((row) =>
+                row.kind === "cert" ? (
+                  <li key="cert" className="py-2.5 text-sm text-mute">
+                    <p className="text-xs font-medium text-ink">Cert</p>
+                    <ul className="mt-1.5 space-y-1">
+                      {row.lines.map((line) => (
+                        <li key={line} className="leading-relaxed">
+                          {line}
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ) : (
+                  <li key={row.text} className="py-2.5 text-sm text-mute">
+                    {row.text}
+                  </li>
+                )
+              )}
             </ul>
 
             {purposes.length ? (

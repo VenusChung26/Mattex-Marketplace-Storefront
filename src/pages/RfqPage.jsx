@@ -6,6 +6,7 @@ import { useStore } from "../hooks/useStore";
 import {
   addCustomLine,
   getProduct,
+  getDraft,
   isOrderable,
   draftTotals,
   formatPrice,
@@ -550,10 +551,19 @@ export default function RfqPage() {
 
 function Shell({ children }) {
   const { t, lang } = useLanguage();
+  useStore();
+  const specFile = getDraft().specFile;
   return (
     <div className="bg-paper min-h-screen">
       <Seo lang={lang} path={withLocale(lang, "/rfq")} title={`${t("rfqDraftTitle")} | Mattex Marketplace`} description={t("reviewQuoteHint")} noindex />
       <SiteHeader />
+      {specFile?.url ? (
+        <p className="max-w-7xl mx-auto px-4 pt-4 text-sm text-ink">
+          <a className="font-semibold text-brand-700 hover:underline" href={specFile.url} target="_blank" rel="noreferrer">
+            {specFile.name}
+          </a>
+        </p>
+      ) : null}
       {children}
     </div>
   );

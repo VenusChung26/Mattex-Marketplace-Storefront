@@ -58,6 +58,9 @@
     }
   ],
   "rewrites": [
+    { "source": "/api/catalog-version", "destination": "/api/catalog-snapshot?part=version" },
+    { "source": "/api/catalog/commit", "destination": "/api/catalog-snapshot?part=commit" },
+    { "source": "/api/catalog", "destination": "/api/catalog-snapshot?part=get" },
     { "source": "/:lang(en|zh)", "destination": "/api/ssr?p=/:lang" },
     { "source": "/:lang(en|zh)/green", "destination": "/api/ssr?p=/:lang/green" },
     { "source": "/:lang(en|zh)/catalog/:slug", "destination": "/api/ssr?p=/:lang/catalog/:slug" },

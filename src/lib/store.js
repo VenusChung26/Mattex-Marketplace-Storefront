@@ -22,33 +22,33 @@ const HIDDEN_CATEGORY_IDS = new Set(["service", "computer", "hardware"]);
 const SYNTHETIC_CATEGORY_IDS = new Set(["service", "computer", "hardware"]);
 
 const CATEGORY_DEFS = [
-  { id: "reinforcement-mesh", name: "鋼筋網, Reinforcement Mesh", nameEn: "Reinforcement Mesh", image: "/assets/prod-mesh.webp", count: 12, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: reinforcement mesh", "Size: 2.1m × 4.8m / custom", "Standard: BS4483 / BS4449", "Use: road / slab"] },
-  { id: "safety-net", name: "密目防燃安全網, Dense Mesh Flame Retardant Safety Net", nameEn: "Dense Mesh Flame Retardant Safety Net", image: "/assets/prod-safetynet.webp", count: 7, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: dense mesh FR net", "Color: green / orange", "Use: edge protection", "Stock: HK / site lead"] },
-  { id: "gypsum-block", name: "石膏磚, Gypsum Block", nameEn: "Gypsum Block", image: "/assets/type-gypsum.webp?v=20260929b", count: 3, unit: "m²", base: 100, supplier: "Mattex", specs: ["Material: gypsum block", "Size: 500 mm series", "Density: 1100–1200 kg/m³", "Use: partition"] },
-  { id: "xps-foam-board", name: "擠塑板, XPS Foam Board", nameEn: "XPS Foam Board", image: "/assets/type-xps.webp?v=20260929c", count: 21, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: XPS foam board", "Grade: JL150–JL900", "Thickness: 50–100 mm", "Fire: B1 / B2"] },
-  { id: "tiles", name: "瓷磚, Tiles", nameEn: "Tiles", image: "/assets/prod-tile.webp", count: 152, unit: "m²", base: 100, supplier: "Mattex", specs: ["Material: sintered stone / porcelain", "Size: 600×600–1200×3000", "Finish: marble / texture / artistic", "Use: floor / wall"] },
-  { id: "vinyl", name: "膠地板, Vinyl", nameEn: "Vinyl", image: "/assets/type-vinyl.webp?v=20260929d", count: 2, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: homogeneous / heterogeneous vinyl", "Size: 2×20 m", "Thickness: 2–3 mm", "Use: flooring"] },
-  { id: "precasted-concrete", name: "預製混凝土, Precasted Concrete", nameEn: "Precasted Concrete", image: "/assets/prod-precast.webp", count: 40, unit: "m³", base: 100, supplier: "Mattex", specs: ["Type: precast block", "Size: modular / custom", "Finish: structural", "Use: civil / building"] },
-  { id: "cat-ladder", name: "貓梯, Cat Ladder", nameEn: "Cat Ladder", image: "/assets/type-ladder.webp?v=20260929b", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: cat ladder", "Finish: galvanized", "Custom: by drawing"] },
-  { id: "steel-shelving", name: "貨台同鋼層架, Logistics Storage Platform & Steel Shelving", nameEn: "Logistics Storage Platform & Steel Shelving", image: "/assets/prod-ironwork.webp", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: storage platform / shelving", "Custom: by drawing"] },
-  { id: "handrails", name: "扶手, Handrails", nameEn: "Handrails", image: "/assets/type-balustrade-alt.webp?v=20260929d", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: ball joint handrail", "Custom: by drawing"] },
-  { id: "balustrades", name: "欄河, Balustrades", nameEn: "Balustrades", image: "/assets/type-balustrade.webp?v=20260929d", count: 4, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: carbon / stainless / disability", "Custom: by drawing"] },
-  { id: "forge-welded-grating", name: "焊接鋼格板, Forge-welded Grating", nameEn: "Forge-welded Grating", image: "/assets/type-channel.webp?v=20260929b", count: 5, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: forge-welded", "Material: galvanized steel", "Load: by drawing"] },
-  { id: "press-lock-grating", name: "壓鎖鋼格板, Press-Lock Grating", nameEn: "Press-Lock Grating", image: "/assets/type-channel.webp?v=20260929b", count: 6, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: press-lock", "Material: galvanized steel", "Load: by drawing"] },
-  { id: "gu-gratings", name: "GU型去水溝蓋, GU Type Drainage Gratings", nameEn: "GU Type Drainage Gratings", image: "/assets/type-gully.webp?v=20260929b", count: 15, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: GU drainage grating", "Material: galvanized steel"] },
-  { id: "gt-gratings", name: "GT型去水溝蓋, GT Type Drainage Gratings", nameEn: "GT Type Drainage Gratings", image: "/assets/type-gully.webp?v=20260929b", count: 24, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: GT drainage grating", "Material: galvanized steel"] },
-  { id: "gypsum-board", name: "石膏板, Gypsum Board", nameEn: "Gypsum Board", image: "/assets/prod-gypsum-board.webp", count: 4, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: fire-resistant gypsum board", "Size: 1220×2440", "Thickness: 9.5–15 mm"] },
-  { id: "oxygen-chamber", name: "氧氣艙, Oxygen Chamber", nameEn: "Oxygen Chamber", image: "/assets/type-oxygen.webp?v=20260929b", count: 9, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: oxygen chamber", "Use: medical / site"] },
-  { id: "dowel-bar", name: "傳力桿, Dowel Bar", nameEn: "Dowel Bar", image: "/assets/type-dowel.webp?v=20260929b", count: 27, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: dowel bar", "Material: mild / stainless steel"] },
-  { id: "paint", name: "油漆, Paint", nameEn: "Paint", image: "/assets/type-paint.webp?v=20260929b", count: 30, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: interior / exterior paint"] },
-  { id: "raised-access-floors", name: "架空地板, Raised Access Floors", nameEn: "Raised Access Floors", image: "/assets/type-floor.webp?v=20260929e", count: 17, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: raised access floor"] },
-  { id: "aluminum-cladding", name: "鋁板飾面, Aluminum Cladding", nameEn: "Aluminum Cladding", image: "/assets/type-aluminium.webp?v=20260929b", count: 13, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: aluminum cladding"] },
-  { id: "cable", name: "電線電纜, Cable", nameEn: "Cable", image: "/assets/type-cable.webp?v=20260929b", count: 5, unit: "m", base: 100, supplier: "Mattex", specs: ["Type: power cable"] },
-  { id: "shoe-washing-machines", name: "洗鞋機, Shoe Washing Machines", nameEn: "Shoe Washing Machines", image: "/assets/type-shoe.webp?v=20260929e", count: 6, unit: "set", base: 100, supplier: "Mattex", specs: ["Type: shoe washing machine"] },
-  { id: "service", name: "Service", nameEn: "Service", image: "/assets/sensor.webp", count: 3, unit: "lot", base: 1800, supplier: "SiteServe Contracting", specs: ["Type: survey / install / inspect", "Scope: labour + report", "Lead: scheduled", "Use: site support"] },
-  { id: "computer", name: "Computer", nameEn: "Computer", image: "/assets/plc.webp", count: 3, unit: "pc", base: 920, supplier: "BuildIT Workstations", specs: ["Type: desktop / rugged laptop", "OS: Windows", "Use: site office / BIM", "Warranty: 3 year"] },
-  { id: "hardware", name: "Hardware", nameEn: "Hardware", image: "/assets/gearbox.webp", count: 4, unit: "pack", base: 48, supplier: "FixRight Hardware Co.", specs: ["Type: fixings / tools", "Grade: commercial", "Finish: zinc / stainless", "Use: install"] },
-  { id: "software", name: "Software", nameEn: "Software", image: "/assets/vfd.webp", count: 14, unit: "license", base: 240, supplier: "Mattex", specs: ["Type: construction software / platform", "Term: project / annual", "Use: site management / safety / BIM"] },
+  { id: "reinforcement-mesh", name: "鋼筋網, Reinforcement Mesh", nameEn: "Reinforcement Mesh", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/prod-mesh-igvCUHaNuYJdOx7HvsmLA7WsVq9Spc.webp", imageFallback: "/assets/prod-mesh.webp", count: 12, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: reinforcement mesh", "Size: 2.1m × 4.8m / custom", "Standard: BS4483 / BS4449", "Use: road / slab"] },
+  { id: "safety-net", name: "密目防燃安全網, Dense Mesh Flame Retardant Safety Net", nameEn: "Dense Mesh Flame Retardant Safety Net", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/prod-safetynet-7pZTQmbjLimrVV8UB2RmwfKBl6T3ek.webp", imageFallback: "/assets/prod-safetynet.webp", count: 7, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: dense mesh FR net", "Color: green / orange", "Use: edge protection", "Stock: HK / site lead"] },
+  { id: "gypsum-block", name: "石膏磚, Gypsum Block", nameEn: "Gypsum Block", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-gypsum-3ATeN7OF3zYPPTuAdYhtKXujfjoFb4.webp", imageFallback: "/assets/type-gypsum.webp?v=20260929b", count: 3, unit: "m²", base: 100, supplier: "Mattex", specs: ["Material: gypsum block", "Size: 500 mm series", "Density: 1100–1200 kg/m³", "Use: partition"] },
+  { id: "xps-foam-board", name: "擠塑板, XPS Foam Board", nameEn: "XPS Foam Board", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-xps-2m1X4lFY0lvDVQq6OK7ZsaRBS9C0n4.webp", imageFallback: "/assets/type-xps.webp?v=20260929c", count: 21, unit: "sheet", base: 100, supplier: "Mattex", specs: ["Type: XPS foam board", "Grade: JL150–JL900", "Thickness: 50–100 mm", "Fire: B1 / B2"] },
+  { id: "tiles", name: "瓷磚, Tiles", nameEn: "Tiles", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/prod-tile-GsSvgaR7fVVUXOIbELbmJjVZx7aeDr.webp", imageFallback: "/assets/prod-tile.webp", count: 152, unit: "m²", base: 100, supplier: "Mattex", specs: ["Material: sintered stone / porcelain", "Size: 600×600–1200×3000", "Finish: marble / texture / artistic", "Use: floor / wall"] },
+  { id: "vinyl", name: "膠地板, Vinyl", nameEn: "Vinyl", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-vinyl-Hw2nOPl7RWQ18uk6IqCvojVtVTKomY.webp", imageFallback: "/assets/type-vinyl.webp?v=20260929h", count: 2, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: homogeneous / heterogeneous vinyl", "Size: 2×20 m", "Thickness: 2–3 mm", "Use: flooring"] },
+  { id: "precasted-concrete", name: "預製混凝土, Precasted Concrete", nameEn: "Precasted Concrete", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/prod-precast-XE9uUPhvWMsLJaGhBPt4EZ6AfoIYS6.webp", imageFallback: "/assets/prod-precast.webp", count: 40, unit: "m³", base: 100, supplier: "Mattex", specs: ["Type: precast block", "Size: modular / custom", "Finish: structural", "Use: civil / building"] },
+  { id: "cat-ladder", name: "貓梯, Cat Ladder", nameEn: "Cat Ladder", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-ladder-BAmkzUZvxj7OFdiXeTkA9Nx7tpdQec.webp", imageFallback: "/assets/type-ladder.webp?v=20260929b", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: cat ladder", "Finish: galvanized", "Custom: by drawing"] },
+  { id: "steel-shelving", name: "貨台同鋼層架, Logistics Storage Platform & Steel Shelving", nameEn: "Logistics Storage Platform & Steel Shelving", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/prod-ironwork-HMk06gBBYcJKDV0Ki1R9phPviBIbxd.webp", imageFallback: "/assets/prod-ironwork.webp", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: storage platform / shelving", "Custom: by drawing"] },
+  { id: "handrails", name: "扶手, Handrails", nameEn: "Handrails", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-balustrade-alt-kirSFZwazdsc7aVYKzvVu8tz9f3lJx.webp", imageFallback: "/assets/type-balustrade-alt.webp?v=20260929k", count: 1, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: ball joint handrail", "Custom: by drawing"] },
+  { id: "balustrades", name: "欄河, Balustrades", nameEn: "Balustrades", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-balustrade-gJ9WsfK09raY69h9JJJZrt4FxNezAa.webp", imageFallback: "/assets/type-balustrade.webp?v=20260929d", count: 4, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: carbon / stainless / disability", "Custom: by drawing"] },
+  { id: "forge-welded-grating", name: "焊接鋼格板, Forge-welded Grating", nameEn: "Forge-welded Grating", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-channel-0yE1rziMdsoMgZX6wOKCACSWInJI10.webp", imageFallback: "/assets/type-channel.webp?v=20260929b", count: 5, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: forge-welded", "Material: galvanized steel", "Load: by drawing"] },
+  { id: "press-lock-grating", name: "壓鎖鋼格板, Press-Lock Grating", nameEn: "Press-Lock Grating", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-channel-0yE1rziMdsoMgZX6wOKCACSWInJI10.webp", imageFallback: "/assets/type-channel.webp?v=20260929b", count: 6, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: press-lock", "Material: galvanized steel", "Load: by drawing"] },
+  { id: "gu-gratings", name: "GU型去水溝蓋, GU Type Drainage Gratings", nameEn: "GU Type Drainage Gratings", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-gully-l51d5xPgezJWroiUHDpm1ga7GsoJJk.webp", imageFallback: "/assets/type-gully.webp?v=20260929b", count: 15, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: GU drainage grating", "Material: galvanized steel"] },
+  { id: "gt-gratings", name: "GT型去水溝蓋, GT Type Drainage Gratings", nameEn: "GT Type Drainage Gratings", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-gully-l51d5xPgezJWroiUHDpm1ga7GsoJJk.webp", imageFallback: "/assets/type-gully.webp?v=20260929b", count: 24, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: GT drainage grating", "Material: galvanized steel"] },
+  { id: "gypsum-board", name: "石膏板, Gypsum Board", nameEn: "Gypsum Board", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/prod-gypsum-board-yTE7cdxJEiUZTd4YcXl4fWw2HKEGnW.webp", imageFallback: "/assets/prod-gypsum-board.webp", count: 4, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: fire-resistant gypsum board", "Size: 1220×2440", "Thickness: 9.5–15 mm"] },
+  { id: "oxygen-chamber", name: "氧氣艙, Oxygen Chamber", nameEn: "Oxygen Chamber", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-oxygen-E7iMN59XsJ4tbqMhHuhCwsKDl9jXuq.webp", imageFallback: "/assets/type-oxygen.webp?v=20260929i", count: 9, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: oxygen chamber", "Use: medical / site"] },
+  { id: "dowel-bar", name: "傳力桿, Dowel Bar", nameEn: "Dowel Bar", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-dowel-adGXPhrAEOjta4wrRko1lxq5WqIOdK.webp", imageFallback: "/assets/type-dowel.webp?v=20260929s", count: 27, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: dowel bar", "Material: mild / stainless steel"] },
+  { id: "paint", name: "油漆, Paint", nameEn: "Paint", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-paint-zC2uiIhnAGFI88qOt6YqOCaDnRBBR7.webp", imageFallback: "/assets/type-paint.webp?v=20260929b", count: 30, unit: "lot", base: 100, supplier: "Mattex", specs: ["Type: interior / exterior paint"] },
+  { id: "raised-access-floors", name: "架空地板, Raised Access Floors", nameEn: "Raised Access Floors", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-floor-fmker3ir6yXcawi9Z3ZJIJbmlbTdwn.webp", imageFallback: "/assets/type-floor.webp?v=20260929h", count: 17, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: raised access floor"] },
+  { id: "aluminum-cladding", name: "鋁板飾面, Aluminum Cladding", nameEn: "Aluminum Cladding", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-aluminium-Ka8SsyyIiZlOnAvLvqEoGMocsShYsh.webp", imageFallback: "/assets/type-aluminium.webp?v=20260929b", count: 13, unit: "m²", base: 100, supplier: "Mattex", specs: ["Type: aluminum cladding"] },
+  { id: "cable", name: "電線電纜, Cable", nameEn: "Cable", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-cable-OY7L8TUjFGRUc4SWXuc2UkJhdH6BAY.webp", imageFallback: "/assets/type-cable.webp?v=20260929b", count: 5, unit: "m", base: 100, supplier: "Mattex", specs: ["Type: power cable"] },
+  { id: "shoe-washing-machines", name: "洗鞋機, Shoe Washing Machines", nameEn: "Shoe Washing Machines", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/type-shoe-ocCPb9QH0qPCG3r2BnyssOTtzi1m0m.webp", imageFallback: "/assets/type-shoe.webp?v=20260929e", count: 6, unit: "set", base: 100, supplier: "Mattex", specs: ["Type: shoe washing machine"] },
+  { id: "service", name: "Service", nameEn: "Service", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/sensor-WfIUjghJSZFqaEGqeRO4hDGsbexpa9.webp", imageFallback: "/assets/sensor.webp", count: 3, unit: "lot", base: 1800, supplier: "SiteServe Contracting", specs: ["Type: survey / install / inspect", "Scope: labour + report", "Lead: scheduled", "Use: site support"] },
+  { id: "computer", name: "Computer", nameEn: "Computer", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/plc-uxgP8fOa1CQepMcKd7VjgY5LGj8CS6.webp", imageFallback: "/assets/plc.webp", count: 3, unit: "pc", base: 920, supplier: "BuildIT Workstations", specs: ["Type: desktop / rugged laptop", "OS: Windows", "Use: site office / BIM", "Warranty: 3 year"] },
+  { id: "hardware", name: "Hardware", nameEn: "Hardware", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/gearbox-d0FpzaaMV30SedU8Y4ckkZTOAPCKve.webp", imageFallback: "/assets/gearbox.webp", count: 4, unit: "pack", base: 48, supplier: "FixRight Hardware Co.", specs: ["Type: fixings / tools", "Grade: commercial", "Finish: zinc / stainless", "Use: install"] },
+  { id: "software", name: "Software", nameEn: "Software", image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/vfd-bxFvwiHoRWPgXGHCKyDtWyEoTv9lpZ.webp", imageFallback: "/assets/vfd.webp", count: 14, unit: "license", base: 240, supplier: "Mattex", specs: ["Type: construction software / platform", "Term: project / annual", "Use: site management / safety / BIM"] },
 ];
 
 const ALT_SUPPLIERS = {
@@ -232,6 +232,34 @@ function isOrderable(product) {
   return isBuyerVisible(product) && !isDiscontinued(product);
 }
 
+function certificationLines(product) {
+  const seen = new Set();
+  const lines = [];
+  for (const raw of String(product?.certifications || "").split(/\n+/)) {
+    const line = raw.replace(/^[\s\-–—]+/, "").replace(/(\S)\(/g, "$1 (").trim();
+    if (!line || line === "-" || seen.has(line)) continue;
+    seen.add(line);
+    lines.push(line);
+  }
+  return lines;
+}
+
+function specificationRows(product) {
+  const rows = [];
+  for (const spec of product?.specs || []) {
+    const text = String(spec);
+    if (/^Cert:\s*/i.test(text)) {
+      const lines = certificationLines(product);
+      if (lines.length > 1) {
+        rows.push({ kind: "cert", lines });
+        continue;
+      }
+    }
+    rows.push({ kind: "line", text });
+  }
+  return rows;
+}
+
 function purposesFromProduct(product) {
   if (Array.isArray(product?.purposes) && product.purposes.length) {
     return product.purposes.map((term) => String(term).trim()).filter(Boolean);
@@ -263,6 +291,8 @@ function normalizeProductRecord(product) {
     image: String(product.imageUrl || product.image || "").startsWith("http")
       ? product.imageUrl || product.image
       : product.image || product.imageUrl || "",
+    imageFallback: String(product.imageFallback || ""),
+    imageFallbacks: Array.isArray(product.imageFallbacks) ? product.imageFallbacks.filter(Boolean).slice(0, 5) : [],
     images: Array.isArray(product.images) && product.images.length
       ? product.images.filter(Boolean).slice(0, 5)
       : (product.imageUrl || product.image ? [product.imageUrl || product.image] : []),
@@ -481,6 +511,7 @@ function getCategoryDefs() {
     id: c.id,
     name: c.name,
     image: c.image || "/assets/prod-mesh.webp",
+    imageFallback: c.imageFallback || "",
     count: counts[c.id] || 0,
     custom: Boolean(c.custom),
   }));
@@ -521,7 +552,7 @@ function addAdminCategory(name) {
   let id = slugifyCategory(nextName);
   const used = new Set([...CATEGORY_DEFS.map((c) => c.id), ...list.map((c) => c.id), ...getCategoryAdminMeta().hidden]);
   if (used.has(id)) id = `${id}-${Date.now().toString(36)}`;
-  list.push({ id, name: nextName, image: "/assets/prod-mesh.webp", custom: true });
+  list.push({ id, name: nextName, image: "https://xwwyrgq1kyv6thim.public.blob.vercel-storage.com/catalog/prod-mesh-igvCUHaNuYJdOx7HvsmLA7WsVq9Spc.webp", imageFallback: "/assets/prod-mesh.webp", custom: true });
   writeJson(CUSTOM_CATEGORIES_KEY, list);
   emitStoreChange();
   return { ok: true, category: { id, name: nextName } };
@@ -565,10 +596,14 @@ function renameAdminCategory(id, name) {
     meta.names = { ...meta.names, [id]: nextName };
     writeCategoryAdminMeta(meta);
   }
+  const renamedIds = [];
   PRODUCTS.forEach((p) => {
-    if (productInNamedCategory(p, current)) p.category = nextName;
+    if (productInNamedCategory(p, current)) {
+      p.category = nextName;
+      renamedIds.push(p.id);
+    }
   });
-  persistProductPatches();
+  persistProductPatches(renamedIds);
   emitStoreChange();
   return { ok: true, category: { id, name: nextName } };
 }
@@ -615,7 +650,7 @@ function assignAdminProductsCategory(ids, categoryName) {
     p.category = category;
     ok += 1;
   });
-  if (ok) persistProductPatches();
+  if (ok) persistProductPatches([...idSet]);
   emitStoreChange();
   return { ok: true, moved: ok, skipped };
 }
@@ -1088,6 +1123,54 @@ function isPortalSurface() {
   return import.meta.env?.VITE_SURFACE === "admin";
 }
 
+function getCatalogEtag() {
+  return catalogEtag;
+}
+
+function getCatalogSyncError(id) {
+  return catalogSyncErrors[String(id)] || "";
+}
+
+async function fetchSharedCatalog() {
+  if (typeof window === "undefined" || typeof fetch !== "function") return null;
+  try {
+    const res = await fetch("/api/catalog", { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data?.products) || !data.products.length) return null;
+    catalogEtag = data.etag || "seed";
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+async function commitCatalogProducts(changedIds, removedIds) {
+  if (!isPortalSurface() || typeof fetch !== "function") return;
+  const ids = [...new Set((changedIds || []).map(String).filter(Boolean))];
+  const removed = [...new Set((removedIds || []).map(String).filter(Boolean))];
+  const products = PRODUCTS.filter((product) => ids.includes(String(product.id)));
+  if (!products.length && !removed.length) return;
+  const categories = getCategoryDefs().map((category) => ({ name: category.name, image: category.image || "" }));
+  catalogCommitChain = catalogCommitChain.then(async () => {
+    const res = await fetch("/api/catalog/commit", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ products, categories, removed }),
+    });
+    const data = await res.json().catch(() => ({}));
+    const failed = !res.ok || data?.ok === false;
+    const mark = failed ? (data?.error === "quota" ? "quota" : "save") : "";
+    for (const id of ids) {
+      if (mark) catalogSyncErrors[id] = mark;
+      else delete catalogSyncErrors[id];
+    }
+    if (!failed && data?.etag && data.etag !== "seed") catalogEtag = data.etag;
+    emitStoreChange();
+  }).catch(() => {});
+}
+
 async function fetchHostCatalog() {
   if (typeof window === "undefined" || typeof fetch !== "function") return null;
   try {
@@ -1112,25 +1195,35 @@ function applyHostCategoryImages(categories) {
       id: slugifyCategory(name),
       name,
       image: item.image || "/assets/prod-mesh.webp",
+      imageFallback: item.imageFallback || "",
       custom: true,
     });
   }
   if (extra.length) writeLocalOnly(CUSTOM_CATEGORIES_KEY, extra);
 }
 
-function restoreHostImages(hostImages) {
+function restoreHostImages(rows) {
+  const byId = new Map((rows || []).map((row) => [String(row?.id), row]));
   for (const product of PRODUCTS) {
-    const image = hostImages.get(product.id);
-    if (!image || !String(image).startsWith("/assets/")) continue;
+    const row = byId.get(String(product.id));
+    if (!row) continue;
+    const image = String(row.image || row.imageUrl || "").trim();
+    if (!image) continue;
+    const fallback = String(row.imageFallback || "").trim();
     product.image = image;
-    product.imageUrl = image;
-    product.images = [image];
+    product.imageUrl = String(row.imageUrl || image);
+    product.images = Array.isArray(row.images) && row.images.length
+      ? row.images.filter(Boolean).slice(0, 5)
+      : [image];
+    product.imageFallback = fallback;
+    product.imageFallbacks = Array.isArray(row.imageFallbacks) && row.imageFallbacks.length
+      ? row.imageFallbacks.filter(Boolean).slice(0, 5)
+      : (fallback ? [fallback] : []);
   }
 }
 
 async function publishCatalogProducts(list) {
   const rows = Array.isArray(list) ? list : [];
-  const hostImages = new Map(rows.map((row) => [row.id, row.image || row.imageUrl || ""]));
   PRODUCTS.splice(0, PRODUCTS.length);
   const CHUNK = 64;
   let releasedBoot = false;
@@ -1138,7 +1231,7 @@ async function publishCatalogProducts(list) {
     if (releasedBoot) return;
     releasedBoot = true;
     applySavedProductPatches();
-    restoreHostImages(hostImages);
+    restoreHostImages(rows);
     catalogBootReady = true;
     bumpCatalog();
     emitStoreChange();
@@ -1161,7 +1254,7 @@ async function publishCatalogProducts(list) {
   }
   if (!releasedBoot) releaseBoot();
   applySavedProductPatches();
-  restoreHostImages(hostImages);
+  restoreHostImages(rows);
   catalogLoading = false;
   catalogReady = true;
   catalogBootReady = true;
@@ -1219,7 +1312,7 @@ async function hydrateStore() {
     if (catalogLoading) emitStoreChange();
     await yieldToBrowser();
 
-    const host = await fetchHostCatalog();
+    const host = (await fetchSharedCatalog()) || (await fetchHostCatalog());
     if (host) {
       applyHostCategoryImages(host.categories);
       await publishCatalogProducts(host.products);
@@ -1427,6 +1520,9 @@ let authModalMode = "invite";
 let lastCartWhatsappResult = null;
 let catalogEpoch = 0;
 let catalogLoading = isSupabaseConfigured();
+let catalogEtag = "seed";
+const catalogSyncErrors = {};
+let catalogCommitChain = Promise.resolve();
 let catalogReady = !catalogLoading;
 let catalogBootReady = !catalogLoading;
 
@@ -1680,6 +1776,7 @@ function normalizeDraft(draft) {
     address: src.address || "",
     canonicalCategory: src.canonicalCategory || "",
     acceptSubstitutes: Boolean(src.acceptSubstitutes),
+    specFile: src.specFile?.url ? { name: String(src.specFile.name || "spec").slice(0, 180), url: String(src.specFile.url) } : null,
   };
 }
 
@@ -1764,6 +1861,7 @@ function mergeGuestCartIntoUser() {
     projects: normalizeProfileProjects(pickFilledDraftValue(member.project, guest.project)),
     canonicalCategory: pickFilledDraftValue(member.canonicalCategory, guest.canonicalCategory),
     acceptSubstitutes: Boolean(member.acceptSubstitutes || guest.acceptSubstitutes),
+    specFile: member.specFile?.url ? member.specFile : guest.specFile,
     deliveryMode: member.deliveryMode === "partial" || guest.deliveryMode === "partial" ? "partial" : member.deliveryMode || guest.deliveryMode,
     deliveryLots:
       (Array.isArray(member.deliveryLots) && member.deliveryLots.some((lot) => lot.date || lot.address || lot.note)
@@ -1888,6 +1986,41 @@ function addCustomLine({
     });
   setDraft(draft);
   return { ok: true, productId };
+}
+
+function addSpecMatchLines({ lines, specFile } = {}) {
+  const draft = getDraft();
+  for (const line of Array.isArray(lines) ? lines : []) {
+    if (!line || line.checked === false) continue;
+    const qty = Math.max(1, Math.floor(Number(line.qty)) || 1);
+    const product = line.kind === "tailor" ? null : getProduct(line.productId);
+    if (!product || !isOrderable(product)) {
+      const name = String(line.name || "").trim();
+      if (!name) continue;
+      draft.lines.push({
+        productId: newCustomProductId(),
+        qty,
+        custom: true,
+        intent: "quote",
+        name,
+        description: String(line.spec || "").trim(),
+        category: "",
+        attachments: [],
+        image: "",
+        tailorMade: true,
+        baseProductId: "",
+        baseProductNo: "",
+      });
+      continue;
+    }
+    const addQty = Math.max(Math.max(1, Number(product.moq) || 1), qty);
+    const existing = draft.lines.find((row) => row.productId === product.id && !row.custom);
+    if (existing) existing.qty = (existing.qty || 0) + addQty;
+    else draft.lines.push({ productId: product.id, qty: addQty, intent: "quote" });
+  }
+  if (specFile?.url) draft.specFile = { name: String(specFile.name || "spec").slice(0, 180), url: String(specFile.url) };
+  setDraft(draft);
+  return { ok: true };
 }
 
 function updateCustomLine(productId, patch = {}) {
@@ -2288,6 +2421,7 @@ function submitRfq(productIds, options = {}) {
     buyerPhone: buyerKind === "member" ? buyerContactPhone(user, user?.email) : "",
     buyerPhoneWhatsapp: Boolean(user?.phoneWhatsapp),
     buyerKind,
+    specFile: draft.specFile?.url ? draft.specFile : null,
   };
   const v1 = snapshotRfqRequest(rfq, { version: 1, createdAt: rfq.submittedAt });
   rfq.requestVersions = [v1];
@@ -6172,7 +6306,7 @@ function fixProductReport(id, { hold, markChain, patch, note, unpublish } = {}) 
     }
     if (markChain) product.needsChainImage = true;
     if (patch) Object.assign(product, patch);
-    persistProductPatches();
+    persistProductPatches([product.id]);
   }
   r.status = "fixed";
   r.lookingBy = "";
@@ -6204,7 +6338,7 @@ function mergeProductPatchMaps(local, remote) {
   return merged;
 }
 
-function persistProductPatches() {
+function persistProductPatches(changedIds, removedIds) {
   const prev = readJson(PRODUCT_PATCH_KEY, {});
   const removed = readRemovedProductIds(prev);
   const created = PRODUCTS.filter((p) => String(p.id || "").startsWith("p-new-") || String(p.id || "").startsWith("p-xls-"));
@@ -6232,6 +6366,8 @@ function persistProductPatches() {
       hit: p.hit,
       tailorMade: p.tailorMade,
       image: p.image,
+      imageFallback: p.imageFallback || "",
+      imageFallbacks: Array.isArray(p.imageFallbacks) ? p.imageFallbacks.filter(Boolean).slice(0, 5) : [],
       images: Array.isArray(p.images) ? p.images.filter(Boolean).slice(0, 5) : [],
       imageSource: p.imageSource,
       needsChainImage: p.needsChainImage,
@@ -6242,7 +6378,9 @@ function persistProductPatches() {
   patches.__created = created;
   patches.__removed = removed;
   writeJson(PRODUCT_PATCH_KEY, patches);
-  persistCatalogTables(PRODUCTS);
+  const ids = Array.isArray(changedIds) ? changedIds.map(String).filter(Boolean) : [];
+  const dropped = Array.isArray(removedIds) ? removedIds.map(String).filter(Boolean) : [];
+  if (ids.length || dropped.length) commitCatalogProducts(ids, dropped);
   bumpCatalog();
 }
 
@@ -6302,7 +6440,9 @@ function createAdminProduct(fields) {
     hit: Boolean(fields.hit),
     tailorMade: Boolean(fields.tailorMade),
     image: fields.image || "",
+    imageFallback: fields.imageFallback || "",
     images: Array.isArray(fields.images) ? fields.images.filter(Boolean).slice(0, 5) : fields.image ? [fields.image] : [],
+    imageFallbacks: Array.isArray(fields.imageFallbacks) ? fields.imageFallbacks.filter(Boolean).slice(0, 5) : [],
     imageSource: fields.image ? (fields.imageSource || "upload") : "generated",
     supplier: "Mattex",
     specs: [],
@@ -6312,7 +6452,7 @@ function createAdminProduct(fields) {
     createdAt: Date.now() + (Number(String(tmp).replace(/\D/g, "")) || 0),
   });
   PRODUCTS.push(product);
-  persistProductPatches();
+  persistProductPatches([product.id]);
   emitStoreChange();
   return { ok: true, product };
 }
@@ -6348,8 +6488,9 @@ function updateAdminProduct(id, fields) {
       : fields.image === ""
         ? "generated"
         : product.imageSource,
+    imageFallback: fields.imageFallback == null ? product.imageFallback : fields.imageFallback,
   });
-  persistProductPatches();
+  persistProductPatches([id]);
   emitStoreChange();
   return { ok: true, product };
 }
@@ -6407,7 +6548,7 @@ function publishAdminProduct(id) {
   product.published = true;
   product.held = false;
   product.deleted = false;
-  persistProductPatches();
+  persistProductPatches([id]);
   emitStoreChange();
   return { ok: true, product };
 }
@@ -6421,7 +6562,7 @@ function restoreAdminProduct(id) {
   product.deleted = false;
   product.published = false;
   product.held = false;
-  persistProductPatches();
+  persistProductPatches([id]);
   emitStoreChange();
   return { ok: true, product };
 }
@@ -6434,7 +6575,7 @@ function unpublishAdminProduct(id) {
   if (!product.published) return { ok: false, error: "not_live" };
   product.published = false;
   product.held = false;
-  persistProductPatches();
+  persistProductPatches([id]);
   emitStoreChange();
   return { ok: true, product };
 }
@@ -6446,21 +6587,23 @@ function holdAdminProduct(id, held) {
   if (!product || product.deleted) return { ok: false, error: "missing" };
   product.held = false;
   if (held) product.published = false;
-  persistProductPatches();
+  persistProductPatches([id]);
   emitStoreChange();
   return { ok: true, product };
 }
 
 function migrateHeldProductsToDraft() {
   let changed = false;
+  const migrated = [];
   PRODUCTS.forEach((p) => {
     if (p.held && !p.deleted) {
       p.held = false;
       p.published = false;
       changed = true;
+      migrated.push(p.id);
     }
   });
-  if (changed) persistProductPatches();
+  if (changed) persistProductPatches(migrated);
 }
 
 function softDeleteAdminProduct(id) {
@@ -6471,7 +6614,7 @@ function softDeleteAdminProduct(id) {
   product.deleted = true;
   product.published = false;
   product.held = false;
-  persistProductPatches();
+  persistProductPatches([id]);
   emitStoreChange();
   return { ok: true, product };
 }
@@ -6498,7 +6641,7 @@ function hardDeleteAdminProduct(id) {
     next.__created = next.__created.filter((row) => String(row?.id) !== String(product.id));
   }
   writeJson(PRODUCT_PATCH_KEY, next);
-  persistProductPatches();
+  persistProductPatches([], [product.id]);
   emitStoreChange();
   return { ok: true };
 }
@@ -6531,6 +6674,7 @@ function importAdminCsv(csv) {
   if (!gate.ok) return gate;
   const parsed = parseAdminCsv(csv);
   const results = [];
+  const touched = [];
   parsed.rows.forEach((row) => {
     const name = String(row.name || "").trim();
     const cat = matchAdminCategory(row.category);
@@ -6567,6 +6711,7 @@ function importAdminCsv(csv) {
       if (created.ok) {
         if (tmp) created.product.provisionalSku = tmp;
         if (sku) created.product.productNo = sku;
+        touched.push(created.product.id);
       }
       results.push({ line: row._line, ok: true, msg: `Draft ${name}` });
       return;
@@ -6603,9 +6748,10 @@ function importAdminCsv(csv) {
     } else if (!officialImg) {
       p.imageSource = "generated";
     }
+    touched.push(p.id);
     results.push({ line: row._line, ok: true, msg: p.published ? `Updated live ${p.productNo}` : `Updated draft` });
   });
-  persistProductPatches();
+  persistProductPatches(touched);
   emitStoreChange();
   return { ok: true, results };
 }
@@ -7126,6 +7272,9 @@ export {
   cartCount,
   addToCart,
   addCustomLine,
+  addSpecMatchLines,
+  getCatalogEtag,
+  getCatalogSyncError,
   updateCustomLine,
   setLineQty,
   setLineIntent,
@@ -7311,6 +7460,8 @@ export {
   publishBlockers,
   productCatalogStatus,
   productSkuId,
+  certificationLines,
+  specificationRows,
   holdAdminProduct,
   softDeleteAdminProduct,
   hardDeleteAdminProduct,

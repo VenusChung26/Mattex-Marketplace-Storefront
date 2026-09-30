@@ -27,3 +27,5 @@ supabase/.temp
 .env*
 .local-shared-store.json
 .local-shared-store.lock
+data/catalog-snapshot.json
+data/catalog-version.json

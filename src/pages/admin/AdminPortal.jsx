@@ -4,7 +4,15 @@ import { useStore } from "../../hooks/useStore";
 import { PasswordInput } from "../../components/AccountForm";
 import { buildQuotePdf, downloadBlob } from "../../lib/quotePdf";
 import { compressImageFile, PRODUCT_IMAGE_MAX, productImageList } from "../../lib/compressImage";
-import { uploadProductImage } from "../../lib/rfqBlob";
+import { uploadCatalogImage } from "../../lib/catalogImage";
+
+function legacyImageUrl(url) {
+  const value = String(url || "").trim();
+  if (!value) return "";
+  const path = value.split("?")[0];
+  if (path.startsWith("/assets/") || value.includes("www-cms.mattex.com.hk")) return value;
+  return "";
+}
 import { marketplaceHomeHref } from "../../lib/origins";
 import {
   addAdminCategory,
@@ -36,6 +44,7 @@ import {
   getAllRfqs,
   getStaffList,
   getStaffSession,
+  getCatalogSyncError,
   importAdminCsv,
   inboxStatus,
   listAdminProducts,
@@ -1887,16 +1896,29 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
         error = "Each image must be under 800 KB after compress (max 1,600px).";
         break;
       }
+      if (!String(dataUrl).startsWith("data:image/webp")) {
+        error = "Photo must be WebP.";
+        break;
+      }
       try {
-        added.push(await uploadProductImage(dataUrl, draft.productNo || product?.id));
+        added.push(await uploadCatalogImage(dataUrl, draft.productNo || product?.id));
       } catch {
-        error = "Photo upload failed. Check the connection and try again.";
+        error = "這次未送出，稍後再試";
         break;
       }
     }
     if (added.length) {
-      const next = [...current, ...added].slice(0, PRODUCT_IMAGE_MAX);
-      fields({ image: next[0] || "", images: next, imageSource: "upload" });
+      const next = [...current, ...added.map((item) => item.image)].slice(0, PRODUCT_IMAGE_MAX);
+      const prior = legacyImageUrl(draft.imageFallback) || legacyImageUrl(draft.image);
+      const previous = Array.isArray(draft.imageFallbacks) ? draft.imageFallbacks : [];
+      const fallbacks = next.map((_, index) => legacyImageUrl(previous[index]) || (index === 0 ? prior : ""));
+      fields({
+        image: next[0] || "",
+        imageFallback: fallbacks[0] || "",
+        images: next,
+        imageFallbacks: fallbacks,
+        imageSource: next.length ? "upload" : "generated",
+      });
     }
     setFormError(error);
   }
@@ -2236,6 +2258,9 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                         <ProductThumb product={p} />
                         <div className="min-w-0">
                           <p className="font-medium leading-snug">{cellText(p.name)}</p>
+                          {getCatalogSyncError(p.id) === "quota" ? (
+                            <p className="mt-1 text-xs font-semibold text-[#8a2b2b]">這次未送出，稍後再試</p>
+                          ) : null}
                           <div className="mt-1">
                             <StatusBadge product={p} />
                           </div>
@@ -2675,7 +2700,9 @@ function toForm(p) {
       hit: false,
       tailorMade: false,
       image: "",
+      imageFallback: "",
       images: [],
+      imageFallbacks: [],
       imageSource: "generated",
     };
   }
@@ -2695,7 +2722,9 @@ function toForm(p) {
     hit: Boolean(p.hit),
     tailorMade: Boolean(p.tailorMade),
     image: p.image || "",
+    imageFallback: p.imageFallback || "",
     images: productImageList(p),
+    imageFallbacks: Array.isArray(p.imageFallbacks) ? p.imageFallbacks : [],
     imageSource: p.imageSource || (p.image ? "upload" : "generated"),
   };
 }

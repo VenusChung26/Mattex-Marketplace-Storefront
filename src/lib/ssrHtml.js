@@ -17,6 +17,7 @@ import {
   isBuyerVisible,
   isDiscontinued,
   searchProducts,
+  specificationRows,
   supplierDisplayName,
   supplierPath,
 } from "./store.js";
@@ -317,8 +318,18 @@ function productBlock(lang, product) {
   const href = withLocale(lang, `/details/${product.id}`);
   const categoryHref = withLocale(lang, catalogPathForCategory(product.category));
   const supplierHref = product.supplier ? withLocale(lang, supplierPath(product.supplier)) : "";
-  const specs = (product.specs || []).map((line) => `<li>${esc(line)}</li>`).join("");
-  const purposes = (product.purposes || []).map((line) => `<li>${esc(line)}</li>`).join("");
+  const specs = specificationRows(product)
+    .map((row) =>
+      row.kind === "cert"
+        ? `<li>Cert<ul>${row.lines.map((line) => `<li>${esc(line)}</li>`).join("")}</ul></li>`
+        : `<li>${esc(row.text)}</li>`
+    )
+    .join("");
+  const purposes = (product.purposes || [])
+    .map((line) => String(line).trim())
+    .filter((line) => line && !/^\d+\.\s/.test(line))
+    .map((line) => `<li>${esc(line)}</li>`)
+    .join("");
   return `<article>
         <p><a href="${esc(categoryHref)}">${esc(product.category)}</a></p>
         <h3><a href="${esc(href)}">${esc(product.name)}</a></h3>
@@ -370,8 +381,18 @@ function pageContent(page) {
     const image = safeImage(product.image);
     const images = (product.images || []).map((src) => safeImage(src)).filter(Boolean);
     const gallery = images.length ? images : image ? [image] : [];
-    const specs = (product.specs || []).map((line) => `<li>${esc(line)}</li>`).join("");
-    const purposes = (product.purposes || []).map((term) => `<li>${esc(term)}</li>`).join("");
+    const specs = specificationRows(product)
+      .map((row) =>
+        row.kind === "cert"
+          ? `<li>Cert<ul>${row.lines.map((line) => `<li>${esc(line)}</li>`).join("")}</ul></li>`
+          : `<li>${esc(row.text)}</li>`
+      )
+      .join("");
+    const purposes = (product.purposes || [])
+      .map((term) => String(term).trim())
+      .filter((term) => term && !/^\d+\.\s/.test(term))
+      .map((term) => `<li>${esc(term)}</li>`)
+      .join("");
     const lead = product.leadTime
       ? product.leadTime.min === product.leadTime.max
         ? String(product.leadTime.min)

@@ -38,6 +38,11 @@ async function uploadRfqFile(pathname, file) {
   return blob.url;
 }
 
+export async function uploadSpecFile(file) {
+  const name = file?.name || "spec";
+  return uploadRfqFile(`specs/${safeSegment(name)}/${Date.now()}-${safeSegment(name)}`, file);
+}
+
 export async function uploadProductImage(dataUrl, productKey) {
   const file = dataUrlToFile(dataUrl, "photo");
   return uploadRfqFile(`products/${safeSegment(productKey || "new")}/${file.name}`, file);

@@ -21,6 +21,8 @@ import AdminPortal from "./pages/admin/AdminPortal";
 import StaffSetPasswordPage from "./pages/admin/StaffSetPasswordPage";
 import StaffForgotPasswordPage from "./pages/admin/StaffForgotPasswordPage";
 import PublicQuotePage from "./pages/PublicQuotePage";
+import SpecMatchPage from "./pages/SpecMatchPage";
+import CatalogUpdateBanner from "./components/CatalogUpdateBanner";
 import { getCategoryByName, ensureBuyerSession } from "./lib/store";
 import { adminOrigin, isAdminSurface } from "./lib/origins";
 import { useStore } from "./hooks/useStore";
@@ -52,6 +54,7 @@ function LangLayout() {
   return (
     <>
       <BuyerSessionGuard />
+      <CatalogUpdateBanner />
       <Outlet />
     </>
   );
@@ -146,6 +149,7 @@ export default function App() {
           <Route path="/forgot-password" element={<Navigate to="/en/forgot-password" replace />} />
           <Route path="/reset-password" element={<Navigate to="/en/reset-password" replace />} />
           <Route path="/rfq" element={<Navigate to="/en/rfq" replace />} />
+          <Route path="/spec-match" element={<Navigate to="/en/spec-match" replace />} />
           <Route path="/rfqs" element={<Navigate to={SHOW_RFQ ? "/en/rfqs" : "/en"} replace />} />
           <Route path="/whatsapp" element={<Navigate to="/en/whatsapp" replace />} />
           <Route path="/whatsapp-chat" element={<Navigate to="/en/whatsapp-chat" replace />} />
@@ -171,6 +175,7 @@ export default function App() {
             <Route path="details/:id" element={<DetailsPage />} />
             <Route path="supplier/:slug" element={<SupplierPage />} />
             <Route path="rfq" element={<RfqPage />} />
+            <Route path="spec-match" element={<SpecMatchPage />} />
             <Route path="rfqs" element={<RfqsRoute />} />
             <Route path="whatsapp" element={<WhatsappPage />} />
             <Route path="whatsapp/:id" element={<WhatsappPage />} />

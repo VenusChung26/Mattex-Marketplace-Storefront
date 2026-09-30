@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AccountMenu from "./AccountMenu";
+import { FallbackImage } from "./ProductCard";
 import AuthModal from "./AuthModal";
 import LangToggle from "./LangToggle";
 import { useStore } from "../hooks/useStore";
@@ -324,7 +325,7 @@ export default function SiteHeader({
                     onClick={() => pickCategory(c.name)}
                     className={`nav-cat-item text-left ${selectedCategories.includes(c.name) ? "!bg-brand-600/40 !text-white" : ""}`}
                   >
-                    {catsOpen ? <img src={c.image} alt="" loading="lazy" decoding="async" /> : <span className="nav-cat-ph" aria-hidden />}
+                    {catsOpen ? <FallbackImage src={c.image} fallback={c.imageFallback} alt="" loading="lazy" decoding="async" /> : <span className="nav-cat-ph" aria-hidden />}
                     <span className="min-w-0">
                       <span className="block text-[12px] font-semibold leading-snug line-clamp-2">{c.name}</span>
                       <span className="block text-[10px] text-white/45 mt-0.5">{c.count} items</span>
@@ -377,7 +378,7 @@ export default function SiteHeader({
                   onClick={() => pickCategory(c.name)}
                   className="nav-cat-item text-left"
                 >
-                  <img src={c.image} alt="" loading="lazy" />
+                  <FallbackImage src={c.image} fallback={c.imageFallback} alt="" loading="lazy" />
                   <span className="min-w-0">
                     <span className="block text-[13px] font-semibold leading-snug">{c.name}</span>
                     <span className="block text-[11px] text-white/45">{c.count} items</span>

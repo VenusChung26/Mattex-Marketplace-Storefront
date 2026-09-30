@@ -8,6 +8,23 @@ import ProductPrice from "./ProductPrice";
 import ProductRating from "./ProductRating";
 import CustomProductModal from "./CustomProductModal";
 
+export function FallbackImage({ src, fallback = "", alt = "", ...rest }) {
+  const [current, setCurrent] = useState(src);
+  useEffect(() => {
+    setCurrent(src);
+  }, [src]);
+  return (
+    <img
+      {...rest}
+      src={current}
+      alt={alt}
+      onError={() => {
+        if (fallback && current !== fallback) setCurrent(fallback);
+      }}
+    />
+  );
+}
+
 function LeavesIcon() {
   return (
     <svg
@@ -62,24 +79,32 @@ function EmptyImage({ compact }) {
   );
 }
 
-export function ProductImage({ src, alt, className = "", imgClassName = "", compact = false }) {
+export function ProductImage({ src, alt, fallback = "", className = "", imgClassName = "", compact = false }) {
   const { t } = useLanguage();
+  const [current, setCurrent] = useState(src);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
+    setCurrent(src);
     setFailed(false);
   }, [src]);
-  const show = Boolean(String(src || "").trim()) && !failed;
+  const show = Boolean(String(current || "").trim()) && !failed;
   return (
     <span className={`relative block overflow-hidden bg-[#f3f5f4] ${className}`}>
       {show ? (
         <img
-          src={src}
+          src={current}
           alt={alt}
           className={imgClassName}
           loading="lazy"
           decoding="async"
           fetchPriority="low"
-          onError={() => setFailed(true)}
+          onError={() => {
+            if (fallback && current !== fallback) {
+              setCurrent(fallback);
+              return;
+            }
+            setFailed(true);
+          }}
         />
       ) : (
         <EmptyImage compact={compact} />
@@ -554,6 +579,7 @@ export function ProductListRow({ product, onAdd }) {
       >
         <ProductImage
           src={product.image}
+          fallback={product.imageFallback}
           alt={product.name}
           compact
           className="h-full w-full"
@@ -603,6 +629,7 @@ export default function ProductCard({ product, onAdd, rank = null }) {
       >
         <ProductImage
           src={product.image}
+          fallback={product.imageFallback}
           alt={product.name}
           className="h-full w-full"
           imgClassName="w-full h-full object-cover transition-transform duration-500 ease-out hover:scale-[1.04]"

@@ -6,6 +6,9 @@ import { handleTmsLogin, handleTmsStatus, handleTmsSubmit } from "./api/tms-subm
 import { handleSendEmail } from "./api/send-email.js";
 import { handleAuth } from "./api/auth.js";
 import { handleData } from "./api/data.js";
+import { handleCatalogCommit, handleCatalogGet, handleCatalogVersion } from "./api/catalog-snapshot.js";
+import { handleProductImage } from "./api/product-image.js";
+import { handleSpecMatch, handleSpecMatchStatus } from "./api/spec-match.js";
 
 const GA_MEASUREMENT_ID = "G-F89GE7J3CR";
 
@@ -74,6 +77,31 @@ function jsonPlugin() {
           res.end(JSON.stringify(handleSharedStoreGet()));
           return;
         }
+        if (path === "/api/catalog-version" && req.method === "GET") {
+          res.statusCode = 200;
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify(await handleCatalogVersion()));
+          return;
+        }
+        if (path === "/api/catalog" && req.method === "GET") {
+          const snapshot = await handleCatalogGet();
+          res.setHeader("Content-Type", "application/json");
+          if (!snapshot) {
+            res.statusCode = 404;
+            res.end(JSON.stringify({ etag: "seed" }));
+            return;
+          }
+          res.statusCode = 200;
+          res.end(JSON.stringify(snapshot));
+          return;
+        }
+        if (path === "/api/spec-match" && req.method === "GET") {
+          const result = await handleSpecMatchStatus(localRequest(req, path));
+          res.statusCode = result.status || 200;
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify(result.body));
+          return;
+        }
         if ((path === "/api/auth" || path === "/api/data") && req.method === "POST") {
           let authBody = {};
           try {
@@ -118,6 +146,28 @@ function jsonPlugin() {
           res.statusCode = 200;
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify(handleSharedStorePost(body)));
+          return;
+        }
+        if ((path === "/api/catalog/commit" || path === "/api/product-image" || path === "/api/spec-match") && req.method === "POST") {
+          let posted = {};
+          try {
+            ({ body: posted } = await readJsonBody(req));
+          } catch {
+            res.statusCode = 400;
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ ok: false, error: "invalid json" }));
+            return;
+          }
+          const request = localRequest(req, path);
+          const result = path === "/api/catalog/commit"
+            ? await handleCatalogCommit(posted, request)
+            : path === "/api/product-image"
+              ? await handleProductImage(posted, request)
+              : await handleSpecMatch(posted, request);
+          res.statusCode = result.status || 200;
+          res.setHeader("Content-Type", "application/json");
+          if (result.cookie) res.setHeader("Set-Cookie", result.cookie);
+          res.end(JSON.stringify(result.body));
           return;
         }
         const isBlob = path === "/api/blob-upload" && req.method === "POST";
@@ -200,7 +250,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   if (env.BLOB_READ_WRITE_TOKEN) process.env.BLOB_READ_WRITE_TOKEN = env.BLOB_READ_WRITE_TOKEN;
   for (const [key, value] of Object.entries(env)) {
-    if (key.startsWith("TMS_") || key.startsWith("RESEND_") || key === "SUPABASE_SERVICE_ROLE_KEY" || key === "SESSION_SECRET") {
+    if (key.startsWith("TMS_") || key.startsWith("RESEND_") || key === "SUPABASE_SERVICE_ROLE_KEY" || key === "SESSION_SECRET" || key === "OPENAI_API_KEY" || key === "SPEC_MATCH_API_KEY") {
       process.env[key] = value;
     }
   }
