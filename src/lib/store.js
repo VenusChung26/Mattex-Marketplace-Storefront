@@ -1,9 +1,9 @@
-import { collectAttachmentUrls, collectProductImageUrls, fitWhatsappUrls, uploadRfqPdf } from "./rfqBlob.js";
+import { collectAttachmentUrls, collectProductImageUrls, fitWhatsappUrls, publishCustomLineMedia, uploadRfqPdf } from "./rfqBlob.js";
 import { buildQuotePdf, canSharePdfFile, downloadBlob, sharePdfFile } from "./quotePdf.js";
-import { fetchCatalogState, fetchQuoteSnapshot, fetchRemoteKv, fetchRemoteRfqs, fetchRfqStamp, fetchSessionState, isSupabaseConfigured, persistCatalogTables, persistKv, persistKvNow } from "./supabasePersist.js";
+import { fetchCatalogState, fetchQuoteSnapshot, fetchRemoteKv, fetchRemoteRfqs, fetchRfqStamp, fetchSessionState, isSupabaseConfigured, persistCatalogTables, persistKv, persistKvNow, probeRemoteData, shouldUseLocalSharedStore } from "./supabasePersist.js";
 import { adminOrigin, marketplaceOrigin } from "./origins.js";
 import { foldHan } from "./han.js";
-import { normalizeRoles } from "./phone.js";
+import { contactFormFromAccount, normalizeRoles } from "./phone.js";
 import {
   accountCreatedEmailHtml,
   buyerRejectedEmailHtml,
@@ -676,12 +676,16 @@ function catalogPathForCategory(nameOrSlug) {
   return found ? `/catalog/${found.id}` : "/";
 }
 
+function hitProductOrder(a, b) {
+  const ar = a.featuredRank == null ? Number.POSITIVE_INFINITY : Number(a.featuredRank);
+  const br = b.featuredRank == null ? Number.POSITIVE_INFINITY : Number(b.featuredRank);
+  if (ar !== br) return ar - br;
+  return String(a.name || "").localeCompare(String(b.name || ""));
+}
+
 function getTopProducts(limit) {
-  const n = limit || 5;
-  return activeCatalog(PRODUCTS)
-    .filter((p) => p.featuredRank != null)
-    .sort((a, b) => a.featuredRank - b.featuredRank)
-    .slice(0, n);
+  const list = activeCatalog(PRODUCTS).filter(isHitProduct).sort(hitProductOrder);
+  return typeof limit === "number" ? list.slice(0, limit) : list;
 }
 
 function getGreenProducts(limit) {
@@ -1081,16 +1085,35 @@ function rfqPickStamp(rfq) {
   return max;
 }
 
+function withNewerBuyerContact(base, other) {
+  const baseAt = Date.parse(base?.buyerContactUpdatedAt || "") || 0;
+  const otherAt = Date.parse(other?.buyerContactUpdatedAt || "") || 0;
+  if (otherAt <= baseAt) return base;
+  return {
+    ...base,
+    buyerPhone: other.buyerPhone || "",
+    buyerOtherPhone: other.buyerOtherPhone || "",
+    buyerWhatsappOn: other.buyerWhatsappOn || "",
+    buyerWechatOn: other.buyerWechatOn || "",
+    buyerPhoneWhatsapp: Boolean(other.buyerPhoneWhatsapp),
+    buyerContactUpdatedAt: other.buyerContactUpdatedAt,
+  };
+}
+
 function pickRfq(a, b) {
   if (!a) return b;
   if (!b) return a;
   const tb = rfqPickStamp(b);
   const ta = rfqPickStamp(a);
-  if (tb !== ta) return tb > ta ? b : a;
-  const ra = rfqProgress(a);
-  const rb = rfqProgress(b);
-  if (rb !== ra) return rb > ra ? b : a;
-  return JSON.stringify(b).length >= JSON.stringify(a).length ? b : a;
+  let chosen;
+  if (tb !== ta) chosen = tb > ta ? b : a;
+  else {
+    const ra = rfqProgress(a);
+    const rb = rfqProgress(b);
+    if (rb !== ra) chosen = rb > ra ? b : a;
+    else chosen = JSON.stringify(b).length >= JSON.stringify(a).length ? b : a;
+  }
+  return withNewerBuyerContact(chosen, chosen === a ? b : a);
 }
 
 function mergeRfqMaps(local, remote) {
@@ -1493,15 +1516,8 @@ function getProductsBySupplier(slugOrName) {
 }
 
 function getTopProductsForSupplier(slugOrName, limit) {
-  const n = limit || 5;
-  const list = getProductsBySupplier(slugOrName);
-  const featured = list
-    .filter((p) => p.featuredRank != null)
-    .sort((a, b) => a.featuredRank - b.featuredRank);
-  const rest = list
-    .filter((p) => p.featuredRank == null)
-    .sort((a, b) => Number(b.green) - Number(a.green) || a.name.localeCompare(b.name));
-  return featured.concat(rest).slice(0, n);
+  const list = getProductsBySupplier(slugOrName).filter(isHitProduct).sort(hitProductOrder);
+  return typeof limit === "number" ? list.slice(0, limit) : list;
 }
 
 function searchSupplierProducts(slugOrName, query) {
@@ -1627,12 +1643,23 @@ function formatPrice(price) {
   const n = Number(price);
   if (!Number.isFinite(n)) return pendingPriceLabel();
   return (
-    "$" +
+    "HKD $" +
     n.toLocaleString("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
   );
+}
+
+function displayLeadTime(product) {
+  const label = String(product?.leadTimeLabel || "").trim();
+  if (label) return label;
+  const lead = product?.leadTime;
+  if (!lead || (lead.min == null && lead.max == null)) return "";
+  const min = lead.min ?? lead.max;
+  const max = lead.max ?? lead.min;
+  if (min === max) return `${min} days`;
+  return `${min}–${max} days`;
 }
 
 function getProduct(id) {
@@ -1952,6 +1979,13 @@ function normalizeAttachments(list) {
     .slice(0, 8);
 }
 
+function customPhotoList(image, images) {
+  const list = [image, ...(Array.isArray(images) ? images : [])]
+    .map((src) => String(src || "").trim())
+    .filter(Boolean);
+  return [...new Set(list)].slice(0, 5);
+}
+
 function addCustomLine({
   name,
   description = "",
@@ -1959,6 +1993,7 @@ function addCustomLine({
   category = "",
   attachments,
   image = "",
+  images,
   tailorMade = false,
   baseProductId = "",
   baseProductNo = "",
@@ -1984,7 +2019,8 @@ function addCustomLine({
       description: String(description || "").trim(),
       category: String(category || "").trim(),
       attachments: normalizeAttachments(attachments),
-      image: String(image || ""),
+      image: customPhotoList(image, images)[0] || "",
+      images: customPhotoList(image, images).slice(1),
       tailorMade: Boolean(tailorMade),
       baseProductId: String(baseProductId || "").trim(),
       baseProductNo: String(baseProductNo || "").trim(),
@@ -2051,8 +2087,13 @@ function updateCustomLine(productId, patch = {}) {
   if (patch.attachments !== undefined) {
     line.attachments = normalizeAttachments(patch.attachments);
   }
-  if (patch.image !== undefined) {
-    line.image = String(patch.image || "");
+  if (patch.image !== undefined || patch.images !== undefined) {
+    const photos = customPhotoList(
+      patch.image !== undefined ? patch.image : line.image,
+      patch.images !== undefined ? patch.images : line.images
+    );
+    line.image = photos[0] || "";
+    line.images = photos.slice(1);
   }
   setDraft(draft);
   return { ok: true };
@@ -2227,7 +2268,8 @@ function draftTotals(draft, productIds) {
         description: line.description || "",
         supplier: null,
         unitPrice: null,
-        image: line.image || null,
+        image: line.image || "",
+        images: Array.isArray(line.images) ? line.images : [],
         custom: true,
         intent: line.intent || "quote",
         moq: 1,
@@ -2334,6 +2376,60 @@ function buyerContactPhone(user, email) {
   return String(account?.phone || "").trim();
 }
 
+function lineMediaSignature(line) {
+  const photos = [line?.image, ...(Array.isArray(line?.images) ? line.images : [])].join("|");
+  const files = (Array.isArray(line?.attachments) ? line.attachments : [])
+    .map((file) => `${file?.name || ""}:${file?.url || ""}`)
+    .join("|");
+  return `${photos}::${files}`;
+}
+
+function applyPublishedMedia(lines, published) {
+  return (lines || []).map((line) => {
+    const next = published.find((row) => String(row.productId) === String(line.productId));
+    if (!next) return line;
+    return {
+      ...line,
+      image: next.image || line.image || "",
+      images: Array.isArray(next.images) ? next.images : line.images,
+      attachments: Array.isArray(next.attachments) ? next.attachments : line.attachments,
+    };
+  });
+}
+
+async function publishStoredRfqMedia(email, rfq) {
+  const lines = Array.isArray(rfq?.lines) ? rfq.lines : [];
+  const hasData = lines.some((line) => {
+    const photos = [line?.image, ...(Array.isArray(line?.images) ? line.images : [])];
+    if (photos.some((src) => String(src || "").startsWith("data:"))) return true;
+    return (line?.attachments || []).some((file) => String(file?.url || "").startsWith("data:"));
+  });
+  if (!hasData) return;
+  const published = [];
+  for (const line of lines) published.push(await publishCustomLineMedia(line, rfq.id));
+  if (published.every((line, index) => lineMediaSignature(line) === lineMediaSignature(lines[index]))) return;
+  const map = getRfqsMap();
+  const list = Array.isArray(map[email]) ? map[email].slice() : [];
+  const idx = list.findIndex((row) => row?.id === rfq.id);
+  if (idx < 0) return;
+  const current = list[idx];
+  const next = {
+    ...current,
+    lines: applyPublishedMedia(current.lines, published),
+    requestVersions: Array.isArray(current.requestVersions)
+      ? current.requestVersions.map((version) => ({
+          ...version,
+          lines: applyPublishedMedia(version.lines, published),
+        }))
+      : current.requestVersions,
+  };
+  list[idx] = next;
+  map[email] = list;
+  setRfqsMap(map);
+  persistSharedRfq(email, next);
+  emitStoreChange();
+}
+
 function submitRfq(productIds, options = {}) {
   const user = getUser();
   const allowGuest = Boolean(options.allowGuest);
@@ -2379,6 +2475,8 @@ function submitRfq(productIds, options = {}) {
   restoreSessionBuyerAccount();
   const buyerEmail = user?.email || "guest@subbie.store";
   const buyerKind = user?.email ? "member" : "guest";
+  const memberAccount = buyerKind === "member" ? { ...(getAccount(buyerEmail) || {}), ...(user || {}) } : null;
+  const slotOn = (value) => (value === "1" || value === "2" ? value : "");
   const rfq = {
     id: nextRfqId(),
     status: channel === "whatsapp" ? "whatsapp_sent" : channel === "email" ? "email_sent" : "submitted",
@@ -2413,6 +2511,7 @@ function submitRfq(productIds, options = {}) {
       category: l.category || "",
       green: Boolean(l.green),
       image: l.image || null,
+      images: Array.isArray(l.images) ? l.images : [],
       attachments: Array.isArray(l.attachments) ? l.attachments : [],
       remark: String(l.remark || ""),
       tailorMade: Boolean(l.tailorMade),
@@ -2424,7 +2523,10 @@ function submitRfq(productIds, options = {}) {
     buyerEmail,
     buyerName: user?.name || "Guest",
     buyerPhone: buyerKind === "member" ? buyerContactPhone(user, user?.email) : "",
-    buyerPhoneWhatsapp: Boolean(user?.phoneWhatsapp),
+    buyerOtherPhone: String(memberAccount?.otherPhone || "").trim(),
+    buyerWhatsappOn: slotOn(memberAccount?.whatsappOn),
+    buyerWechatOn: slotOn(memberAccount?.wechatOn),
+    buyerPhoneWhatsapp: Boolean(slotOn(memberAccount?.whatsappOn) || memberAccount?.phoneWhatsapp),
     buyerKind,
     specFile: draft.specFile?.url ? draft.specFile : null,
   };
@@ -2445,6 +2547,7 @@ function submitRfq(productIds, options = {}) {
   map[email] = list;
   setRfqsMap(map);
   persistSharedRfq(email, rfq);
+  void publishStoredRfqMedia(email, rfq);
   notifyAdmins({
     kind: "rfq",
     title: `New RFQ ${rfq.id}`,
@@ -2549,6 +2652,8 @@ function reorderRfq(id) {
           description: l.description || "",
           category: l.category || "",
           attachments: Array.isArray(l.attachments) ? l.attachments : [],
+          image: l.image || "",
+          images: Array.isArray(l.images) ? l.images : [],
           tailorMade: Boolean(l.tailorMade),
           baseProductId: l.baseProductId || "",
           baseProductNo: l.baseProductNo || "",
@@ -2668,14 +2773,18 @@ function buyerApprovalStatus(account) {
 
 function publicUserFromAccount(account) {
   if (!account) return null;
+  const contact = contactFormFromAccount(account);
   return {
     email: account.email,
     name: account.name,
     phone: account.phone || "",
     phoneRegion: account.phoneRegion || "",
+    otherPhone: account.otherPhone || "",
     wechat: account.wechat || "",
+    whatsappOn: contact.whatsappOn,
+    wechatOn: contact.wechatOn,
     roles: normalizeRoles(account.roles),
-    phoneWhatsapp: Boolean(account.phoneWhatsapp),
+    phoneWhatsapp: Boolean(contact.whatsappOn),
     jobTitle: account.jobTitle || "",
     companyName: account.companyName || "",
     companyReg: account.companyReg || "",
@@ -2780,6 +2889,10 @@ async function registerUser(profile) {
       companyName: profile.companyName,
       phoneRegion: profile.phoneRegion,
       wechat: profile.wechat,
+      otherPhone: profile.otherPhone,
+      whatsappOn: profile.whatsappOn,
+      wechatOn: profile.wechatOn,
+      phoneWhatsapp: Boolean(profile.phoneWhatsapp),
       roles: normalizeRoles(profile.roles),
       jobTitle: profile.jobTitle,
       companyReg: profile.companyReg,
@@ -2797,9 +2910,12 @@ async function registerUser(profile) {
     name: String(profile.name).trim(),
     phone: String(profile.phone).trim(),
     phoneRegion: String(profile.phoneRegion || "").trim(),
+    otherPhone: String(profile.otherPhone || "").trim(),
     wechat: String(profile.wechat || "").trim(),
+    whatsappOn: profile.whatsappOn === "1" || profile.whatsappOn === "2" ? profile.whatsappOn : "",
+    wechatOn: profile.wechatOn === "1" || profile.wechatOn === "2" ? profile.wechatOn : "",
     roles: normalizeRoles(profile.roles),
-    phoneWhatsapp: Boolean(String(profile.phone || "").trim()),
+    phoneWhatsapp: profile.whatsappOn === "1" || profile.whatsappOn === "2",
     jobTitle: String(profile.jobTitle).trim(),
     companyName: String(profile.companyName).trim(),
     companyReg: String(profile.companyReg || "").trim(),
@@ -2836,6 +2952,44 @@ async function registerUser(profile) {
   return { ok: true, pending: false, loggedIn: true, email };
 }
 
+function syncBuyerContactToRfqs(email, contact) {
+  const key = normalizeEmail(email);
+  if (!key || !contact) return;
+  const slotOn = (value) => (value === "1" || value === "2" ? value : "");
+  const snapshot = {
+    buyerPhone: String(contact.phone || "").trim(),
+    buyerOtherPhone: String(contact.otherPhone || "").trim(),
+    buyerWhatsappOn: slotOn(contact.whatsappOn),
+    buyerWechatOn: slotOn(contact.wechatOn),
+    buyerPhoneWhatsapp: Boolean(slotOn(contact.whatsappOn)),
+    buyerContactUpdatedAt: new Date().toISOString(),
+  };
+  const map = getRfqsMap();
+  let changed = false;
+  Object.keys(map || {}).forEach((bucket) => {
+    const list = Array.isArray(map[bucket]) ? map[bucket] : [];
+    let bucketChanged = false;
+    const nextList = list.map((rfq) => {
+      if (!rfq || normalizeEmail(rfq.buyerEmail) !== key || rfqBuyerKind(rfq) === "guest") return rfq;
+      const same =
+        String(rfq.buyerPhone || "") === snapshot.buyerPhone &&
+        String(rfq.buyerOtherPhone || "") === snapshot.buyerOtherPhone &&
+        String(rfq.buyerWhatsappOn || "") === snapshot.buyerWhatsappOn &&
+        String(rfq.buyerWechatOn || "") === snapshot.buyerWechatOn &&
+        Boolean(rfq.buyerPhoneWhatsapp) === snapshot.buyerPhoneWhatsapp &&
+        Boolean(rfq.buyerContactUpdatedAt);
+      if (same) return rfq;
+      bucketChanged = true;
+      return { ...rfq, ...snapshot };
+    });
+    if (bucketChanged) {
+      map[bucket] = nextList;
+      changed = true;
+    }
+  });
+  if (changed) setRfqsMap(map);
+}
+
 async function updateUserProfile(patch = {}) {
   const current = getUser();
   if (!current?.email) return { ok: false, error: "not_logged_in" };
@@ -2845,11 +2999,14 @@ async function updateUserProfile(patch = {}) {
     name: String(current.name ?? "").trim(),
     phone: String(patch.phone ?? current.phone ?? "").trim(),
     phoneRegion: String(patch.phoneRegion ?? current.phoneRegion ?? "").trim(),
-    wechat: String(patch.wechat ?? current.wechat ?? "").trim(),
+    otherPhone: String(patch.otherPhone ?? "").trim(),
+    wechat: String(patch.wechat ?? "").trim(),
+    whatsappOn: patch.whatsappOn === "1" || patch.whatsappOn === "2" ? patch.whatsappOn : "",
+    wechatOn: patch.wechatOn === "1" || patch.wechatOn === "2" ? patch.wechatOn : "",
     roles: normalizeRoles(patch.roles ?? current.roles).length
       ? normalizeRoles(patch.roles ?? current.roles)
       : ["buyer"],
-    phoneWhatsapp: Boolean(String(patch.phone ?? current.phone ?? "").trim()),
+    phoneWhatsapp: patch.whatsappOn === "1" || patch.whatsappOn === "2",
     jobTitle: String(patch.jobTitle ?? current.jobTitle ?? "").trim(),
     companyName: String(current.companyName ?? "").trim(),
     companyReg: String(current.companyReg ?? "").trim(),
@@ -2872,13 +3029,19 @@ async function updateUserProfile(patch = {}) {
     setAccountsMap(map);
     setSessionUser(publicUserFromAccount(map[email]));
   } else {
-    setSessionUser({
-      ...current,
-      ...next,
+    const now = new Date().toISOString();
+    map[email] = {
       email: current.email,
-      at: Date.now(),
-    });
+      ...next,
+      enabled: true,
+      approvalStatus: "approved",
+      createdAt: now,
+      updatedAt: now,
+    };
+    setAccountsMap(map);
+    setSessionUser(publicUserFromAccount(map[email]));
   }
+  syncBuyerContactToRfqs(email, next);
   void authApi("update-profile", { profile: next });
   return { ok: true, user: getUser() };
 }
@@ -4305,11 +4468,18 @@ function listBuyers() {
   persistLegacyBuyerAccess();
   const map = getAccountsMap();
   return sortByNewest(
-    Object.values(map || {}).map((a) => ({
+    Object.values(map || {}).map((a) => {
+      const contact = contactFormFromAccount(a);
+      return {
       email: a.email,
       name: a.name,
       phone: a.phone || "",
-      phoneWhatsapp: Boolean(a.phoneWhatsapp),
+      otherPhone: a.otherPhone || "",
+      wechat: a.wechat || "",
+      roles: normalizeRoles(a.roles),
+      whatsappOn: contact.whatsappOn,
+      wechatOn: contact.wechatOn,
+      phoneWhatsapp: Boolean(contact.whatsappOn),
       jobTitle: a.jobTitle || "",
       companyName: a.companyName,
       companyReg: a.companyReg || "",
@@ -4325,7 +4495,8 @@ function listBuyers() {
       needsReview: Boolean(a.needsReview),
       rejectedAt: a.rejectedAt || "",
       rejectReason: a.rejectReason || "",
-    })),
+    };
+    }),
     (buyer) => buyer.createdAt
   );
 }
@@ -6224,7 +6395,8 @@ function updateBuyerRfqDetails(id, patch = {}) {
           description: String(row.description || "").trim(),
           category: String(row.category || "").trim(),
           attachments: Array.isArray(row.attachments) ? row.attachments : [],
-          image: String(row.image || ""),
+          image: customPhotoList(row.image, row.images)[0] || "",
+          images: customPhotoList(row.image, row.images).slice(1),
           tailorMade: Boolean(row.tailorMade),
           baseProductId: String(row.baseProductId || "").trim(),
           baseProductNo: String(row.baseProductNo || "").trim(),
@@ -6443,7 +6615,7 @@ function nextTmpSku() {
   return `TMP-${String(seq).padStart(4, "0")}`;
 }
 
-function createAdminProduct(fields) {
+async function createAdminProduct(fields) {
   const gate = requireStaff();
   if (!gate.ok) return gate;
   if (!String(fields.name || "").trim()) return { ok: false, error: "name" };
@@ -6462,9 +6634,7 @@ function createAdminProduct(fields) {
     salesUnit: fields.salesUnit || fields.unit || "",
     unit: fields.salesUnit || fields.unit || "",
     moq: fields.moq === "" || fields.moq == null ? "" : Number(fields.moq),
-    leadTime: typeof fields.leadTime === "string"
-      ? (String(fields.leadTime).trim() ? { min: 7, max: 7 } : null)
-      : fields.leadTime || null,
+    leadTime: typeof fields.leadTime === "string" ? null : fields.leadTime || null,
     leadTimeLabel: typeof fields.leadTime === "string" ? String(fields.leadTime).trim() : "",
     purposes: Array.isArray(fields.purposes)
       ? fields.purposes
@@ -6486,7 +6656,14 @@ function createAdminProduct(fields) {
     createdAt: Date.now() + (Number(String(tmp).replace(/\D/g, "")) || 0),
   });
   PRODUCTS.push(product);
-  persistProductPatches([product.id]);
+  const sent = await persistProductPatches([product.id]);
+  if (!sent?.ok) {
+    const idx = PRODUCTS.findIndex((row) => row.id === product.id);
+    if (idx >= 0) PRODUCTS.splice(idx, 1);
+    await persistProductPatches([], [], { commit: false });
+    emitStoreChange();
+    return { ok: false, error: sent?.error || "save", product };
+  }
   emitStoreChange();
   return { ok: true, product };
 }
@@ -6506,9 +6683,9 @@ async function updateAdminProduct(id, fields) {
         ? fields.purposes
         : String(fields.purposes).split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean),
     unit: fields.salesUnit || fields.unit || product.unit,
-    leadTimeLabel: typeof fields.leadTime === "string" ? String(fields.leadTime).trim() : product.leadTimeLabel,
+    leadTimeLabel: typeof fields.leadTime === "string" ? String(fields.leadTime).trim() : product.leadTimeLabel || "",
     leadTime: typeof fields.leadTime === "string"
-      ? (String(fields.leadTime).trim() ? product.leadTime || { min: 7, max: 7 } : null)
+      ? (String(fields.leadTime).trim() && product.leadTime && typeof product.leadTime === "object" ? product.leadTime : null)
       : (fields.leadTime == null ? product.leadTime : fields.leadTime),
     green: Boolean(fields.green),
     hit: Boolean(fields.hit),
@@ -6723,18 +6900,18 @@ function listAdminProducts() {
   });
 }
 
-function importAdminCsv(csv) {
+async function importAdminCsv(csv) {
   const gate = requireStaff();
   if (!gate.ok) return gate;
   const parsed = parseAdminCsv(csv);
   const results = [];
   const touched = [];
-  parsed.rows.forEach((row) => {
+  for (const row of parsed.rows) {
     const name = String(row.name || "").trim();
     const cat = matchAdminCategory(row.category);
     if (!name || !cat) {
       results.push({ line: row._line, ok: false, msg: !name ? "Missing product name" : `Unknown category: ${row.category}` });
-      return;
+      continue;
     }
     const sku = String(row.productNo || row.provisionalSku || "").trim();
     const tmp = String(row.provisionalSku || row.productNo || "").trim();
@@ -6745,7 +6922,7 @@ function importAdminCsv(csv) {
     const imgRaw = String(row.image || "").trim();
     const imgIsGen = !imgRaw || /^gen/i.test(imgRaw);
     if (!p) {
-      const created = createAdminProduct({
+      const created = await createAdminProduct({
         name,
         category: cat,
         productNo: sku,
@@ -6768,7 +6945,7 @@ function importAdminCsv(csv) {
         touched.push(created.product.id);
       }
       results.push({ line: row._line, ok: true, msg: `Draft ${name}` });
-      return;
+      continue;
     }
     if (p.deleted) {
       p.deleted = false;
@@ -6804,8 +6981,8 @@ function importAdminCsv(csv) {
     }
     touched.push(p.id);
     results.push({ line: row._line, ok: true, msg: p.published ? `Updated live ${p.productNo}` : `Updated draft` });
-  });
-  persistProductPatches(touched);
+  }
+  await persistProductPatches(touched);
   emitStoreChange();
   return { ok: true, results };
 }
@@ -6910,11 +7087,21 @@ function leanSharedAttachment(item) {
 
 function leanSharedRfq(rfq) {
   if (!rfq || typeof rfq !== "object") return rfq;
-  const leanLine = (line) => ({
-    ...line,
-    image: stripSharedDataUrl(line?.image),
-    attachments: Array.isArray(line?.attachments) ? line.attachments.map(leanSharedAttachment) : line?.attachments,
-  });
+  const leanLine = (line) => {
+    if (line?.custom) {
+      const attachments = Array.isArray(line.attachments) ? line.attachments : [];
+      return {
+        ...line,
+        image: line.image || firstImageAttachmentUrl(attachments) || "",
+        attachments,
+      };
+    }
+    return {
+      ...line,
+      image: stripSharedDataUrl(line?.image),
+      attachments: Array.isArray(line?.attachments) ? line.attachments.map(leanSharedAttachment) : line?.attachments,
+    };
+  };
   return {
     ...rfq,
     lines: (rfq.lines || []).map(leanLine),
@@ -6936,7 +7123,7 @@ function leanSharedRfqsMap(map) {
 }
 
 function enqueueSharedPost(body) {
-  if (typeof fetch === "undefined" || isSupabaseConfigured()) return Promise.resolve();
+  if (typeof fetch === "undefined" || !shouldUseLocalSharedStore()) return Promise.resolve();
   sharedPostChain = sharedPostChain
     .then(() =>
       fetch("/api/shared-store", {
@@ -6975,7 +7162,9 @@ function flushRfqsRemote() {
       const remote = await fetchRemoteKv([RFQS_KEY]);
       const merged = mergeRfqMaps(latest, remote?.[RFQS_KEY] || {});
       writeLocalOnly(RFQS_KEY, merged);
-      await persistKvNow(RFQS_KEY, leanSharedRfqsMap(merged));
+      const lean = leanSharedRfqsMap(merged);
+      const saved = await persistKvNow(RFQS_KEY, lean);
+      if (!saved && shouldUseLocalSharedStore()) await enqueueSharedPost({ key: RFQS_KEY, value: lean });
       emitStoreChange();
     })
     .catch((error) => {
@@ -7158,7 +7347,7 @@ async function pullSupabaseSharedStore() {
 
 async function pullSharedStore({ bootstrap = false } = {}) {
   try {
-    if (!isSupabaseConfigured()) {
+    if (shouldUseLocalSharedStore()) {
       const res = await fetch("/api/shared-store");
       if (res.ok) {
         const data = await res.json();
@@ -7183,7 +7372,7 @@ async function pullSharedStore({ bootstrap = false } = {}) {
   } catch {
     /* ignore */
   }
-  await pullSupabaseSharedStore();
+  if (!shouldUseLocalSharedStore()) await pullSupabaseSharedStore();
 }
 
 const CATALOG_KV_KEYS = [
@@ -7212,7 +7401,7 @@ let rfqRefreshChain = Promise.resolve();
 let rfqStamp = null;
 
 function refreshRemoteRfqs() {
-  if (!isSupabaseConfigured()) return pullSharedStore();
+  if (shouldUseLocalSharedStore()) return pullSharedStore();
   rfqRefreshChain = rfqRefreshChain
     .then(async () => {
       const stamp = await fetchRfqStamp();
@@ -7256,12 +7445,27 @@ function ensureBuyerSession() {
   return rfqRefreshChain;
 }
 
+function beginLocalSharedSync() {
+  pullSharedStore({ bootstrap: true });
+  sharedStoreTimer = window.setInterval(() => pullSharedStore(), 1000);
+}
+
 function startSharedStoreSync() {
   if (typeof window === "undefined") return;
   window.clearInterval(sharedStoreTimer);
+  const publishBuyerContact = () => {
+    if (isPortalSurface()) return;
+    const user = getUser();
+    if (user?.email) syncBuyerContactToRfqs(user.email, user);
+  };
   if (!isSupabaseConfigured()) {
-    pullSharedStore({ bootstrap: true });
-    sharedStoreTimer = window.setInterval(() => pullSharedStore(), 1000);
+    beginLocalSharedSync();
+    publishBuyerContact();
+  } else {
+    probeRemoteData().then((up) => {
+      if (!up) beginLocalSharedSync();
+      publishBuyerContact();
+    });
   }
   if (isPortalSurface()) verifyStaffSession();
 }
@@ -7296,6 +7500,7 @@ export {
   searchSupplierProducts,
   buildSupplierMetrics,
   formatPrice,
+  displayLeadTime,
   SAMPLE_PROJECTS,
   rfqProjectName,
   getProduct,

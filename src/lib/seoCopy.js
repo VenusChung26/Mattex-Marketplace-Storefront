@@ -31,7 +31,7 @@ export function seoCopy(lang = "en") {
     supplierDesc: (name) =>
       zh
         ? `${name || "Mattex"} 供應商頁：熱門產品與可搜尋目錄。`
-        : `${name || "Mattex"} supplier page — top products and a searchable catalog.`,
+        : `${name || "Mattex"} supplier page — hit products and a searchable catalog.`,
     productTitle: (name) => `${name} | ${SITE}`,
     productDesc: (product) => {
       const name = product?.name || "Product";

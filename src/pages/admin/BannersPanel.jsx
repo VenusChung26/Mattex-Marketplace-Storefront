@@ -40,6 +40,98 @@ async function filesToWebp(fileList) {
   return images;
 }
 
+const DEMO_COPY = {
+  zh: { title: "限時優惠", cta: "限時優惠", ask: "WhatsApp 查詢", browse: "瀏覽目錄" },
+  en: { title: "Limited offer", cta: "Limited offer", ask: "Ask on WhatsApp", browse: "Browse catalog" },
+};
+
+function MarketplaceSentenceDemo({ form }) {
+  const [lang, setLang] = useState("zh");
+  const copy = DEMO_COPY[lang];
+  const sentence = String((lang === "zh" ? form.sentenceZh : form.sentenceEn) || "").trim();
+  const poster = form.banners?.[0];
+  const src = poster?.preview || poster?.src || "";
+
+  return (
+    <section className="mb-4 rounded-xl border border-dashed border-brand-300 bg-paper p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-800">Demo preview</p>
+          <p className="mt-1 max-w-2xl text-sm text-mute">
+            Display only. This is not the live marketplace page. Shoppers see these words after you Save.
+          </p>
+        </div>
+        <div className="flex rounded-lg border border-line bg-white p-0.5 text-sm font-semibold">
+          {[
+            ["zh", "中文"],
+            ["en", "English"],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={lang === id}
+              className={`rounded-md px-3 py-1 ${lang === id ? "bg-brand-800 text-white" : "text-ink"}`}
+              onClick={() => setLang(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-mute">Homepage</p>
+      <div className="mt-2 grid overflow-hidden border border-line bg-white lg:grid-cols-[minmax(0,1.25fr)_minmax(12rem,0.75fr)]">
+        <div className="relative flex flex-col justify-center bg-brand-50/70 px-5 py-6">
+          <div className="absolute left-0 top-0 h-full w-1.5 bg-brand-400" aria-hidden />
+          <p className="font-display text-2xl font-semibold leading-tight text-brand-800">{copy.title}</p>
+          <p className={`mt-3 max-w-lg text-sm leading-relaxed ${sentence ? "text-mute" : "text-mute/70 italic"}`}>
+            {sentence || "The sentence you type above appears here."}
+          </p>
+          <span className="mt-5 inline-flex w-fit items-center bg-brand-600 px-4 py-2 text-sm font-semibold text-white">
+            {copy.cta}
+            <span aria-hidden className="ml-2">→</span>
+          </span>
+        </div>
+        <div className="relative min-h-40 bg-brand-50">
+          {src ? (
+            <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover object-top" />
+          ) : (
+            <p className="absolute inset-0 flex items-center justify-center px-4 text-center text-xs text-mute">Row 1 poster</p>
+          )}
+        </div>
+      </div>
+
+      <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-mute">Offer page</p>
+      <div className="relative mt-2 overflow-hidden bg-brand-800 text-white">
+        {src ? (
+          <div className="absolute inset-0 bg-cover bg-top opacity-30" style={{ backgroundImage: `url("${src}")` }} aria-hidden />
+        ) : null}
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-800 via-brand-800/92 to-brand-800/75" aria-hidden />
+        <div className="relative flex flex-col gap-4 px-5 py-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <p className="font-display text-2xl font-semibold leading-tight">{copy.title}</p>
+            <p className={`mt-2 max-w-2xl text-sm leading-relaxed ${sentence ? "text-white/75" : "text-white/50 italic"}`}>
+              {sentence || "The sentence you type above appears here."}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <span className="inline-flex items-center bg-white px-4 py-2 text-sm font-semibold text-brand-800">{copy.ask}</span>
+            <span className="inline-flex items-center border border-white/40 px-4 py-2 text-sm font-semibold text-white">{copy.browse}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function RequiredMark() {
+  return (
+    <span className="text-red-600" aria-hidden="true">
+      {" *"}
+    </span>
+  );
+}
+
 export default function BannersPanel({ note }) {
   const [form, setForm] = useState(EMPTY);
   const [loaded, setLoaded] = useState(false);
@@ -205,7 +297,7 @@ export default function BannersPanel({ note }) {
       <section className="mb-4 grid gap-4 lg:grid-cols-2">
         <p className="text-sm text-mute lg:col-span-2">These two sentences are what shoppers read on the homepage and the offer page.</p>
         <label className="block text-sm font-semibold text-ink">
-          Sentence（中文）
+          Sentence（中文）<RequiredMark />
           <textarea
             value={form.sentenceZh}
             onChange={(event) => {
@@ -217,7 +309,7 @@ export default function BannersPanel({ note }) {
           />
         </label>
         <label className="block text-sm font-semibold text-ink">
-          Sentence (English)
+          Sentence (English)<RequiredMark />
           <textarea
             value={form.sentenceEn}
             onChange={(event) => {
@@ -230,14 +322,16 @@ export default function BannersPanel({ note }) {
         </label>
       </section>
 
+      <MarketplaceSentenceDemo form={form} />
+
       <div className="overflow-auto rounded-xl border border-line bg-white">
         <table className="w-full min-w-[40rem] text-left text-[12px]">
           <thead className="bg-brand-50 text-[10px] font-semibold uppercase tracking-wide text-mute">
             <tr>
               <th className="w-12 px-3 py-2"> </th>
-              <th className="w-28 px-3 py-2">Image</th>
-              <th className="px-3 py-2">Tab name (中文)</th>
-              <th className="px-3 py-2">Tab name (English)</th>
+              <th className="w-28 px-3 py-2">Image<RequiredMark /></th>
+              <th className="px-3 py-2">Tab name (中文)<RequiredMark /></th>
+              <th className="px-3 py-2">Tab name (English)<RequiredMark /></th>
               <th className="w-28 px-3 py-2"> </th>
             </tr>
           </thead>

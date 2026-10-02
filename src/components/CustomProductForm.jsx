@@ -380,7 +380,7 @@ export default function CustomProductForm({
     <div className="space-y-3">
       <label className="block min-w-0">
         <span className="block text-sm font-semibold text-ink mb-1">
-          {t("customProductName")} <span className="text-brand-600">*</span>
+          {t("customProductName")} <span className="text-red-600">*</span>
         </span>
         <input
           type="text"

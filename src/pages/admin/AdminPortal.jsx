@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useStore } from "../../hooks/useStore";
-import { PasswordInput } from "../../components/AccountForm";
+import { PasswordChecklist, PasswordInput } from "../../components/AccountForm";
+import AttachmentLinks, { linePhotoSrc, PreviewThumb } from "../../components/AttachmentLinks";
 import { buildQuotePdf, downloadBlob } from "../../lib/quotePdf";
 import { compressImageFile, PRODUCT_IMAGE_MAX, productImageList } from "../../lib/compressImage";
 import { uploadCatalogImage } from "../../lib/catalogImage";
@@ -14,6 +15,7 @@ function legacyImageUrl(url) {
   return "";
 }
 import { marketplaceHomeHref } from "../../lib/origins";
+import { phoneSlotLabel } from "../../lib/phone";
 import {
   addAdminCategory,
   createAdminProduct,
@@ -26,6 +28,7 @@ import {
   decideRfqReverse,
   deliverAdminAlertEmails,
   formatPrice,
+  displayLeadTime,
   disableStaff,
   enableStaff,
   hardDeleteStaff,
@@ -184,12 +187,16 @@ const RFQ_STATUS_TABS_SLICE = [
   { id: "cancelled", label: "Cancelled" },
 ];
 
+function RequiredMark() {
+  return (
+    <span className="text-red-600" aria-hidden="true">
+      {" *"}
+    </span>
+  );
+}
+
 function leadLabel(p) {
-  if (p.leadTimeLabel) return p.leadTimeLabel;
-  const lead = p.leadTime;
-  if (!lead) return "";
-  if (lead.min === lead.max) return `${lead.min} days`;
-  return `${lead.min}–${lead.max} days`;
+  return displayLeadTime(p);
 }
 
 function productStatusKey(p) {
@@ -255,12 +262,7 @@ function cellText(value) {
 }
 
 function productLeadLabel(p) {
-  const lead = p?.leadTime;
-  if (lead && (lead.min != null || lead.max != null)) {
-    if (lead.min === lead.max) return `${lead.min} days`;
-    return `${lead.min}–${lead.max} days`;
-  }
-  return cellText(p?.lead);
+  return cellText(displayLeadTime(p));
 }
 
 function productPrimarySpec(p) {
@@ -270,6 +272,17 @@ function productPrimarySpec(p) {
   const skip = /^(size|cert|sales unit|moq|lead|use):/i;
   const line = specs.find((item) => !skip.test(String(item)));
   return String(line || "").trim();
+}
+
+function lineAttachmentList(line) {
+  return Array.isArray(line?.attachments) ? line.attachments.filter((file) => file?.name || file?.url) : [];
+}
+
+function lineImageSrc(line, product) {
+  if (line?.custom) return linePhotoSrc(line);
+  if (product?.image) return product.image;
+  if (line?.image) return line.image;
+  return linePhotoSrc(line);
 }
 
 function ProductThumb({ product }) {
@@ -542,7 +555,9 @@ export default function AdminPortal() {
                 ? "Move products out of this category first."
                 : reason === "save" || reason === "quota"
                 ? "這次未送出，稍後再試"
-                : reason || "Unable to save"
+                : reason === "not_configured"
+                  ? "Email is not set up on this computer. The RFQ change was saved."
+                  : reason || "Unable to save"
       );
     } else {
       setFlashError(false);
@@ -592,7 +607,7 @@ export default function AdminPortal() {
             }}
           >
             <label className="block text-sm font-medium">
-              Email
+              Email<RequiredMark />
               <input
                 type="email"
                 value={email}
@@ -603,7 +618,7 @@ export default function AdminPortal() {
               />
             </label>
             <label className="block text-sm font-medium">
-              Password
+              Password<RequiredMark />
               <PasswordInput
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -1010,23 +1025,18 @@ export default function AdminPortal() {
         >
           <div className="space-y-3">
             <label className="block text-sm font-medium">
-              Current password
+              Current password<RequiredMark />
               <input type="password" className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm" value={pwCurrent} onChange={(e) => setPwCurrent(e.target.value)} autoComplete="current-password" />
             </label>
             <label className="block text-sm font-medium">
-              New password
+              New password<RequiredMark />
               <input type="password" className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm" value={pwNext} onChange={(e) => setPwNext(e.target.value)} autoComplete="new-password" />
             </label>
             <label className="block text-sm font-medium">
-              Confirm new password
+              Confirm new password<RequiredMark />
               <input type="password" className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm" value={pwConfirm} onChange={(e) => setPwConfirm(e.target.value)} autoComplete="new-password" />
             </label>
-            <ul className="text-xs text-mute space-y-1">
-              <li>{pwNext.length >= 8 ? "✓" : "○"} At least 8 characters</li>
-              <li>{/[A-Za-z]/.test(pwNext) ? "✓" : "○"} Includes a letter</li>
-              <li>{/\d/.test(pwNext) ? "✓" : "○"} Includes a number</li>
-              <li>{pwConfirm && pwNext === pwConfirm ? "✓" : "○"} Passwords match</li>
-            </ul>
+            <PasswordChecklist password={pwNext} confirmPassword={pwConfirm} hasError={Boolean(pwError)} />
             {pwError ? <p className="text-sm text-red-700">{pwError}</p> : null}
             {pwOk ? <p className="text-sm text-brand-700">{pwOk}</p> : null}
           </div>
@@ -1305,7 +1315,9 @@ function CategoryPanel({ products, note, onOpenProduct }) {
           <h1 className="font-display text-2xl text-brand-900">Product Category</h1>
           <p className="text-sm text-mute">Add, rename, or delete empty categories. Hover Delete to see why a category cannot be removed.</p>
         </div>
-        <div className="flex min-w-[18rem] gap-2">
+        <div className="flex min-w-[18rem] flex-col gap-1">
+          <span className="text-sm font-medium text-ink">Category name</span>
+          <div className="flex gap-2">
           <input
             className="min-w-0 flex-1 rounded-lg border border-line bg-white px-3 py-2 text-sm"
             value={addName}
@@ -1321,6 +1333,7 @@ function CategoryPanel({ products, note, onOpenProduct }) {
           <button type="button" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white" onClick={addCategory}>
             Add
           </button>
+          </div>
         </div>
       </div>
       <div className="grid gap-4 lg:grid-cols-[minmax(16rem,20rem)_1fr]">
@@ -1598,7 +1611,7 @@ function CategoryPanel({ products, note, onOpenProduct }) {
             {editingCategory.count} product{editingCategory.count === 1 ? "" : "s"} stay in this category. Marketplace catalog uses the same name.
           </p>
           <label className="mt-3 block text-sm font-medium text-ink">
-            Category name
+            Category name<RequiredMark />
             <textarea
               className="mt-1 w-full resize-y rounded-lg border border-line px-3 py-2 text-sm leading-snug"
               rows={3}
@@ -1758,7 +1771,7 @@ function ProductCategoryField({ value, onChange, note }) {
 
   return (
     <div className="text-sm font-medium text-ink">
-      <span>Category</span>
+      <span>Category<RequiredMark /></span>
       <select
         className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 font-normal"
         value={value}
@@ -2121,7 +2134,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
     }
     const payload = fromForm(draft);
     if (modal === "create" || !editing) {
-      const result = createAdminProduct(payload);
+      const result = await createAdminProduct(payload);
       if (!result.ok) {
         setFormError(result.error === "name" ? "Please enter a product name." : result.error || "Unable to add product.");
         note(result);
@@ -2434,7 +2447,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
             </div>
           ) : null}
           <label className="block text-sm font-medium text-ink">
-            Product name
+            Product name<RequiredMark />
             <textarea
               className="mt-1 w-full resize-y rounded-lg border border-line px-3 py-2 text-sm leading-snug placeholder:text-mute"
               rows={2}
@@ -2534,7 +2547,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <ProductCategoryField value={draft.category} onChange={(value) => field("category", value)} note={note} />
             <label className="text-sm font-medium text-ink">
-              Provisional SKU ID
+              Provisional SKU ID<RequiredMark />
               <input
                 className="mt-1 w-full rounded-lg border border-line px-3 py-2 font-normal placeholder:text-mute"
                 value={draft.productNo}
@@ -2543,7 +2556,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
               />
             </label>
             <label className="text-sm font-medium text-ink">
-              Sales unit
+              Sales unit<RequiredMark />
               <input
                 className="mt-1 w-full rounded-lg border border-line px-3 py-2 font-normal placeholder:text-mute"
                 value={draft.salesUnit}
@@ -2564,7 +2577,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
             </label>
             {draft.priceMode === "amount" ? (
               <label className="text-sm font-medium text-ink">
-                Amount (HKD)
+                Amount (HKD)<RequiredMark />
                 <input
                   type="number"
                   min="0.01"
@@ -2813,7 +2826,7 @@ function ExcelPanel({ note }) {
     setBusy(true);
     try {
       const csv = await excelFileToCsv(file);
-      const result = importAdminCsv(csv);
+      const result = await importAdminCsv(csv);
       setCsvResult(result.results || []);
       note(result, "Excel import finished.");
     } catch (error) {
@@ -2937,18 +2950,30 @@ function ProductPreviewModal({ line, product, onClose }) {
   return (
     <AdminModal title={name} onClose={onClose} wide>
       <div className="mt-3 grid gap-4 sm:grid-cols-[8rem_minmax(0,1fr)]">
-        {product?.image || line?.image ? (
-          <img src={product?.image || line.image} alt="" className="h-32 w-32 rounded-lg border border-line object-cover" />
-        ) : (
-          <div className="flex h-32 w-32 items-center justify-center rounded-lg border border-dashed border-line text-xs text-mute">No image</div>
-        )}
+        <div>
+          {lineImageSrc(line, product) ? (
+            <PreviewThumb src={lineImageSrc(line, product)} name={name} className="h-32 w-32 rounded-lg" />
+          ) : (
+            <div className="flex h-32 w-32 items-center justify-center rounded-lg border border-dashed border-line text-xs text-mute">No image</div>
+          )}
+          {Array.isArray(line?.images) && line.images.filter(Boolean).length ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {line.images.filter(Boolean).map((src, index) => (
+                <PreviewThumb key={`${src.slice(0, 24)}-${index}`} src={src} name={name} className="h-14 w-14" />
+              ))}
+            </div>
+          ) : null}
+        </div>
         <div className="text-sm">
           <p className="font-mono text-xs text-mute">
             {sku}
             {line?.qty ? ` · × ${line.qty}${product?.unit ? ` ${product.unit}` : ""}` : ""}
           </p>
           {product?.category ? <p className="mt-1 text-xs text-mute">{product.category}</p> : null}
-          {product?.description ? <p className="mt-3 text-sm text-ink">{product.description}</p> : null}
+          {line?.description || product?.description ? <p className="mt-3 whitespace-pre-wrap text-sm text-ink">{line?.description || product.description}</p> : null}
+          {lineAttachmentList(line).length ? (
+            <AttachmentLinks files={lineAttachmentList(line)} className="mt-3 text-xs text-brand-800" label="Attachment" />
+          ) : null}
           {product?.moq ? <p className="mt-2 text-xs text-mute">MOQ {product.moq} {product.unit || ""}</p> : null}
           {specs.length ? (
             <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-mute">
@@ -3008,7 +3033,7 @@ function RfqLineRow({ rfq, line, showPricing, compact, note, readOnly = false })
     <li className={`overflow-hidden rounded-lg border border-line/80 bg-paper/40 ${compact ? "p-2" : "p-2.5"} ${line.noOffer ? "opacity-80" : ""}`}>
       <div className="flex min-w-0 items-start gap-2.5">
         <button type="button" className="shrink-0" onClick={() => setPreview(true)} aria-label={`Preview ${product?.name || line.name}`}>
-          <ProductThumb product={product || { image: line.image }} />
+          <ProductThumb product={product || { image: lineImageSrc(line, product) }} />
         </button>
         <div className="min-w-0 flex-1 overflow-hidden">
           <button type="button" className="text-left text-sm font-medium text-ink hover:underline" onClick={() => setPreview(true)}>
@@ -3025,12 +3050,18 @@ function RfqLineRow({ rfq, line, showPricing, compact, note, readOnly = false })
               {line.remark ? <span className="ml-2 text-mute">{line.remark}</span> : null}
             </p>
           )}
+          {line.custom && line.description ? (
+            <p className="mt-1 whitespace-pre-wrap text-[11px] text-ink">{line.description}</p>
+          ) : null}
+          {line.custom && lineAttachmentList(line).length ? (
+            <AttachmentLinks files={lineAttachmentList(line)} className="mt-1 text-[11px] text-brand-800" label="Attachment" />
+          ) : null}
         </div>
         {canNoOffer || showPricing ? (
         <div className="flex w-[7.5rem] shrink-0 flex-col items-stretch gap-1.5">
           {canEditPrice ? (
             <label>
-              <span className="sr-only">Product price</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-ink">Price<RequiredMark /></span>
               <input
                 type="number"
                 min="0"
@@ -3908,9 +3939,11 @@ function RfqDetail({
             {account ? (
               <>
                 <p className="mt-2 text-sm">{account.companyName || "—"}</p>
-                <p className="text-xs">
-                  <BuyerPhoneLink phone={account.phone} className="text-brand-800 hover:underline" />
-                </p>
+                {Array.isArray(account.roles) && account.roles.length ? (
+                  <p className="mt-2 text-sm text-ink">
+                    {account.roles.map((role) => (role === "contractor" ? "Contractor" : "Buyer")).join(" · ")}
+                  </p>
+                ) : null}
                 <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-brand-700">{accountStatusLabel(account)}</p>
               </>
             ) : (
@@ -3919,25 +3952,10 @@ function RfqDetail({
           </section>
           <section className="rounded-xl border border-line bg-white p-4">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-mute">Follow-up</h2>
-            <p className="mt-1 text-xs text-mute">
-              {guestBuyer
-                ? "Guest RFQ has no marketplace phone. Add a number, then click it to open WhatsApp."
-                : String(rfq.buyerPhone || account?.phone || "").trim()
-                  ? "Contact from the marketplace account. Click the number to open WhatsApp."
-                  : "This marketplace account has no phone on file. Add a number in this slot."}
-            </p>
+            <p className="mt-1 text-xs text-mute">{followUpHint(account, rfq, guestBuyer)}</p>
             <div className="mt-3">
               <RfqFollowUpContact rfq={rfq} account={account} note={note} />
             </div>
-            {account?.wechat || (Array.isArray(account?.roles) && account.roles.length) ? (
-              <p className="mt-3 text-sm text-ink">
-                {account?.wechat ? `WeChat ${account.wechat}` : ""}
-                {account?.wechat && account?.roles?.length ? " · " : ""}
-                {Array.isArray(account?.roles)
-                  ? account.roles.map((role) => (role === "contractor" ? "Contractor" : "Buyer")).join(" · ")
-                  : ""}
-              </p>
-            ) : null}
           </section>
           <RfqActivityLog rfq={rfq} lang="en" audience="staff" title="Activity" />
           <section className="rounded-xl border border-line bg-white p-4">
@@ -4047,8 +4065,12 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
       note({ ok: true }, okMessage.replace(/Buyer email sent\.?/, "No buyer email (guest or invalid address)."));
       return;
     }
+    if (mail?.ok === false && mail.error === "not_configured") {
+      note({ ok: true }, okMessage.replace(/Buyer email sent\.?/, "Buyer email was not sent. Email is not set up on this computer."));
+      return;
+    }
     if (mail?.ok === false) {
-      note(mail, failMessage);
+      note({ ok: false, error: failMessage || "Buyer email could not be sent." });
       return;
     }
     note(
@@ -4332,7 +4354,7 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
               ))}
             </div>
             <label className="mt-3 block text-sm">
-              Reason
+              Reason<RequiredMark />
               <textarea
                 className="mt-1 w-full min-h-[88px] rounded-lg border border-line px-3 py-2 text-sm"
                 placeholder="Select a reason above or write your own"
@@ -4607,7 +4629,7 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
             ))}
           </div>
           <label className="mt-3 block text-sm">
-            Reason
+            Reason<RequiredMark />
             <textarea
               className="mt-1 w-full min-h-[88px] rounded-lg border border-line px-3 py-2 text-sm"
               placeholder="Select a reason above or write your own"
@@ -4705,6 +4727,82 @@ function BuyerInfoField({ label, children, wide }) {
   );
 }
 
+function slotOn(value) {
+  return value === "1" || value === "2" ? value : "";
+}
+
+function buyerPhoneSources(account, rfq) {
+  const rfqHasContact = Boolean(
+    String(rfq?.buyerPhone || "").trim() ||
+      String(rfq?.buyerOtherPhone || "").trim() ||
+      slotOn(rfq?.buyerWhatsappOn) ||
+      slotOn(rfq?.buyerWechatOn)
+  );
+  const source = rfqHasContact ? rfq : account;
+  return {
+    phone: String((rfqHasContact ? source?.buyerPhone : source?.phone) || "").trim(),
+    otherPhone: String((rfqHasContact ? source?.buyerOtherPhone : source?.otherPhone) || "").trim(),
+    whatsappOn: slotOn(rfqHasContact ? source?.buyerWhatsappOn : source?.whatsappOn),
+    wechatOn: slotOn(rfqHasContact ? source?.buyerWechatOn : source?.wechatOn),
+  };
+}
+
+function followUpHint(account, rfq, guestBuyer) {
+  if (guestBuyer) return "Guest RFQ has no marketplace phone. Add a number, then click it to open WhatsApp.";
+  const sources = buyerPhoneSources(account, rfq);
+  const apps = followUpAppRows(sources);
+  const hasWhatsapp = apps.some((row) => row.key === "whatsapp");
+  const hasWechat = apps.some((row) => row.key === "wechat");
+  const hasPhone = followUpPlainPhones(sources).length > 0;
+  if (hasPhone && (hasWhatsapp || hasWechat)) {
+    return "Click WhatsApp or WeChat to open that app. A number without those options is a phone number — click to call.";
+  }
+  if (hasWhatsapp && hasWechat) return "Click WhatsApp to open WhatsApp, or WeChat to open WeChat.";
+  if (hasWhatsapp) return "Click the number to open WhatsApp.";
+  if (hasWechat) return "Click the number to open WeChat.";
+  if (hasPhone) return "Click the number to call.";
+  return "This marketplace account has no phone number. Add a number in this slot.";
+}
+
+function phoneForSlot(sources, slot) {
+  if (slot === "1") return sources.phone;
+  if (slot === "2") return sources.otherPhone;
+  return "";
+}
+
+function whatsappAppHref(phone) {
+  const web = buyerWhatsappHref(phone);
+  if (!web) return "";
+  const id = web.slice("https://wa.me/".length).split("?")[0];
+  return id ? `whatsapp://send?phone=${id}` : "";
+}
+
+function followUpAppRows(sources) {
+  const rows = [];
+  const whatsapp = phoneForSlot(sources, sources.whatsappOn);
+  const wechat = phoneForSlot(sources, sources.wechatOn);
+  if (whatsapp) rows.push({ key: "whatsapp", label: "WhatsApp", phone: whatsapp, href: whatsappAppHref(whatsapp), title: "Open WhatsApp" });
+  if (wechat) rows.push({ key: "wechat", label: "WeChat", phone: wechat, href: "weixin://", title: "Open WeChat" });
+  return rows;
+}
+
+function phoneCallHref(phone) {
+  const dial = String(phone || "").replace(/[^\d+]/g, "");
+  return dial ? `tel:${dial}` : "";
+}
+
+function followUpPlainPhones(sources, extra = "") {
+  const used = new Set(followUpAppRows(sources).map((row) => row.phone));
+  const phones = [];
+  for (const value of [sources.phone, sources.otherPhone, extra]) {
+    const phone = String(value || "").trim();
+    if (!phone || used.has(phone)) continue;
+    used.add(phone);
+    phones.push(phone);
+  }
+  return phones;
+}
+
 function BuyerPhoneLink({ phone, className = "text-brand-800 hover:underline" }) {
   const value = String(phone || "").trim();
   if (!value) return "—";
@@ -4739,8 +4837,22 @@ function RfqFollowUpContact({ rfq, account, note }) {
     if (!accountPhone) return;
     setRfqBuyerPhone(rfq.id, accountPhone);
   }, [account?.phone, member, rfq.buyerPhone, rfq.id]);
-  const href = buyerWhatsappHref(stored);
-  const display = formatBuyerPhoneDisplay(stored);
+  const sources = buyerPhoneSources(account, rfq);
+  const appRows = followUpAppRows(sources);
+  const plainRows = member
+    ? followUpPlainPhones(sources, stored).map((phone, index) => ({
+        key: `phone-${index}`,
+        label: "Phone",
+        phone,
+        href: phoneCallHref(phone),
+        title: "Call",
+      }))
+    : [];
+  const rows = appRows.length || plainRows.length
+    ? [...appRows, ...plainRows]
+    : stored
+      ? [{ key: "phone", label: "WhatsApp", phone: stored, href: whatsappAppHref(stored), title: "Open WhatsApp" }]
+      : [];
 
   function save() {
     const next = String(phone || "").trim();
@@ -4752,28 +4864,32 @@ function RfqFollowUpContact({ rfq, account, note }) {
     setEditing(!next);
   }
 
-  if (!editing && stored) {
+  if (!editing && rows.length) {
     return (
-      <div>
-        <p className="text-[11px] font-medium text-mute">Contact no.</p>
-        <div className="mt-1 flex items-center justify-between gap-2">
-          {href ? (
-            <a
-              href={href}
-              target="_blank"
-              rel="noreferrer"
-              className="text-sm font-semibold text-[#1f8a45] hover:underline"
-              title="Open WhatsApp chat"
-            >
-              {display}
-            </a>
-          ) : (
-            <span className="text-sm text-ink">{display}</span>
-          )}
-          <button type="button" className="text-xs font-semibold text-brand-800 hover:underline" onClick={() => setEditing(true)}>
-            Edit
-          </button>
-        </div>
+      <div className="space-y-3">
+        {rows.map((row, index) => (
+          <div key={row.key}>
+            <p className="text-[11px] font-medium text-mute">{row.label}</p>
+            <div className="mt-1 flex items-center justify-between gap-2">
+              {row.href ? (
+                <a
+                  href={row.href}
+                  className={`text-sm font-semibold hover:underline ${row.label === "Phone" ? "text-brand-800" : "text-[#1f8a45]"}`}
+                  title={row.title}
+                >
+                  {formatBuyerPhoneDisplay(row.phone)}
+                </a>
+              ) : (
+                <span className="text-sm text-ink">{formatBuyerPhoneDisplay(row.phone)}</span>
+              )}
+              {index === 0 ? (
+                <button type="button" className="text-xs font-semibold text-brand-800 hover:underline" onClick={() => setEditing(true)}>
+                  Edit
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -4892,10 +5008,12 @@ function BuyerInfoModal({ email, note, onClose, onOpenRfq, onReject, onForever }
                 </a>
               ) : null}
             </BuyerInfoField>
-            <BuyerInfoField label="Phone">
+            <BuyerInfoField label={phoneSlotLabel("Mobile", "1", buyer?.whatsappOn, buyer?.wechatOn)}>
               <BuyerPhoneLink phone={buyer?.phone} />
             </BuyerInfoField>
-            <BuyerInfoField label="WeChat">{buyer?.wechat}</BuyerInfoField>
+            <BuyerInfoField label={phoneSlotLabel("Other phone", "2", buyer?.whatsappOn, buyer?.wechatOn)}>
+              {buyer?.otherPhone ? <BuyerPhoneLink phone={buyer.otherPhone} /> : null}
+            </BuyerInfoField>
             <BuyerInfoField label="Roles">
               {Array.isArray(buyer?.roles) && buyer.roles.length
                 ? buyer.roles.map((role) => (role === "contractor" ? "Contractor" : "Buyer")).join(" · ")
@@ -5270,7 +5388,7 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
         >
           <p className="text-sm text-mute">They cannot log in. This cannot be reversed with Enable. A rejection email will open.</p>
           <label className="mt-3 block text-sm font-medium">
-            Reason
+            Reason<RequiredMark />
             <textarea
               className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm"
               rows={4}
@@ -5350,7 +5468,7 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
               : "We'll open an email so they can set their own password. No temporary password is created."}
           </p>
           <label className="mt-4 block text-sm font-medium text-ink">
-            Name
+            Name<RequiredMark />
             <input
               className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm"
               value={formName}
@@ -5362,7 +5480,7 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
             />
           </label>
           <label className="mt-3 block text-sm font-medium text-ink">
-            Email
+            Email<RequiredMark />
             <input
               type="email"
               className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm disabled:bg-paper disabled:text-mute"

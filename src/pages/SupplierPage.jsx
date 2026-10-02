@@ -52,7 +52,7 @@ export default function SupplierPage() {
   }, [searchQuery, selectedCategory, priceFilter, stockFilter, greenOnly]);
 
   const top = useMemo(
-    () => (supplier ? getTopProductsForSupplier(supplier.slug, 5) : []),
+    () => (supplier ? getTopProductsForSupplier(supplier.slug) : []),
     [supplier]
   );
   const catalog = useMemo(
@@ -163,6 +163,7 @@ export default function SupplierPage() {
           <SupplierMetrics metrics={supplier.metrics} t={t} />
         </section>
 
+        {top.length ? (
         <section className="max-w-7xl mx-auto px-4 pt-10 sm:pt-12">
           <div className="mb-6">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-mute mb-2">
@@ -173,11 +174,12 @@ export default function SupplierPage() {
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
-            {top.map((p, i) => (
-              <ProductCard key={p.id} product={p} compact rank={i + 1} onAdd={handleAdd} />
+            {top.map((p) => (
+              <ProductCard key={p.id} product={p} compact rank={p.featuredRank} onAdd={handleAdd} />
             ))}
           </div>
         </section>
+        ) : null}
 
         <section id="supplier-products" className="max-w-7xl mx-auto px-4 py-12 sm:py-14">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">

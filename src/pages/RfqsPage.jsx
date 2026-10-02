@@ -10,7 +10,7 @@ import Seo from "../components/Seo";
 import { useLanguage } from "../i18n";
 import { withLocale } from "../lib/locale";
 import { SHOW_RFQ_QUOTES } from "../lib/flags";
-import AttachmentLinks from "../components/AttachmentLinks";
+import AttachmentLinks, { linePhotoSrc, PreviewThumb } from "../components/AttachmentLinks";
 import { DEMO_QUOTED_RFQ, buildPrototypeQuotes, buildSalesQuote } from "./rfqs-prototype/quoteMocks";
 import QuoteVariant from "./rfqs-prototype/QuoteCompareVariantA";
 import RfqStepBar, { RFQ_PHASE_STEPS } from "./rfqs-prototype/RfqStepBar";
@@ -110,7 +110,8 @@ function lineQuoteUnit(l) {
 }
 
 function lineThumb(l) {
-  if (l?.image) return l.image;
+  const photo = linePhotoSrc(l);
+  if (photo) return photo;
   if (l?.custom) return "";
   return getProduct(l?.productId)?.image || "";
 }
@@ -259,7 +260,7 @@ function RfqDetailsSummary({ rfq, t, editing = false, onPatch }) {
               <li key={String(l.productId)} className="flex flex-wrap items-start justify-between gap-3 py-2.5">
                 <span className="flex min-w-0 items-start gap-2.5 flex-1">
                   {thumb ? (
-                    <img src={thumb} alt="" className="h-10 w-10 shrink-0 rounded-md border border-line object-cover bg-paper" />
+                    <PreviewThumb src={thumb} name={l.name} className="h-10 w-10" />
                   ) : (
                     <span className="h-10 w-10 shrink-0 rounded-md border border-line bg-paper" />
                   )}
@@ -1230,7 +1231,7 @@ function SubmittedStep({ rfq, t, editing = false, onChangeLine, onRemoveLine, on
           <li key={`${l.productId}-${l.qty}`} className="flex justify-between gap-3 py-2.5 text-sm">
             <span className="flex min-w-0 items-start gap-2.5">
               {thumb ? (
-                <img src={thumb} alt="" className="h-10 w-10 shrink-0 rounded-md border border-line object-cover bg-paper" />
+                <PreviewThumb src={thumb} name={l.name} className="h-10 w-10" />
               ) : (
                 <span className="h-10 w-10 shrink-0 rounded-md border border-line bg-paper" />
               )}

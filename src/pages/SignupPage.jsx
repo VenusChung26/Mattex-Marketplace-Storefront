@@ -21,7 +21,7 @@ import {
 } from "../lib/store";
 import ProjectListEditor from "../components/ProjectListEditor";
 import { BuyerContactFields } from "../components/BuyerContactFields";
-import { composePhone, normalizeRoles } from "../lib/phone";
+import { composePhone, contactPayload, normalizeRoles } from "../lib/phone";
 
 const EMPTY_FORM = {
   email: "",
@@ -33,7 +33,16 @@ const EMPTY_FORM = {
   phoneRegion: "852",
   phoneOtherCode: "",
   phoneNational: "",
-  wechat: "",
+  addPhone: false,
+  phone2Region: "852",
+  phone2OtherCode: "",
+  phone2National: "",
+  whatsappOn: "",
+  wechatOn: "",
+  wechatPhoneRegion: "852",
+  wechatPhoneOtherCode: "",
+  wechatPhoneNational: "",
+  wechatId: "",
   roles: ["buyer"],
   companyName: "",
   companyReg: "",
@@ -79,6 +88,9 @@ export default function SignupPage() {
     if (!String(nextForm.name || "").trim()) errors.name = t("signupFixRequired");
     if (!String(nextForm.jobTitle || "").trim()) errors.jobTitle = t("signupFixRequired");
     if (!composePhone(nextForm.phoneRegion, nextForm.phoneOtherCode, nextForm.phoneNational)) errors.phone = t("signupFixRequired");
+    if (nextForm.addPhone && !composePhone(nextForm.phone2Region, nextForm.phone2OtherCode, nextForm.phone2National)) {
+      errors.phone2 = t("signupFixRequired");
+    }
     if (!normalizeRoles(nextForm.roles).length) errors.roles = t("signupFixRole");
     if (!pwd.length || !pwd.letter || !pwd.number) errors.password = t("signupFixPassword");
     if (!pwd.match) errors.confirmPassword = t("signupFixPasswordMatch");
@@ -99,11 +111,10 @@ export default function SignupPage() {
       return;
     }
     setBusy(true);
-    const phone = composePhone(form.phoneRegion, form.phoneOtherCode, form.phoneNational);
+    const contact = contactPayload(form);
     const result = await registerUser({
       ...form,
-      phone,
-      phoneRegion: form.phoneRegion === "other" ? form.phoneOtherCode : form.phoneRegion,
+      ...contact,
       roles: normalizeRoles(form.roles),
     });
     setBusy(false);
@@ -112,6 +123,7 @@ export default function SignupPage() {
         email: "email",
         name: "name",
         phone: "phone",
+        roles: "roles",
         jobTitle: "jobTitle",
         companyName: "companyName",
         companyReg: "companyReg",
@@ -123,6 +135,7 @@ export default function SignupPage() {
         pending: t("signupErrorExists"),
         staff: t("loginErrorStaff"),
         password: t("signupFixPassword"),
+        roles: t("signupFixRole"),
         email: t("signupFixEmail"),
         name: t("signupFixRequired"),
         phone: t("signupFixRequired"),
@@ -138,10 +151,13 @@ export default function SignupPage() {
       } else {
         setFieldErrors({});
       }
+      const fieldMessage = messages[result.error];
       setError(
         result.error === "exists" || result.error === "staff" || result.error === "pending"
-          ? messages[result.error]
-          : t("signupFixAlert")
+          ? fieldMessage
+          : fieldMessage
+            ? t("signupFixAlert")
+            : t("signupErrorGeneric")
       );
       revealIssue();
       return;
@@ -197,7 +213,7 @@ export default function SignupPage() {
                   </div>
                 ) : null}
 
-                <AccountSection title={t("userInfo")}>
+                <AccountSection title={t("userInfo")} columns={1}>
                   <AccountField label={t("workEmail")} required error={fieldErrors.email}>
                     <input
                       type="email"
@@ -231,7 +247,7 @@ export default function SignupPage() {
                   <BuyerContactFields t={t} value={form} onChange={setField} errors={fieldErrors} />
                 </AccountSection>
 
-                <AccountSection title={t("password")}>
+                <AccountSection title={t("password")} columns={1}>
                   <AccountField label={t("password")} required error={fieldErrors.password}>
                     <input
                       type="password"
@@ -263,7 +279,7 @@ export default function SignupPage() {
                   />
                 </AccountSection>
 
-                <AccountSection title={t("companyDetails")}>
+                <AccountSection title={t("companyDetails")} columns={1}>
                   <AccountField label={t("companyName")} required error={fieldErrors.companyName}>
                     <input
                       type="text"
@@ -292,14 +308,14 @@ export default function SignupPage() {
                       className="field-input"
                     />
                   </AccountField>
-                  <AccountField className="sm:col-span-2" label={t("projectName")} hint={t("profileProjectHint")}>
+                  <AccountField label={t("projectName")} hint={t("profileProjectHint")}>
                     <ProjectListEditor
                       idPrefix="signup-project"
                       projects={form.projects}
                       onChange={(projects) => setField("projects", projects)}
                     />
                   </AccountField>
-                  <AccountField className="sm:col-span-2" label={t("companyAddress")} required error={fieldErrors.companyAddress}>
+                  <AccountField label={t("companyAddress")} required error={fieldErrors.companyAddress}>
                     <textarea
                       rows={2}
                       value={form.companyAddress}

@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { draftTotals, formatPrice, getEffectivePrice, getProduct, isDiscontinued } from "../../lib/store";
 import CustomProductForm from "../../components/CustomProductForm";
 import CustomProductModal from "../../components/CustomProductModal";
-import AttachmentLinks from "../../components/AttachmentLinks";
+import AttachmentLinks, { PreviewThumb } from "../../components/AttachmentLinks";
 import { QtyStepper } from "../../components/ProductCard";
 import { useLanguage } from "../../i18n";
 
@@ -44,6 +44,8 @@ function firstImageAttachment(files) {
 function lineThumb(line) {
   const direct = String(line?.image || "").trim();
   if (direct) return direct;
+  const extra = (Array.isArray(line?.images) ? line.images : []).map((src) => String(src || "").trim()).find(Boolean);
+  if (extra) return extra;
   const fromFile = firstImageAttachment(line?.attachments);
   if (fromFile) return fromFile;
   if (line?.custom) return "";
@@ -56,7 +58,7 @@ function LineThumb({ line, className = "h-16 w-16 sm:h-[4.5rem] sm:w-24" }) {
   return (
     <span className={`${className} shrink-0 overflow-hidden rounded-md border border-line bg-paper`}>
       {src ? (
-        <img src={src} alt={line?.name || ""} className="h-full w-full object-cover" />
+        <PreviewThumb src={src} name={line?.name} className="h-full w-full rounded-none border-0" />
       ) : (
         <span className="flex h-full w-full items-center justify-center px-1 text-center text-[9px] font-bold uppercase leading-tight text-brand-700">
           {line?.custom ? t("customItem") : ""}
@@ -1152,6 +1154,7 @@ function LinesList({
                         description: l.description || "",
                         qty: l.qty,
                         image: l.image || "",
+                        images: Array.isArray(l.images) ? l.images : [],
                         category: l.category || "",
                         attachments: l.attachments || [],
                       }}

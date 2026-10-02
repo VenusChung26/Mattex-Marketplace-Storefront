@@ -7,6 +7,8 @@ import { readSession } from "./auth.js";
 const DIR = path.join(process.cwd(), "data");
 const SNAPSHOT_FILE = path.join(DIR, "catalog-snapshot.json");
 const VERSION_FILE = path.join(DIR, "catalog-version.json");
+const SNAPSHOT_KEY = "catalog-snapshot";
+const VERSION_KEY = "catalog-version";
 const SEED = "seed";
 
 let client = null;
@@ -64,30 +66,117 @@ function etagFor(updatedAt, count) {
   return createHash("sha256").update(`${updatedAt}|${count}`).digest("hex").slice(0, 16);
 }
 
+function snapshotBody(value) {
+  if (!Array.isArray(value?.products) || !value.products.length) return null;
+  return value;
+}
+
+async function readKv(sb, key) {
+  const { data, error } = await sb.from("app_kv").select("value").eq("key", key).maybeSingle();
+  if (error) return { error, value: null };
+  return { error: null, value: data?.value ?? null };
+}
+
+async function writeKv(sb, key, value) {
+  const { error } = await sb.from("app_kv").upsert({
+    key,
+    value,
+    updated_at: new Date().toISOString(),
+  });
+  return { error };
+}
+
 export async function handleCatalogVersion() {
+  const sb = db();
+  if (sb) {
+    const remote = await readKv(sb, VERSION_KEY);
+    if (!remote.error && remote.value?.etag && remote.value.etag !== SEED) {
+      return { etag: remote.value.etag, updatedAt: remote.value.updatedAt || "" };
+    }
+  }
   const version = await readJson(VERSION_FILE);
   if (!version?.etag || version.etag === SEED) return { etag: SEED, updatedAt: "" };
   return { etag: version.etag, updatedAt: version.updatedAt || "" };
 }
 
 export async function handleCatalogGet() {
+  const sb = db();
+  if (sb) {
+    const remote = await readKv(sb, SNAPSHOT_KEY);
+    if (!remote.error) {
+      const shared = snapshotBody(remote.value);
+      if (shared) return shared;
+    }
+  }
   const snapshot = await readJson(SNAPSHOT_FILE);
-  if (!Array.isArray(snapshot?.products) || !snapshot.products.length) return null;
-  return snapshot;
+  return snapshotBody(snapshot);
 }
 
-async function writeSnapshot(snapshot) {
+function buildSnapshot(snapshot) {
   const updatedAt = new Date().toISOString();
-  const etag = etagFor(updatedAt, snapshot.products.length);
-  const next = {
+  const products = Array.isArray(snapshot?.products) ? snapshot.products : [];
+  const etag = etagFor(updatedAt, products.length);
+  return {
     etag,
     updatedAt,
-    products: snapshot.products,
-    categories: Array.isArray(snapshot.categories) ? snapshot.categories : [],
+    products,
+    categories: Array.isArray(snapshot?.categories) ? snapshot.categories : [],
   };
-  await writeJson(SNAPSHOT_FILE, next);
-  await writeJson(VERSION_FILE, { etag, updatedAt });
-  return next;
+}
+
+async function writeSnapshotFile(next) {
+  try {
+    await writeJson(SNAPSHOT_FILE, next);
+    await writeJson(VERSION_FILE, { etag: next.etag, updatedAt: next.updatedAt });
+    return true;
+  } catch {
+    // Production disks are read-only. The shared snapshot in app_kv is what both apps read.
+    return false;
+  }
+}
+
+async function writeSnapshot(snapshot, sb) {
+  const next = buildSnapshot(snapshot);
+  if (sb) {
+    const saved = await writeKv(sb, SNAPSHOT_KEY, next);
+    if (saved.error) return { error: saved.error };
+    const version = await writeKv(sb, VERSION_KEY, { etag: next.etag, updatedAt: next.updatedAt });
+    if (version.error) return { error: version.error };
+  }
+  const filed = await writeSnapshotFile(next);
+  if (!sb && !filed) return { error: new Error("save") };
+  return { error: null, snapshot: next };
+}
+
+function commitResult(written) {
+  if (written?.error) {
+    const quota = isQuotaError(written.error);
+    return { status: quota ? 402 : 400, body: { ok: false, error: quota ? "quota" : "save" } };
+  }
+  return { status: 200, body: { ok: true, etag: written.snapshot.etag, snapshot: true } };
+}
+
+async function loadBaseSnapshot(sb) {
+  if (sb) {
+    const remote = await readKv(sb, SNAPSHOT_KEY);
+    if (remote.error) return { error: remote.error };
+    const shared = snapshotBody(remote.value);
+    if (shared) return { snapshot: shared };
+  }
+  const file = snapshotBody(await readJson(SNAPSHOT_FILE));
+  if (file) return { snapshot: file };
+  if (sb) {
+    const remote = await readAllProducts(sb);
+    if (remote.error) return { error: remote.error };
+    return { snapshot: { products: remote.products, categories: [] } };
+  }
+  const host = await readJson(path.join(process.cwd(), "public", "catalog.json"));
+  return {
+    snapshot: {
+      products: Array.isArray(host?.products) ? host.products : [],
+      categories: Array.isArray(host?.categories) ? host.categories : [],
+    },
+  };
 }
 
 function rowFromProduct(product) {
@@ -96,6 +185,25 @@ function rowFromProduct(product) {
     payload: product,
     image_url: String(product.imageUrl || product.image || ""),
     updated_at: new Date().toISOString(),
+    name: String(product.name || ""),
+    product_no: String(product.productNo || ""),
+    provisional_sku: String(product.provisionalSku || ""),
+    category: String(product.category || ""),
+    supplier: String(product.supplier || ""),
+    supplier_slug: String(product.supplierSlug || ""),
+    unit: String(product.salesUnit || product.unit || ""),
+    published: Boolean(product.published) && !product.deleted,
+    held: Boolean(product.held),
+    deleted: Boolean(product.deleted),
+    discontinued: Boolean(product.discontinued),
+    green: Boolean(product.green),
+    hit: Boolean(product.hit),
+    tailor_made: Boolean(product.tailorMade),
+    moq: product.moq == null || product.moq === "" ? "" : String(product.moq),
+    lead_time: product.leadTime || null,
+    lead_time_label: String(product.leadTimeLabel || ""),
+    size_desc: String(product.sizeDesc || ""),
+    created_at_ms: Number(product.createdAt) || 0,
   };
 }
 
@@ -129,24 +237,7 @@ async function commitNow(body, request) {
   if (!incoming.length && !removed.length) return { status: 200, body: { ok: true, etag: (await handleCatalogVersion()).etag } };
 
   const sb = db();
-  if (!sb) {
-    const existing = await readJson(SNAPSHOT_FILE);
-    let products = Array.isArray(existing?.products) ? existing.products : [];
-    if (!products.length) {
-      const host = await readJson(path.join(process.cwd(), "public", "catalog.json"));
-      products = Array.isArray(host?.products) ? host.products : [];
-    }
-    const byId = new Map(products.map((product) => [String(product.id), product]));
-    for (const product of incoming) byId.set(String(product.id), product);
-    for (const id of removed) byId.delete(id);
-    const written = await writeSnapshot({
-      products: [...byId.values()],
-      categories: categories.length ? categories : existing?.categories || [],
-    });
-    return { status: 200, body: { ok: true, etag: written.etag, snapshot: true } };
-  }
-
-  if (incoming.length) {
+  if (sb && incoming.length) {
     const saved = await upsertProducts(sb, incoming);
     if (saved.error) {
       const quota = isQuotaError(saved.error);
@@ -154,7 +245,7 @@ async function commitNow(body, request) {
     }
   }
 
-  if (removed.length) {
+  if (sb && removed.length) {
     const { error } = await sb.from("products").delete().in("id", removed);
     if (error) {
       const quota = isQuotaError(error);
@@ -162,26 +253,21 @@ async function commitNow(body, request) {
     }
   }
 
-  const existing = await readJson(SNAPSHOT_FILE);
-  if (!existing?.products?.length) {
-    const remote = await readAllProducts(sb);
-    if (remote.error) {
-      const quota = isQuotaError(remote.error);
-      return { status: quota ? 402 : 400, body: { ok: false, error: quota ? "quota" : "save" } };
-    }
-    if (!remote.products.length) return { status: 200, body: { ok: true, etag: SEED, snapshot: false } };
-    const written = await writeSnapshot({ products: remote.products, categories });
-    return { status: 200, body: { ok: true, etag: written.etag, snapshot: true } };
+  const base = await loadBaseSnapshot(sb);
+  if (base.error) {
+    const quota = isQuotaError(base.error);
+    return { status: quota ? 402 : 400, body: { ok: false, error: quota ? "quota" : "save" } };
   }
-
-  const byId = new Map(existing.products.map((product) => [String(product.id), product]));
+  const products = Array.isArray(base.snapshot?.products) ? base.snapshot.products : [];
+  if (!products.length && !incoming.length) return { status: 200, body: { ok: true, etag: SEED, snapshot: false } };
+  const byId = new Map(products.map((product) => [String(product.id), product]));
   for (const product of incoming) byId.set(String(product.id), product);
   for (const id of removed) byId.delete(id);
   const written = await writeSnapshot({
     products: [...byId.values()],
-    categories: categories.length ? categories : existing.categories,
-  });
-  return { status: 200, body: { ok: true, etag: written.etag, snapshot: true } };
+    categories: categories.length ? categories : base.snapshot?.categories || [],
+  }, sb);
+  return commitResult(written);
 }
 
 export function handleCatalogCommit(body, request) {

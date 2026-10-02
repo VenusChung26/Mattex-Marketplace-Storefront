@@ -29,3 +29,4 @@ supabase/.temp
 .local-shared-store.lock
 data/catalog-snapshot.json
 data/catalog-version.json
+data/local-buyer-auth.json

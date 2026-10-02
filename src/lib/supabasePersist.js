@@ -46,6 +46,38 @@ export function isSupabaseConfigured() {
   return Boolean(url && (anon || service));
 }
 
+let remoteDataReady = null;
+
+export function shouldUseLocalSharedStore() {
+  return !isSupabaseConfigured() || remoteDataReady === false;
+}
+
+function markRemoteDataDown() {
+  remoteDataReady = false;
+}
+
+export async function probeRemoteData() {
+  if (!isSupabaseConfigured() || typeof fetch !== "function") return false;
+  if (remoteDataReady != null) return remoteDataReady;
+  try {
+    const res = await fetch("/api/data", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ op: "read", keys: ["subbie_rfq_seq"] }),
+    });
+    if (res.status >= 500) {
+      markRemoteDataDown();
+      return false;
+    }
+    remoteDataReady = true;
+    return true;
+  } catch {
+    markRemoteDataDown();
+    return false;
+  }
+}
+
 let anonClient = null;
 let serviceClient = null;
 
@@ -95,6 +127,7 @@ async function dataApi(op, payload = {}) {
       body: JSON.stringify({ op, ...payload }),
     });
     const data = await res.json().catch(() => null);
+    if (res.status >= 500) markRemoteDataDown();
     return data?.ok ? data : null;
   } catch {
     return null;

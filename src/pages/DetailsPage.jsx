@@ -17,6 +17,7 @@ import {
   addFromStorefront,
   canDirectBuy,
   catalogPathForCategory,
+  displayLeadTime,
   getEffectivePrice,
   getProduct,
   isBuyerVisible,
@@ -108,11 +109,7 @@ export default function DetailsPage() {
           ? `${t("buyNowHint")} ${t("requestQuoteHint")}`
           : t("requestQuoteOnlyHint");
   const minQty = Math.max(1, Number(product.moq) || 1);
-  const leadTime = product.leadTime
-    ? product.leadTime.min === product.leadTime.max
-      ? String(product.leadTime.min)
-      : `${product.leadTime.min}–${product.leadTime.max}`
-    : "—";
+  const leadTime = displayLeadTime(product) || "—";
   const facts = [
     { label: t("productNo"), value: productSkuId(product) || product.id.toUpperCase() },
     {
@@ -122,7 +119,7 @@ export default function DetailsPage() {
       tone: discontinued ? "bg-[#f8e8e8] text-[#8a2b2b]" : STOCK_TONE[product.stockStatus] || STOCK_TONE.in_stock,
     },
     { label: t("moq"), value: `${product.moq} ${product.unit}` },
-    { label: t("leadTime"), value: t("leadTimeValue", { time: leadTime }) },
+    { label: t("leadTime"), value: leadTime },
     { label: t("standard"), value: product.standard },
   ];
 

@@ -1,4 +1,7 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { passwordResetEmailHtml, staffInviteEmailHtml, wrapEmailSend } from "../src/lib/mailTemplate.js";
 import { sendResendEmail } from "./send-email.js";
@@ -37,6 +40,83 @@ function localStaffMatch(email, password) {
 
 function localStaffAccount(email) {
   return { email: normalizeEmail(email), name: "Sales", enabled: true, kind: "staff" };
+}
+
+const LOCAL_BUYERS_FILE = join(dirname(fileURLToPath(import.meta.url)), "../data/local-buyer-auth.json");
+
+function localBuyersEnabled() {
+  return !process.env.VERCEL_ENV;
+}
+
+function readLocalBuyers() {
+  try {
+    const parsed = JSON.parse(readFileSync(LOCAL_BUYERS_FILE, "utf8"));
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalBuyers(map) {
+  mkdirSync(dirname(LOCAL_BUYERS_FILE), { recursive: true });
+  writeFileSync(LOCAL_BUYERS_FILE, JSON.stringify(map));
+}
+
+function hashLocalPassword(password, salt = randomBytes(16).toString("hex")) {
+  return { salt, hash: scryptSync(String(password), salt, 32).toString("hex") };
+}
+
+function localPasswordMatches(password, row) {
+  if (!row?.salt || !row?.hash) return false;
+  const next = scryptSync(String(password || ""), row.salt, 32);
+  const prev = Buffer.from(row.hash, "hex");
+  return next.length === prev.length && timingSafeEqual(next, prev);
+}
+
+function localBuyerAccount(address, profile = {}) {
+  const extra = profile.extra && typeof profile.extra === "object" ? profile.extra : {};
+  return {
+    email: address,
+    kind: "buyer",
+    name: String(profile.name || "").trim(),
+    phone: String(profile.phone || "").trim(),
+    company_name: String(profile.companyName || profile.company_name || "").trim(),
+    job_title: String(profile.jobTitle || profile.job_title || "").trim(),
+    company_reg: String(profile.companyReg || profile.company_reg || "").trim(),
+    company_phone: String(profile.companyPhone || profile.company_phone || "").trim(),
+    company_address: String(profile.companyAddress || profile.company_address || "").trim(),
+    enabled: true,
+    approval_status: "approved",
+    needs_review: true,
+    extra: {
+      phoneRegion: String(profile.phoneRegion || extra.phoneRegion || "").trim(),
+      wechat: String(profile.wechat ?? extra.wechat ?? "").trim(),
+      otherPhone: String(profile.otherPhone ?? extra.otherPhone ?? "").trim(),
+      whatsappOn: profile.whatsappOn === "1" || profile.whatsappOn === "2" ? profile.whatsappOn : extra.whatsappOn === "1" || extra.whatsappOn === "2" ? extra.whatsappOn : "",
+      wechatOn: profile.wechatOn === "1" || profile.wechatOn === "2" ? profile.wechatOn : extra.wechatOn === "1" || extra.wechatOn === "2" ? extra.wechatOn : "",
+      phoneWhatsapp: profile.whatsappOn === "1" || profile.whatsappOn === "2" || extra.whatsappOn === "1" || extra.whatsappOn === "2",
+      roles: Array.isArray(profile.roles) ? profile.roles : Array.isArray(extra.roles) ? extra.roles : [],
+    },
+    created_at: new Date().toISOString(),
+  };
+}
+
+function localBuyerSignup(address, password, profile) {
+  const buyers = readLocalBuyers();
+  if (buyers[address]?.hash) return { body: { ok: false, error: "exists" } };
+  const hashed = hashLocalPassword(password);
+  const account = localBuyerAccount(address, profile);
+  buyers[address] = { ...hashed, account };
+  writeLocalBuyers(buyers);
+  return { cookie: sessionCookie("buyer", address), body: { ok: true, email: address, account } };
+}
+
+function localBuyerLogin(email, password) {
+  const address = normalizeEmail(email);
+  const row = readLocalBuyers()[address];
+  if (!row?.account) return { body: { ok: false, error: "missing" } };
+  if (!localPasswordMatches(password, row)) return { body: { ok: false, error: "password" } };
+  return { cookie: sessionCookie("buyer", address), body: { ok: true, account: row.account } };
 }
 
 const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
@@ -173,6 +253,9 @@ const actions = {
         const address = normalizeEmail(email);
         return { cookie: sessionCookie(kind, address), body: { ok: true, account: localStaffAccount(address) } };
       }
+      if (error?.message === "auth_not_configured" && kind === "buyer" && localBuyersEnabled()) {
+        return localBuyerLogin(email, password);
+      }
       throw error;
     }
     if (!account) return { body: { ok: false, error: kind === "buyer" ? "missing" : "password" } };
@@ -187,7 +270,15 @@ const actions = {
     const address = normalizeEmail(email);
     if (!EMAIL_RE.test(address)) return { body: { ok: false, error: "email" } };
     if (!passwordOk(password)) return { body: { ok: false, error: "password" } };
-    const existing = await findAccount(address);
+    let existing;
+    try {
+      existing = await findAccount(address);
+    } catch (error) {
+      if (error?.message === "auth_not_configured" && localBuyersEnabled()) {
+        return localBuyerSignup(address, password, profile);
+      }
+      throw error;
+    }
     if (existing?.kind === "staff") return { body: { ok: false, error: "staff" } };
     if (existing) {
       const { data: row } = await db().from("user_accounts").select("password").eq("email", address).maybeSingle();
@@ -206,6 +297,10 @@ const actions = {
         extra: {
           phoneRegion: String(profile.phoneRegion || "").trim(),
           wechat: String(profile.wechat || "").trim(),
+          otherPhone: String(profile.otherPhone || "").trim(),
+          whatsappOn: profile.whatsappOn === "1" || profile.whatsappOn === "2" ? profile.whatsappOn : "",
+          wechatOn: profile.wechatOn === "1" || profile.wechatOn === "2" ? profile.wechatOn : "",
+          phoneWhatsapp: profile.whatsappOn === "1" || profile.whatsappOn === "2",
           roles: Array.isArray(profile.roles) ? profile.roles : [],
         },
         created_at: new Date().toISOString(),
@@ -317,7 +412,21 @@ const actions = {
   async "update-profile"({ profile = {} }, request) {
     const session = readSession(request, "buyer");
     if (!session) return { status: 401, body: { ok: false, error: "auth" } };
-    const current = await findAccount(session.email, "buyer");
+    let current;
+    try {
+      current = await findAccount(session.email, "buyer");
+    } catch (error) {
+      if (error?.message === "auth_not_configured" && localBuyersEnabled()) {
+        const buyers = readLocalBuyers();
+        const row = buyers[session.email];
+        if (!row?.account) return { status: 401, body: { ok: false, error: "auth" } };
+        row.account = localBuyerAccount(session.email, { ...row.account, ...profile, extra: row.account.extra });
+        buyers[session.email] = row;
+        writeLocalBuyers(buyers);
+        return { body: { ok: true } };
+      }
+      throw error;
+    }
     const extra = current?.extra && typeof current.extra === "object" ? current.extra : {};
     const { error } = await db()
       .from("user_accounts")
@@ -329,7 +438,11 @@ const actions = {
         extra: {
           ...extra,
           phoneRegion: String(profile.phoneRegion || extra.phoneRegion || "").trim(),
-          wechat: String(profile.wechat || "").trim(),
+          wechat: String(profile.wechat ?? "").trim(),
+          otherPhone: String(profile.otherPhone ?? "").trim(),
+          whatsappOn: profile.whatsappOn === "1" || profile.whatsappOn === "2" ? profile.whatsappOn : "",
+          wechatOn: profile.wechatOn === "1" || profile.wechatOn === "2" ? profile.wechatOn : "",
+          phoneWhatsapp: profile.whatsappOn === "1" || profile.whatsappOn === "2",
           roles: Array.isArray(profile.roles) ? profile.roles : extra.roles || [],
         },
       })
@@ -349,6 +462,11 @@ const actions = {
     } catch (error) {
       if (error?.message === "auth_not_configured" && kind === "staff" && localStaffMatch(session.email, process.env.LOCAL_STAFF_PASSWORD || "")) {
         return { body: { ok: true, account: localStaffAccount(session.email) } };
+      }
+      if (error?.message === "auth_not_configured" && kind === "buyer" && localBuyersEnabled()) {
+        const account = readLocalBuyers()[session.email]?.account;
+        if (!account?.enabled) return { cookie: clearCookie(kind), body: { ok: false } };
+        return { body: { ok: true, account } };
       }
       throw error;
     }

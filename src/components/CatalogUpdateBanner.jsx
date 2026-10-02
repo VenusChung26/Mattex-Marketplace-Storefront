@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getCatalogEtag } from "../lib/store";
+import { getCatalogEtag, getStoreSnapshot, subscribeStore } from "../lib/store";
 import { useLanguage } from "../i18n";
 
 export default function CatalogUpdateBanner() {
@@ -9,18 +9,21 @@ export default function CatalogUpdateBanner() {
   useEffect(() => {
     let stop = false;
     async function check() {
+      if (!getStoreSnapshot().catalogReady) return;
+      const current = String(getCatalogEtag() || "seed");
+      if (current === "seed") return;
       try {
         const res = await fetch("/api/catalog-version", { cache: "no-store" });
         if (!res.ok) return;
         const data = await res.json();
         const next = String(data?.etag || "seed");
-        const current = getCatalogEtag() || "seed";
         if (!stop) setVisible(next !== "seed" && next !== current);
       } catch {
         /* keep the current page */
       }
     }
     check();
+    const unsub = subscribeStore(check);
     const timer = window.setInterval(check, 30000);
     const onVisible = () => {
       if (document.visibilityState === "visible") check();
@@ -28,6 +31,7 @@ export default function CatalogUpdateBanner() {
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       stop = true;
+      unsub();
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };

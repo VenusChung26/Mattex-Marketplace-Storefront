@@ -1,15 +1,20 @@
 const BRAND = "#245a41";
-const INK = "#121816";
-const MUTE = "#5b675f";
-const PAPER = "#f6f7f5";
-const LINE = "#e4ebe6";
+const INK = "#1a1d1c";
+const MUTE = "#5c6560";
+const PAGE = "#eef2f4";
+const LINE = "#e6eaec";
+export const MARKETPLACE_PUBLIC_ORIGIN = "https://marketplace.mattex.com.hk";
+export const ADMIN_PUBLIC_ORIGIN = "https://subbie-admin.mattex.com.hk";
+export const ADMIN_PUBLIC_HOME = `${ADMIN_PUBLIC_ORIGIN}/`;
+export const MARKETPLACE_PUBLIC_HOME = `${MARKETPLACE_PUBLIC_ORIGIN}/`;
+export const MARKETPLACE_LOGO_URL = `${MARKETPLACE_PUBLIC_ORIGIN}/assets/mattex-logo.webp`;
 
 /** Same UI face as Marketplace header / body (`font-sans`). */
 export const MM_GOOGLE_FONTS = "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap";
 
 const SANS = "'IBM Plex Sans', Helvetica, Arial, sans-serif";
 const FACE = `font-family:${SANS};`;
-const TITLE = `${FACE}font-weight:600;letter-spacing:-0.025em;`;
+const TITLE = `${FACE}font-weight:700;letter-spacing:-0.025em;`;
 const WORDMARK = `${FACE}font-size:18px;line-height:1.15;font-weight:600;letter-spacing:-0.025em;`;
 
 export function escapeHtml(value) {
@@ -20,9 +25,37 @@ export function escapeHtml(value) {
     .replace(/"/g, "&quot;");
 }
 
+function publicMailHref(href) {
+  const value = String(href || "").trim();
+  if (!value || value.startsWith("mailto:") || value.startsWith("cid:")) return value;
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return value;
+  }
+  if (url.hostname !== "localhost" && url.hostname !== "127.0.0.1") return value;
+  const admin = url.port === "5179" || url.port === "5181";
+  const base = admin ? ADMIN_PUBLIC_ORIGIN : MARKETPLACE_PUBLIC_ORIGIN;
+  return `${base}${url.pathname}${url.search}${url.hash}`;
+}
+
+function mailButton(label, href) {
+  const url = publicMailHref(href);
+  if (!label || !url) return "";
+  return `
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td align="center" bgcolor="${BRAND}" style="border-radius:6px;background:${BRAND};">
+                  <a href="${escapeHtml(url)}" target="_blank" style="display:inline-block;padding:12px 22px;${FACE}font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;">${escapeHtml(label)}</a>
+                </td>
+              </tr>
+            </table>`;
+}
+
 function fontFaceCss(fontBase) {
   const base = String(fontBase || "").replace(/\/$/, "");
-  const local = base
+  const local = base.startsWith("https://")
     ? `
 @font-face {
   font-family: "IBM Plex Sans";
@@ -60,40 +93,34 @@ body, table, td, p, a, span, strong, h1 {
   font-family: ${SANS} !important;
 }
 h1 {
-  font-weight: 600 !important;
+  font-weight: 700 !important;
 }
 `;
 }
 
-function detailLines(details) {
+function detailRows(details) {
   return (details || [])
     .filter((row) => row && row.value)
     .map(
-      (row) =>
-        `<p style="margin:0 0 8px;${FACE}font-size:14px;line-height:1.5;font-weight:400;color:${MUTE};">${escapeHtml(row.label)}: <span style="font-weight:600;color:${INK};">${escapeHtml(row.value)}</span></p>`
+      (row) => `
+        <tr>
+          <td width="140" style="width:140px;padding:8px 16px 8px 0;${FACE}font-size:14px;line-height:1.4;color:${MUTE};vertical-align:top;">${escapeHtml(row.label)}</td>
+          <td style="padding:8px 0;${FACE}font-size:14px;line-height:1.4;font-weight:600;color:${INK};vertical-align:top;">${escapeHtml(row.value)}</td>
+        </tr>`
     )
     .join("");
 }
 
-function footerLinkRow(links) {
+function footerTextLinks(links) {
   const parts = (links || []).filter((link) => link && link.href && link.label);
   if (!parts.length) return "";
   const html = parts
     .map(
       (link, i) =>
-        `${i ? `<span style="padding:0 8px;color:${LINE};">|</span>` : ""}<a href="${escapeHtml(link.href)}" style="${FACE}font-size:13px;font-weight:600;color:${INK};text-decoration:none;">${escapeHtml(link.label)}</a>`
+        `${i ? `<span style="padding:0 8px;color:${LINE};">·</span>` : ""}<a href="${escapeHtml(publicMailHref(link.href))}" target="_blank" style="${FACE}font-size:13px;font-weight:600;color:${BRAND};text-decoration:underline;">${escapeHtml(link.label)}</a>`
     )
     .join("");
-  return `
-        <tr>
-          <td align="center" style="padding:0 32px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;margin:24px auto 0;border-top:1px solid ${LINE};border-bottom:1px solid ${LINE};">
-              <tr>
-                <td align="center" style="padding:16px 0;${FACE}">${html}</td>
-              </tr>
-            </table>
-          </td>
-        </tr>`;
+  return `<p style="margin:16px 0 0;${FACE}font-size:13px;line-height:1.5;">${html}</p>`;
 }
 
 export function renderMattexEmail({
@@ -105,6 +132,7 @@ export function renderMattexEmail({
   greeting,
   paragraphs = [],
   details = [],
+  detailsTitle = "Details",
   buttonLabel,
   buttonHref,
   footnote,
@@ -114,70 +142,74 @@ export function renderMattexEmail({
     .filter(Boolean)
     .map(
       (p) =>
-        `<p style="margin:0 0 16px;${FACE}font-size:15px;line-height:1.7;font-weight:400;color:${MUTE};">${escapeHtml(p)}</p>`
+        `<p style="margin:0 0 14px;${FACE}font-size:15px;line-height:1.6;font-weight:400;color:${INK};">${escapeHtml(p)}</p>`
     )
     .join("");
-  const detailsHtml = detailLines(details);
-  const sent = toEmail
-    ? `This message was sent to ${escapeHtml(toEmail)}. If you have questions, contact ${escapeHtml(salesEmail)}.`
-    : `Questions? ${escapeHtml(salesEmail)}`;
+  const rows = detailRows(details);
+  const contact = salesEmail
+    ? `Reply to this email or get in touch with us at <a href="mailto:${escapeHtml(salesEmail)}" style="${FACE}color:${BRAND};font-weight:600;text-decoration:underline;">${escapeHtml(salesEmail)}</a>.`
+    : "";
+  const logoSrc = String(logoUrl || "").includes("/assets/mattex-logo.webp") && String(logoUrl).startsWith("https://")
+    ? logoUrl
+    : MARKETPLACE_LOGO_URL;
   return `
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;margin:0;padding:0;${FACE}">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAGE};margin:0;padding:0;${FACE}">
   <tr>
-    <td align="center" style="padding:48px 28px 0;${FACE}">
-      <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto;">
+    <td align="center" style="padding:28px 16px 0;${FACE}">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="width:100%;max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;">
         <tr>
-          <td style="vertical-align:middle;padding:0;">
-            <img src="${escapeHtml(logoUrl)}" alt="" width="36" height="36" style="height:36px;width:auto;display:block;border:0;outline:none;text-decoration:none;" />
+          <td align="center" style="background:${BRAND};padding:22px 24px;${FACE}">
+            <table role="presentation" cellpadding="0" cellspacing="0" align="center">
+              <tr>
+                <td style="background:#ffffff;border-radius:10px;padding:6px 8px;vertical-align:middle;">
+                  <img src="${escapeHtml(logoSrc)}" alt="Mattex" width="43" height="36" style="display:block;width:43px;height:36px;border:0;outline:none;text-decoration:none;" />
+                </td>
+                <td style="padding:0 0 0 12px;vertical-align:middle;${WORDMARK}font-size:20px;color:#ffffff;">${escapeHtml(brandName)}</td>
+              </tr>
+            </table>
           </td>
-          <td style="vertical-align:middle;padding:0 0 0 10px;${WORDMARK}color:${INK};">${escapeHtml(brandName)}</td>
+        </tr>
+        <tr>
+          <td style="padding:28px 36px 8px;${FACE}">
+            <h1 style="margin:0 0 16px;${TITLE}font-size:28px;line-height:1.25;color:${INK};text-align:left;">${escapeHtml(title)}</h1>
+            ${greeting ? `<p style="margin:0 0 12px;${FACE}font-size:15px;line-height:1.6;color:${INK};">${escapeHtml(greeting)}</p>` : ""}
+            ${body}
+          </td>
+        </tr>
+        ${
+          rows
+            ? `<tr>
+          <td style="padding:8px 36px 0;${FACE}">
+            <p style="margin:0;border-top:1px solid ${LINE};padding-top:18px;${FACE}font-size:15px;line-height:1.4;font-weight:700;color:${INK};">${escapeHtml(detailsTitle)}</p>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
+              ${rows}
+            </table>
+          </td>
+        </tr>`
+            : ""
+        }
+        <tr>
+          <td style="padding:22px 36px 8px;${FACE}">
+            ${mailButton(buttonLabel, buttonHref)}
+            ${footerTextLinks(footerLinks)}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:8px 36px 32px;${FACE}">
+            <p style="margin:18px 0 0;border-top:1px solid ${LINE};padding-top:18px;${FACE}font-size:15px;line-height:1.6;color:${INK};">Thanks for choosing ${escapeHtml(brandName)}.</p>
+            <p style="margin:4px 0 0;${FACE}font-size:15px;line-height:1.6;color:${INK};">– The ${escapeHtml(brandName)} Team</p>
+            ${footnote ? `<p style="margin:14px 0 0;${FACE}font-size:13px;line-height:1.5;color:${MUTE};">${escapeHtml(footnote)}</p>` : ""}
+            ${toEmail ? `<p style="margin:8px 0 0;${FACE}font-size:12px;line-height:1.5;color:${MUTE};">This message was sent to ${escapeHtml(toEmail)}.</p>` : ""}
+          </td>
         </tr>
       </table>
     </td>
   </tr>
   <tr>
-    <td align="center" style="padding:40px 28px 0;${FACE}">
-      <h1 style="margin:0 auto;max-width:480px;${TITLE}font-size:32px;line-height:1.25;color:${INK};text-align:center;">${escapeHtml(title)}</h1>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" style="padding:20px 40px 0;${FACE}">
-      <div style="max-width:440px;margin:0 auto;text-align:center;">
-        ${greeting ? `<p style="margin:0 0 16px;${FACE}font-size:15px;line-height:1.7;font-weight:400;color:${MUTE};">${escapeHtml(greeting)}</p>` : ""}
-        ${body}
-        ${detailsHtml ? `<div style="margin:8px 0 0;">${detailsHtml}</div>` : ""}
-      </div>
-    </td>
-  </tr>
-  <tr>
-    <td align="center" style="padding:32px 28px 56px;${FACE}">
-      <a href="${escapeHtml(buttonHref)}" style="display:inline-block;background:${BRAND};color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:999px;${FACE}font-size:14px;font-weight:600;letter-spacing:0.04em;">${escapeHtml(buttonLabel)}</a>
-    </td>
-  </tr>
-</table>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAPER};margin:0;padding:0;${FACE}">
-  <tr>
-    <td align="center" style="padding:36px 28px 0;${FACE}">
-      <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto;">
-        <tr>
-          <td style="vertical-align:middle;padding:0;">
-            <img src="${escapeHtml(logoUrl)}" alt="" width="22" height="22" style="height:22px;width:auto;display:block;border:0;outline:none;text-decoration:none;" />
-          </td>
-          <td style="vertical-align:middle;padding:0 0 0 8px;${FACE}font-size:14px;font-weight:600;color:${INK};">${escapeHtml(brandName)}</td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-  ${footerLinkRow(footerLinks)}
-  <tr>
-    <td align="center" style="padding:20px 40px 12px;${FACE}">
-      <p style="margin:0;max-width:440px;${FACE}font-size:12px;line-height:1.6;color:${MUTE};">${sent}</p>
-      ${footnote ? `<p style="margin:12px 0 0;max-width:440px;${FACE}font-size:12px;line-height:1.6;color:${MUTE};">${escapeHtml(footnote)}</p>` : ""}
-    </td>
-  </tr>
-  <tr>
-    <td align="center" style="padding:8px 40px 40px;${FACE}">
-      <p style="margin:0;${FACE}font-size:12px;line-height:1.6;color:${MUTE};">Mattex Marketplace · Hong Kong</p>
+    <td align="center" style="padding:28px 24px 40px;${FACE}">
+      <p style="margin:0;${FACE}font-size:15px;line-height:1.4;font-weight:700;color:${INK};">Questions?</p>
+      <p style="margin:8px 0 0;max-width:460px;${FACE}font-size:14px;line-height:1.6;color:${MUTE};">${contact}</p>
+      <p style="margin:16px 0 0;${FACE}font-size:12px;line-height:1.5;color:${MUTE};">Mattex Marketplace · Hong Kong</p>
     </td>
   </tr>
 </table>`;
@@ -195,7 +227,7 @@ export function wrapEmailPreview({ to, subject, innerHtml, fontBase }) {
   <link href="${MM_GOOGLE_FONTS}" rel="stylesheet" />
   <style>${fontFaceCss(fontBase)}</style>
 </head>
-<body style="margin:0;background:#ffffff;${FACE}">
+<body style="margin:0;background:${PAGE};${FACE}">
   <div style="background:#101513;color:#ffffff;padding:16px 24px;font-size:13px;${FACE}">
     <p style="margin:0;${FACE}"><strong>To</strong> ${escapeHtml(to)}</p>
     <p style="margin:6px 0 0;${FACE}"><strong>Subject</strong> ${escapeHtml(subject)}</p>
@@ -217,31 +249,32 @@ export function wrapEmailSend({ subject, innerHtml, fontBase }) {
   <link href="${MM_GOOGLE_FONTS}" rel="stylesheet" />
   <style>${fontFaceCss(fontBase)}</style>
 </head>
-<body style="margin:0;background:#ffffff;${FACE}">
+<body style="margin:0;background:${PAGE};${FACE}">
   ${innerHtml}
 </body>
 </html>`;
 }
 
-export function accountCreatedEmailHtml({ logoUrl, salesEmail, name, email, company, shopHref }) {
+export function accountCreatedEmailHtml({ logoUrl, salesEmail, name, email, company }) {
   return renderMattexEmail({
     logoUrl,
     salesEmail,
     toEmail: email,
     title: "Your Mattex Marketplace account is ready",
-    greeting: `Hello ${name},`,
+    greeting: `Hi ${name},`,
     paragraphs: [
       "Your account was created. You can sign in and request quotes right away — no approval wait.",
     ],
+    detailsTitle: "Here's your account:",
     details: [
       { label: "Work email", value: email },
       { label: "Company", value: company },
     ],
     buttonLabel: "Open Marketplace",
-    buttonHref: shopHref,
+    buttonHref: MARKETPLACE_PUBLIC_HOME,
     footnote: "If you did not create this account, please contact Mattex.",
     footerLinks: [
-      { label: "Marketplace", href: shopHref },
+      { label: "Marketplace", href: MARKETPLACE_PUBLIC_HOME },
       { label: "Contact", href: `mailto:${salesEmail}` },
     ],
   });
@@ -253,7 +286,7 @@ export function rfqSubmittedEmailHtml({ logoUrl, salesEmail, name, rfqId, projec
     salesEmail,
     toEmail,
     title: "We received your quote request",
-    greeting: `Hello ${name},`,
+    greeting: `Hi ${name},`,
     paragraphs: [
       "Sales will follow up from the portal. You can also track this RFQ in My RFQs.",
     ],
@@ -279,7 +312,7 @@ export function staffInviteEmailHtml({ logoUrl, salesEmail, name, setPasswordHre
     salesEmail,
     toEmail,
     title: "You've been invited to the Sales portal",
-    greeting: `Hello ${name},`,
+    greeting: `Hi ${name},`,
     paragraphs: [
       "Set a password to review RFQs, products, and buyer accounts. The button below opens the password page directly.",
     ],
@@ -300,7 +333,7 @@ export function passwordResetEmailHtml({ logoUrl, salesEmail, name, resetHref, t
     salesEmail,
     toEmail,
     title: "Reset your password",
-    greeting: `Hello ${name},`,
+    greeting: `Hi ${name},`,
     paragraphs: [
       staff
         ? "Use the button below to choose a new Sales portal password."
@@ -327,7 +360,7 @@ export function buyerRejectedEmailHtml({ logoUrl, salesEmail, name, company, rea
     salesEmail,
     toEmail,
     title: "Your application was not approved",
-    greeting: `Hello ${name},`,
+    greeting: `Hi ${name},`,
     paragraphs: [
       `Thank you for applying for a Mattex Marketplace account${company ? ` for ${company}` : ""}. We are unable to approve it at this time.`,
     ],
@@ -345,14 +378,14 @@ export function buyerRejectedEmailHtml({ logoUrl, salesEmail, name, company, rea
   });
 }
 
-export function salesNewRfqEmailHtml({ logoUrl, salesEmail, rfqId, buyerName, buyerEmail, project, lineCount, portalHref }) {
+export function salesNewRfqEmailHtml({ logoUrl, salesEmail, rfqId, buyerName, project, lineCount }) {
   return renderMattexEmail({
     logoUrl,
     brandName: "Mattex Marketplace Admin Portal",
     salesEmail,
     toEmail: salesEmail,
     title: "New RFQ from Marketplace",
-    greeting: "Hello Sales,",
+    greeting: "Hi Sales,",
     paragraphs: ["A buyer submitted a quote request. Open it in the portal to Accept or Reject."],
     details: [
       { label: "RFQ", value: rfqId },
@@ -361,9 +394,9 @@ export function salesNewRfqEmailHtml({ logoUrl, salesEmail, rfqId, buyerName, bu
       { label: "Lines", value: lineCount != null ? String(lineCount) : "" },
     ],
     buttonLabel: "Open in portal",
-    buttonHref: portalHref,
+    buttonHref: ADMIN_PUBLIC_HOME,
     footerLinks: [
-      { label: "Sales portal", href: portalHref },
+      { label: "Sales portal", href: ADMIN_PUBLIC_HOME },
       { label: "Contact", href: `mailto:${salesEmail}` },
     ],
   });
@@ -375,7 +408,7 @@ export function rfqAcceptedEmailHtml({ logoUrl, salesEmail, name, rfqId, project
     salesEmail,
     toEmail,
     title: "Your RFQ is in review",
-    greeting: `Hello ${name},`,
+    greeting: `Hi ${name},`,
     paragraphs: ["Sales accepted this quote request and is handling it. You can still request a cancellation from My RFQs until a purchase order is created."],
     details: [
       { label: "RFQ", value: rfqId },
@@ -398,7 +431,7 @@ export function rfqNoOfferEmailHtml({ logoUrl, salesEmail, name, rfqId, project,
     salesEmail,
     toEmail,
     title: "No offer on your RFQ",
-    greeting: `Hello ${name},`,
+    greeting: `Hi ${name},`,
     paragraphs: ["Sales is not able to quote this request. The reason is saved on the RFQ in My RFQs."],
     details: [
       { label: "RFQ", value: rfqId },
@@ -415,14 +448,14 @@ export function rfqNoOfferEmailHtml({ logoUrl, salesEmail, name, rfqId, project,
   });
 }
 
-export function rfqCancelRequestedEmailHtml({ logoUrl, salesEmail, rfqId, buyerName, buyerEmail, project, portalHref }) {
+export function rfqCancelRequestedEmailHtml({ logoUrl, salesEmail, rfqId, buyerName, project }) {
   return renderMattexEmail({
     logoUrl,
     brandName: "Mattex Marketplace Admin Portal",
     salesEmail,
     toEmail: salesEmail,
     title: "Buyer asked to cancel an RFQ",
-    greeting: "Hello Sales,",
+    greeting: "Hi Sales,",
     paragraphs: ["Accept the cancellation to close this RFQ, or keep it in review."],
     details: [
       { label: "RFQ", value: rfqId },
@@ -430,9 +463,9 @@ export function rfqCancelRequestedEmailHtml({ logoUrl, salesEmail, rfqId, buyerN
       { label: "Project", value: project },
     ],
     buttonLabel: "Open in portal",
-    buttonHref: portalHref,
+    buttonHref: ADMIN_PUBLIC_HOME,
     footerLinks: [
-      { label: "Sales portal", href: portalHref },
+      { label: "Sales portal", href: ADMIN_PUBLIC_HOME },
       { label: "Contact", href: `mailto:${salesEmail}` },
     ],
   });
@@ -444,7 +477,7 @@ export function rfqCancelAcceptedEmailHtml({ logoUrl, salesEmail, name, rfqId, p
     salesEmail,
     toEmail,
     title: "Your RFQ was cancelled",
-    greeting: `Hello ${name},`,
+    greeting: `Hi ${name},`,
     paragraphs: ["Sales accepted your cancellation request. This RFQ is closed."],
     details: [
       { label: "RFQ", value: rfqId },
@@ -466,7 +499,7 @@ export function rfqCancelDeclinedEmailHtml({ logoUrl, salesEmail, name, rfqId, p
     salesEmail,
     toEmail,
     title: "Your RFQ remains open",
-    greeting: `Hello ${name},`,
+    greeting: `Hi ${name},`,
     paragraphs: ["Sales kept this quote request open. It stays in review."],
     details: [
       { label: "RFQ", value: rfqId },
@@ -482,14 +515,14 @@ export function rfqCancelDeclinedEmailHtml({ logoUrl, salesEmail, name, rfqId, p
   });
 }
 
-export function rfqReverseRequestedEmailHtml({ logoUrl, salesEmail, rfqId, buyerName, buyerEmail, project, portalHref }) {
+export function rfqReverseRequestedEmailHtml({ logoUrl, salesEmail, rfqId, buyerName, project }) {
   return renderMattexEmail({
     logoUrl,
     brandName: "Mattex Marketplace Admin Portal",
     salesEmail,
     toEmail: salesEmail,
     title: "Buyer asked to reverse an RFQ",
-    greeting: "Hello Sales,",
+    greeting: "Hi Sales,",
     paragraphs: ["Accept the reverse so the buyer can revise this RFQ, or keep it in review."],
     details: [
       { label: "RFQ", value: rfqId },
@@ -497,9 +530,9 @@ export function rfqReverseRequestedEmailHtml({ logoUrl, salesEmail, rfqId, buyer
       { label: "Project", value: project },
     ],
     buttonLabel: "Open in portal",
-    buttonHref: portalHref,
+    buttonHref: ADMIN_PUBLIC_HOME,
     footerLinks: [
-      { label: "Sales portal", href: portalHref },
+      { label: "Sales portal", href: ADMIN_PUBLIC_HOME },
       { label: "Contact", href: `mailto:${salesEmail}` },
     ],
   });
@@ -511,7 +544,7 @@ export function rfqReverseAcceptedEmailHtml({ logoUrl, salesEmail, name, rfqId, 
     salesEmail,
     toEmail,
     title: "You can revise your RFQ",
-    greeting: `Hello ${name},`,
+    greeting: `Hi ${name},`,
     paragraphs: ["Sales accepted your reverse request. This RFQ is in Revising — edit it, then resubmit."],
     details: [
       { label: "RFQ", value: rfqId },
@@ -533,7 +566,7 @@ export function rfqReverseDeclinedEmailHtml({ logoUrl, salesEmail, name, rfqId, 
     salesEmail,
     toEmail,
     title: "Your RFQ remains in review",
-    greeting: `Hello ${name},`,
+    greeting: `Hi ${name},`,
     paragraphs: ["Sales kept this RFQ in review. The reverse request was not accepted."],
     details: [
       { label: "RFQ", value: rfqId },

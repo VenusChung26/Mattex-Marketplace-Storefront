@@ -54,11 +54,6 @@ export default function SiteFooter() {
                 {t("allProducts")}
               </Link>
             </li>
-            <li>
-              <a href="/sitemap.xml" className="hover:text-white">
-                {t("footerSitemap")}
-              </a>
-            </li>
             {SHOW_RFQ ? null : (
               <li>
                 <Link to={lp("/rfq")} className="hover:text-white">

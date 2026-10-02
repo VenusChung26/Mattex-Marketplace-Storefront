@@ -58,6 +58,63 @@ export async function uploadRfqDataImage(dataUrl, refNo, index) {
   return uploadRfqFile(`rfq/${safeSegment(refNo)}/img-${index + 1}-${file.name}`, file);
 }
 
+function uniqueUrls(list) {
+  const seen = new Set();
+  return list.filter((url) => {
+    if (!url || seen.has(url)) return false;
+    seen.add(url);
+    return true;
+  });
+}
+
+/** Turn buyer product photos and spec files into public URLs the portal can open. Keeps the data URL when upload fails. */
+export async function publishCustomLineMedia(line, refNo) {
+  const custom = Boolean(line?.custom) || String(line?.productId || "").startsWith("custom_");
+  if (!custom) return line;
+  const photos = [];
+  const rawPhotos = [line?.image, ...(Array.isArray(line?.images) ? line.images : [])];
+  for (let i = 0; i < rawPhotos.length; i += 1) {
+    const url = String(rawPhotos[i] || "").trim();
+    if (!url) continue;
+    if (!url.startsWith("data:")) {
+      photos.push(url);
+      continue;
+    }
+    try {
+      photos.push(await uploadRfqDataImage(url, refNo, photos.length));
+    } catch {
+      photos.push(url);
+    }
+  }
+  const unique = uniqueUrls(photos);
+  const attachments = [];
+  const files = Array.isArray(line?.attachments) ? line.attachments : [];
+  for (let i = 0; i < files.length; i += 1) {
+    const file = files[i];
+    const url = String(file?.url || "").trim();
+    if (!url.startsWith("data:")) {
+      attachments.push(file);
+      continue;
+    }
+    try {
+      const name = String(file?.name || `file-${i + 1}`).replace(/[^\w.-]+/g, "-").slice(0, 60) || `file-${i + 1}`;
+      const uploaded = await uploadRfqFile(
+        `rfq/${safeSegment(refNo)}/att-${i + 1}-${name}`,
+        dataUrlToFile(url, file?.name || name)
+      );
+      attachments.push({ ...file, url: uploaded, omitted: false });
+    } catch {
+      attachments.push({ ...file, url, omitted: false });
+    }
+  }
+  return {
+    ...line,
+    image: unique[0] || "",
+    images: unique.slice(1),
+    attachments,
+  };
+}
+
 export async function collectProductImageUrls(rows, refNo) {
   const urls = [];
   const list = Array.isArray(rows) ? rows : [];

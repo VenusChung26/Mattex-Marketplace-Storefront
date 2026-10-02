@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { acceptStaffPasswordLink, getStaffPasswordLink } from "../../lib/store";
 import { useRevealFormIssue } from "../../lib/formFocus";
-import { PasswordInput, passwordChecks } from "../../components/AccountForm";
+import { PasswordChecklist, PasswordInput, passwordChecks } from "../../components/AccountForm";
 import { useAsyncValue } from "../../hooks/useAsyncValue";
 
 export default function StaffSetPasswordPage() {
@@ -98,12 +98,7 @@ export default function StaffSetPasswordPage() {
                   aria-invalid={error && !pwd.match ? true : undefined}
                 />
               </label>
-              <ul className="rounded-lg border border-line bg-paper/60 px-3 py-2 text-xs text-mute space-y-1">
-                <li>{pwd.length ? "✓" : "○"} At least 8 characters</li>
-                <li>{pwd.letter ? "✓" : "○"} At least 1 letter</li>
-                <li>{pwd.number ? "✓" : "○"} At least 1 number</li>
-                <li>{pwd.match ? "✓" : "○"} Passwords match</li>
-              </ul>
+              <PasswordChecklist password={password} confirmPassword={confirm} hasError={Boolean(error)} />
               {error ? (
                 <p role="alert" tabIndex={-1} data-form-alert className="text-sm font-medium text-red-700 outline-none">
                   {error}

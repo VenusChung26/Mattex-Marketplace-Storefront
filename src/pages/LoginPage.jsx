@@ -11,7 +11,7 @@ import { SHOW_RFQ } from "../lib/flags";
 import { consumePendingAfterAuth, closeAuthModal, loginUser, logoutUser, takeDisabledKick, updateUserProfile } from "../lib/store";
 import ProjectListEditor from "../components/ProjectListEditor";
 import { BuyerContactFields } from "../components/BuyerContactFields";
-import { composePhone, normalizeRoles, splitPhone } from "../lib/phone";
+import { composePhone, contactFormFromAccount, contactPayload, formatPhoneLine, normalizeRoles } from "../lib/phone";
 
 function roleLabel(roles, t) {
   return normalizeRoles(roles)
@@ -20,15 +20,10 @@ function roleLabel(roles, t) {
 }
 
 function profileFromUser(user) {
-  const phone = splitPhone(user?.phone);
   const roles = normalizeRoles(user?.roles);
   return {
     name: user?.name || "",
-    phone: user?.phone || "",
-    phoneRegion: phone.region,
-    phoneOtherCode: phone.otherCode,
-    phoneNational: phone.national,
-    wechat: user?.wechat || "",
+    ...contactFormFromAccount(user),
     roles: roles.length ? roles : ["buyer"],
     jobTitle: user?.jobTitle || "",
     companyName: user?.companyName || "",
@@ -119,6 +114,9 @@ export default function LoginPage() {
     e.preventDefault();
     const errors = {};
     if (!composePhone(profile.phoneRegion, profile.phoneOtherCode, profile.phoneNational)) errors.phone = t("signupFixRequired");
+    if (profile.addPhone && !composePhone(profile.phone2Region, profile.phone2OtherCode, profile.phone2National)) {
+      errors.phone2 = t("signupFixRequired");
+    }
     if (!normalizeRoles(profile.roles).length) errors.roles = t("signupFixRole");
     if (!String(profile.companyAddress || "").trim()) errors.companyAddress = t("signupFixRequired");
     if (Object.keys(errors).length) {
@@ -129,8 +127,7 @@ export default function LoginPage() {
     }
     const result = await updateUserProfile({
       ...profile,
-      phone: composePhone(profile.phoneRegion, profile.phoneOtherCode, profile.phoneNational),
-      phoneRegion: profile.phoneRegion === "other" ? profile.phoneOtherCode : profile.phoneRegion,
+      ...contactPayload(profile),
       roles: normalizeRoles(profile.roles),
     });
     if (!result.ok) {
@@ -183,7 +180,7 @@ export default function LoginPage() {
                     </div>
                   ) : null}
 
-                  <AccountSection title={t("userInfo")}>
+                  <AccountSection title={t("userInfo")} columns={1}>
                     <AccountField label={t("email")} locked lockedHint={t("profileCannotEdit")}>
                       <input type="text" value={user.email} className="field-input" />
                     </AccountField>
@@ -203,7 +200,7 @@ export default function LoginPage() {
                     <BuyerContactFields t={t} value={profile} onChange={setProfileField} errors={fieldErrors} />
                   </AccountSection>
 
-                  <AccountSection title={t("companyDetails")}>
+                  <AccountSection title={t("companyDetails")} columns={1}>
                     <AccountField label={t("companyName")} locked lockedHint={t("profileCannotEdit")}>
                       <input type="text" value={profile.companyName} className="field-input" />
                     </AccountField>
@@ -219,7 +216,7 @@ export default function LoginPage() {
                         className="field-input"
                       />
                     </AccountField>
-                    <AccountField className="sm:col-span-2" label={t("projectName")} hint={t("profileProjectHint")}>
+                    <AccountField label={t("projectName")} hint={t("profileProjectHint")}>
                       <ProjectListEditor
                         idPrefix="profile-project"
                         projects={profile.projects}
@@ -227,7 +224,6 @@ export default function LoginPage() {
                       />
                     </AccountField>
                     <AccountField
-                      className="sm:col-span-2"
                       label={t("companyAddress")}
                       required
                       error={fieldErrors.companyAddress}
@@ -284,21 +280,21 @@ export default function LoginPage() {
                     </p>
                   ) : null}
 
-                  <AccountSection title={t("userInfo")}>
+                  <AccountSection title={t("userInfo")} columns={1}>
                     <ProfileValue label={t("email")} value={user.email} />
                     <ProfileValue label={t("fullName")} value={user.name} />
                     <ProfileValue label={t("jobTitle")} value={user.jobTitle} />
-                    <ProfileValue label={t("mobilePhone")} value={user.phone} />
-                    <ProfileValue label={t("wechat")} value={user.wechat} />
                     <ProfileValue label={t("accountRoles")} value={roleLabel(user.roles, t)} />
+                    <ProfileValue label={t("mobilePhone")} value={formatPhoneLine(user.phone, "1", user.whatsappOn, user.wechatOn)} />
+                    <ProfileValue label={t("otherPhone")} value={formatPhoneLine(user.otherPhone, "2", user.whatsappOn, user.wechatOn)} />
                   </AccountSection>
 
-                  <AccountSection title={t("companyDetails")}>
+                  <AccountSection title={t("companyDetails")} columns={1}>
                     <ProfileValue label={t("companyName")} value={user.companyName} />
                     <ProfileValue label={t("companyReg")} value={user.companyReg} />
                     <ProfileValue label={t("companyPhone")} value={user.companyPhone} />
                     <ProfileValue label={t("projectName")} value={user.project} />
-                    <ProfileValue className="sm:col-span-2" label={t("companyAddress")} value={user.companyAddress} />
+                    <ProfileValue label={t("companyAddress")} value={user.companyAddress} />
                   </AccountSection>
 
                   <div className="grid gap-2">

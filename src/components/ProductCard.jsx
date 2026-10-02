@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { canDirectBuy, catalogPathForCategory, isHitProduct, productSkuId, stockStatusKey, supplierDisplayName, supplierPath, addCustomLine, requireBuyerAuth } from "../lib/store";
+import { canDirectBuy, catalogPathForCategory, displayLeadTime, isHitProduct, productSkuId, stockStatusKey, supplierDisplayName, supplierPath, addCustomLine, requireBuyerAuth } from "../lib/store";
 import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
 import { withLocale } from "../lib/locale";
@@ -52,10 +52,8 @@ function TickIcon({ className = "h-3.5 w-3.5" }) {
   );
 }
 
-function leadTimeLabel(lead, t) {
-  if (!lead) return "—";
-  const time = lead.min === lead.max ? String(lead.min) : `${lead.min}–${lead.max}`;
-  return t("leadTimeValue", { time });
+function shopLeadTime(product) {
+  return displayLeadTime(product) || "—";
 }
 
 const ACTION_BTN =
@@ -193,7 +191,7 @@ export function ProductMetaChips({ product, className = "", showTags = false }) 
         {t("moq")} {product.moq} {product.unit}
       </span>
       <span className={`${META_CHIP} font-medium text-mute`}>
-        {leadTimeLabel(product.leadTime, t)}
+        {shopLeadTime(product)}
       </span>
       {showTags ? <ProductTagPills product={product} /> : null}
     </div>

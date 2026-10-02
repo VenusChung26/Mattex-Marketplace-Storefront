@@ -180,6 +180,10 @@ export function handleSharedStorePost(body = {}) {
         }
         if (key === "subbie_rfqs_by_user") {
           store.kv[key] = mergeRfqMaps(value, store.kv[key]);
+        } else if (key === "subbie_accounts") {
+          const prev = store.kv[key] && typeof store.kv[key] === "object" ? store.kv[key] : {};
+          const next = value && typeof value === "object" ? value : {};
+          store.kv[key] = { ...prev, ...next };
         } else if (key === "subbie_guest_quote_snapshots") {
           store.kv[key] = mergeQuoteSnapshots(value, store.kv[key]);
         }

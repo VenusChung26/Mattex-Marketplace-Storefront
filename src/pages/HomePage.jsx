@@ -203,7 +203,7 @@ export default function HomePage() {
   const visibleCategories = categoriesExpanded
     ? categories
     : categories.slice(0, CATEGORY_PREVIEW_COUNT);
-  const top = useMemo(() => getTopProducts(5), [catalogEpoch]);
+  const top = useMemo(() => getTopProducts(), [catalogEpoch]);
   const greens = useMemo(() => getGreenProducts(5), [catalogEpoch]);
   const suppliers = useMemo(() => getSuppliers(), [catalogEpoch]);
   const visibleSuppliers = suppliersExpanded

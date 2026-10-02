@@ -271,6 +271,12 @@ body {
   border-color: #245a41;
   box-shadow: 0 0 0 3px rgba(36, 90, 65, 0.12);
 }
+.field-input[aria-invalid="true"],
+.field-input[aria-invalid="true"]:focus {
+  border-color: #dc2626;
+  background: #fef2f2;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+}
 
 .toast {
   animation: toast-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);

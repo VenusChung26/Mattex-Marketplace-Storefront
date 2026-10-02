@@ -14,7 +14,7 @@ export function passwordChecks(password, confirmPassword) {
 
 export function RequiredMark() {
   return (
-    <span className="text-brand-600" aria-hidden>
+    <span className="text-red-600" aria-hidden>
       *
     </span>
   );
@@ -102,13 +102,15 @@ export function AccountField({
   locked = false,
   lockedHint,
   className = "",
+  asLabel = true,
   children,
 }) {
   const content = Children.map(children, (child) => decorateControl(child, { error, locked }));
+  const Tag = asLabel ? "label" : "div";
   return (
-    <label className={`block min-w-0 ${className}`.trim()}>
+    <Tag className={`block min-w-0 ${className}`.trim()}>
       <span className="mb-1.5 flex items-center justify-between gap-2">
-        <span className={`text-sm font-medium ${locked ? "text-mute" : "text-ink"}`}>
+        <span className={`text-sm font-medium ${error ? "text-red-700" : locked ? "text-mute" : "text-ink"}`}>
           {label}
           {required ? (
             <>
@@ -126,18 +128,18 @@ export function AccountField({
       {content}
       {error ? <span className="mt-1.5 block text-xs font-medium text-red-700">{error}</span> : null}
       {!error && hint ? <span className="mt-1.5 block text-xs text-mute leading-relaxed">{hint}</span> : null}
-    </label>
+    </Tag>
   );
 }
 
-export function AccountSection({ title, description, children }) {
+export function AccountSection({ title, description, children, columns = 2 }) {
   return (
     <section className="rounded-xl border border-line bg-paper/40 p-4 sm:p-5">
       <header className="mb-4 border-b border-line pb-3">
         <h2 className="text-base font-semibold text-brand-800">{title}</h2>
         {description ? <p className="mt-1 text-xs text-mute leading-relaxed">{description}</p> : null}
       </header>
-      <div className="grid gap-4 sm:grid-cols-2">{children}</div>
+      <div className={columns === 1 ? "grid grid-cols-1 gap-4" : "grid gap-4 sm:grid-cols-2"}>{children}</div>
     </section>
   );
 }
@@ -146,21 +148,18 @@ function CheckItem({ ok, label, metLabel, unmetLabel }) {
   return (
     <li
       className={`flex items-start gap-2.5 text-sm leading-snug pointer-events-none select-none ${
-        ok ? "text-brand-800" : "text-mute"
+        ok ? "font-semibold text-[#127a3a]" : "text-mute"
       }`}
     >
-      <span
-        className={`mt-0.5 inline-flex h-[1.05rem] w-[1.05rem] shrink-0 items-center justify-center rounded-[3px] border ${
-          ok ? "border-brand-700 bg-brand-700 text-white" : "border-[#b7c0bb] bg-white"
-        }`}
+      <svg
+        viewBox="0 0 16 16"
+        className={`mt-0.5 h-4 w-4 shrink-0 ${ok ? "text-[#127a3a]" : "text-[#c5ccc8]"}`}
+        fill="none"
         aria-hidden
       >
-        {ok ? (
-          <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth="2.4">
-            <path d="M2.2 6.2 L4.8 8.7 L9.8 3.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        ) : null}
-      </span>
+        <circle cx="8" cy="8" r="6.25" fill={ok ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" />
+        <path d="M4.8 8.2 7 10.3 11.3 5.8" stroke={ok ? "#fff" : "currentColor"} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
       <span>
         <span className="sr-only">{ok ? metLabel : unmetLabel}: </span>
         {label}
@@ -178,7 +177,7 @@ export function PasswordChecklist({ password, confirmPassword, hasError, id }) {
   return (
     <div
       id={id}
-      className={`sm:col-span-2 rounded-lg border px-3.5 py-3 ${
+      className={`rounded-lg border px-3.5 py-3 ${
         hasError ? "border-red-300 bg-red-50" : "border-line bg-white"
       }`}
       role="status"
