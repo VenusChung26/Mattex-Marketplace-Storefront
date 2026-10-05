@@ -5,7 +5,6 @@ import ScrollToTop from "./components/ScrollToTop";
 import { LanguageProvider } from "./i18n.jsx";
 import { SHOW_RFQ, SHOW_SPEC_MATCH } from "./lib/flags";
 import HomePage from "./pages/HomePage";
-import GreenPage from "./pages/GreenPage";
 import CatalogPage from "./pages/CatalogPage";
 import DetailsPage from "./pages/DetailsPage";
 import LoginPage from "./pages/LoginPage";
@@ -61,6 +60,12 @@ function LangLayout() {
       <FloatingActions />
     </>
   );
+}
+
+function GreenFilterRedirect() {
+  const { lang } = useParams();
+  const locale = lang === "zh" ? "zh" : "en";
+  return <Navigate to={{ pathname: `/${locale}`, search: "?green=1", hash: "products" }} replace />;
 }
 
 function QuoteLegacyRedirect() {
@@ -141,7 +146,7 @@ export default function App() {
         <GoogleAnalytics />
         <Routes>
           <Route path="/" element={<Navigate to="/en" replace />} />
-          <Route path="/green" element={<Navigate to="/en/green" replace />} />
+          <Route path="/green" element={<Navigate to={{ pathname: "/en", search: "?green=1", hash: "products" }} replace />} />
           <Route path="/sales" element={<Navigate to="/en" replace />} />
           <Route path="/admin" element={<AdminHostRedirect />} />
           <Route path="/admin/*" element={<AdminHostRedirect />} />
@@ -169,7 +174,7 @@ export default function App() {
 
           <Route path="/:lang" element={<LangLayout />}>
             <Route index element={<HomePage />} />
-            <Route path="green" element={<GreenPage />} />
+            <Route path="green" element={<GreenFilterRedirect />} />
             <Route path="mid-autumn" element={<Navigate to="../promo" replace />} />
             <Route path="promo" element={<MidAutumnPage />} />
             <Route path="sales" element={<Navigate to=".." replace />} />

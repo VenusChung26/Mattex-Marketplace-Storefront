@@ -51,6 +51,7 @@ import {
   importAdminCsv,
   inboxStatus,
   listAdminProducts,
+  listSalesUnits,
   listBuyers,
   loginStaff,
   logoutStaff,
@@ -1844,6 +1845,48 @@ function ProductCategoryField({ value, onChange, note }) {
   );
 }
 
+function SalesUnitField({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const needle = String(value || "").trim().toLowerCase();
+  const matches = listSalesUnits().filter((unit) => !needle || unit.toLowerCase().includes(needle));
+  return (
+    <label className="relative text-sm font-medium text-ink">
+      Sales unit<RequiredMark />
+      <input
+        className="mt-1 w-full rounded-lg border border-line px-3 py-2 font-normal placeholder:text-mute"
+        value={value}
+        autoComplete="off"
+        onFocus={() => setOpen(true)}
+        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+        }}
+        placeholder="e.g. m², pcs, sheet"
+      />
+      {open && matches.length ? (
+        <ul className="absolute z-20 mt-1 max-h-40 w-full overflow-auto rounded-lg border border-line bg-white py-1 shadow-lg">
+          {matches.map((unit) => (
+            <li key={unit}>
+              <button
+                type="button"
+                className="block w-full px-3 py-1.5 text-left text-sm font-normal hover:bg-brand-50"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onChange(unit);
+                  setOpen(false);
+                }}
+              >
+                {unit}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </label>
+  );
+}
+
 function ProductsPanel({ products, product, editing, setEditing, note, reports = [], focusReport, onClearFocus, openProductId, onOpenedProduct }) {
   const jumped = openProductId ? products.find((row) => row.id === openProductId) : null;
   const [form, setForm] = useState(() => (jumped || (focusReport && product) ? toForm(jumped || product) : null));
@@ -1855,6 +1898,19 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
   const [bulkConfirm, setBulkConfirm] = useState(null);
   const [imageOver, setImageOver] = useState(false);
   const imageInputRef = useRef(null);
+  const actionLock = useRef(false);
+  const [acting, setActing] = useState(false);
+  async function runAction(work) {
+    if (actionLock.current) return;
+    actionLock.current = true;
+    setActing(true);
+    try {
+      await work();
+    } finally {
+      actionLock.current = false;
+      setActing(false);
+    }
+  }
   const needle = searchNeedle(query);
   const searchedProducts = needle
     ? products.filter((p) => matchesSearch(needle, ...productSearchHay(p)))
@@ -1867,6 +1923,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
   const someVisibleSelected = visibleProducts.some((p) => selected.has(p.id));
   const awaitingPublish = products.filter((p) => !p.deleted && productStatusKey(p) !== "published");
   const draft = form || toForm(product);
+  const purposeTags = String(draft.purposes || "").split(/[\n,;]+/).map((tag) => tag.trim()).filter(Boolean);
   const formOpen = modal === "create" || modal === "edit";
   const productReports = (product
     ? reports.filter((r) => r.productId === product.id || (product.productNo && r.productNo === product.productNo))
@@ -2355,13 +2412,13 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
               {product && product.deleted ? (
                 <button
                   type="button"
-                  className="rounded-lg border border-brand-600 bg-white px-4 py-2 text-sm font-semibold text-brand-800"
-                  onClick={() => {
+                  className="rounded-lg border border-brand-600 bg-white px-4 py-2 text-sm font-semibold text-brand-800 disabled:opacity-40"
+                  disabled={acting}
+                  onClick={() => runAction(async () => {
                     const result = restoreAdminProduct(product.id);
-                    const next = result?.product ? productCatalogStatus(result.product) : "";
                     note(result, "Restored as Unpublish");
                     if (result?.ok) closeModal();
-                  }}
+                  })}
                 >
                   Restore
                 </button>
@@ -2369,12 +2426,13 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
               {product && !product.deleted ? (
                 <button
                   type="button"
-                  className="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm text-red-700"
-                  onClick={() => {
+                  className="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm text-red-700 disabled:opacity-40"
+                  disabled={acting}
+                  onClick={() => runAction(async () => {
                     const result = softDeleteAdminProduct(product.id);
                     note(result, "Removed from catalog");
                     if (result?.ok) closeModal();
-                  }}
+                  })}
                 >
                   Remove
                 </button>
@@ -2384,7 +2442,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                   <button
                     type="button"
                     className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
-                    disabled={!canDeleteProductForever(product)}
+                    disabled={acting || !canDeleteProductForever(product)}
                     onClick={() => {
                       if (!canDeleteProductForever(product)) return;
                       setBulkConfirm({ type: "forever", items: [product] });
@@ -2397,17 +2455,17 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
               {product && !product.deleted && product.published ? (
                 <button
                   type="button"
-                  className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-semibold text-ink hover:bg-brand-50"
-                  onClick={() => {
+                  className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-semibold text-ink hover:bg-brand-50 disabled:opacity-40"
+                  disabled={acting}
+                  onClick={() => runAction(async () => {
                     const result = unpublishAdminProduct(product.id);
-                    const next = result?.product ? productCatalogStatus(result.product) : "";
                     note(
                       result,
                       result?.ok
                         ? "Unpublish — not live"
                         : "Unable to Unpublish"
                     );
-                  }}
+                  })}
                 >
                   Unpublish
                 </button>
@@ -2415,8 +2473,9 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
               {product && !product.deleted && !product.published ? (
                 <button
                   type="button"
-                  className="rounded-lg border border-brand-600 px-4 py-2 text-sm font-semibold text-brand-700"
-                  onClick={() => requestPublish(product)}
+                  className="rounded-lg border border-brand-600 px-4 py-2 text-sm font-semibold text-brand-700 disabled:opacity-40"
+                  disabled={acting}
+                  onClick={() => runAction(() => requestPublish(product))}
                 >
                   Publish
                 </button>
@@ -2425,7 +2484,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                 Cancel
               </button>
               {product?.deleted ? null : (
-                <button type="button" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white" onClick={saveProduct}>
+                <button type="button" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40" disabled={acting} onClick={() => runAction(saveProduct)}>
                   {modal === "edit" ? "Save" : "Add Product"}
                 </button>
               )}
@@ -2555,15 +2614,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                 placeholder="e.g. MKT-GB-0001"
               />
             </label>
-            <label className="text-sm font-medium text-ink">
-              Sales unit<RequiredMark />
-              <input
-                className="mt-1 w-full rounded-lg border border-line px-3 py-2 font-normal placeholder:text-mute"
-                value={draft.salesUnit}
-                onChange={(e) => field("salesUnit", e.target.value)}
-                placeholder="e.g. m², pcs, sheet"
-              />
-            </label>
+            <SalesUnitField value={draft.salesUnit} onChange={(value) => field("salesUnit", value)} />
             <label className="text-sm font-medium text-ink">
               Price
               <select
@@ -2644,6 +2695,14 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                 onChange={(e) => field("purposes", e.target.value)}
                 placeholder={"e.g. Partition wall\nFire-rated ceiling\nWet area"}
               />
+              <p className="mt-1 text-xs font-normal text-mute">按 Enter 換行，就係一個新 tag</p>
+              {purposeTags.length ? (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {purposeTags.map((tag, index) => (
+                    <span key={`${tag}-${index}`} className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-800">{tag}</span>
+                  ))}
+                </div>
+              ) : null}
             </label>
             <label className="text-sm font-medium text-ink sm:col-span-2 lg:col-span-3">
               Remark
@@ -2679,8 +2738,8 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
               <button
                 type="button"
                 className={`rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 ${bulkConfirm.type === "delete" || bulkConfirm.type === "forever" ? "bg-red-700" : "bg-brand-600"}`}
-                disabled={bulkConfirm.type === "publish" && !publishableCount}
-                onClick={applyBulkConfirm}
+                disabled={acting || (bulkConfirm.type === "publish" && !publishableCount)}
+                onClick={() => runAction(applyBulkConfirm)}
               >
                 {bulkConfirm.type === "publish"
                   ? `Publish ${publishableCount}`
@@ -5066,6 +5125,8 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
   const [formEmail, setFormEmail] = useState("");
   const [formName, setFormName] = useState("");
   const [formError, setFormError] = useState("");
+  const [acting, setActing] = useState(false);
+  const actionLock = useRef(false);
   const [rejectReason, setRejectReason] = useState("");
   const [query, setQuery] = useState("");
   const isSales = kind === "sales";
@@ -5142,6 +5203,18 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
     setModal(null);
     setFormError("");
     setRejectReason("");
+  }
+
+  async function runAction(work) {
+    if (actionLock.current) return;
+    actionLock.current = true;
+    setActing(true);
+    try {
+      await work();
+    } finally {
+      actionLock.current = false;
+      setActing(false);
+    }
   }
 
   async function saveStaff() {
@@ -5267,11 +5340,12 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
                       {isSales && u.invitePending ? (
                         <button
                           type="button"
-                          className="text-xs font-semibold text-brand-700 hover:underline"
-                          onClick={async () => {
+                          className="text-xs font-semibold text-brand-700 hover:underline disabled:opacity-40"
+                          disabled={acting}
+                          onClick={() => runAction(async () => {
                             const result = await resendStaffInvite(u.email);
                             staffNote(result, await inviteSentLabel(result, u.name || u.email));
-                          }}
+                          })}
                         >
                           Resend invite
                         </button>
@@ -5454,7 +5528,7 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
               <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={closeModal}>
                 Cancel
               </button>
-              <button type="button" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white" onClick={saveStaff}>
+              <button type="button" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40" disabled={acting} onClick={() => runAction(saveStaff)}>
                 {editing ? "Save" : "Send invite"}
               </button>
             </div>

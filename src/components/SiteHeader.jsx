@@ -108,7 +108,7 @@ export default function SiteHeader({
   const width = fluid ? "w-full max-w-none" : wide ? "max-w-[100rem]" : "max-w-7xl";
   const navLinks = [
     showOffer ? { to: lp("/promo"), label: t("midAutumnCta") } : null,
-    { to: lp("/green"), label: t("green") },
+    { hash: "green", label: t("green") },
     { hash: "top", label: t("topProducts") },
     { hash: "suppliers", label: t("suppliers") },
     { hash: "support", label: t("howItWorks") },

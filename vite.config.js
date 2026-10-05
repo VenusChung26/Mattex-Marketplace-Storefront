@@ -6,7 +6,7 @@ import { handleTmsLogin, handleTmsStatus, handleTmsSubmit } from "./api/tms-subm
 import { handleSendEmail } from "./api/send-email.js";
 import { handleAuth } from "./api/auth.js";
 import { handleData } from "./api/data.js";
-import { handleCatalogCommit, handleCatalogGet, handleCatalogVersion } from "./api/catalog-snapshot.js";
+import { GET as handleCatalogRequest, handleCatalogCommit, handleCatalogGet, handleCatalogVersion } from "./api/catalog-snapshot.js";
 import { handleProductImage } from "./api/product-image.js";
 import { handleSpecMatch, handleSpecMatchStatus } from "./api/spec-match.js";
 import { handlePromoGet, handlePromoSave } from "./api/promo.js";
@@ -76,6 +76,15 @@ function jsonPlugin() {
           res.statusCode = 200;
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify(handleSharedStoreGet()));
+          return;
+        }
+        if (path === "/api/catalog-snapshot" && req.method === "GET") {
+          const request = new Request(`http://${req.headers.host || "localhost"}${req.url || ""}`);
+          const result = await handleCatalogRequest(request);
+          res.statusCode = result.status;
+          res.setHeader("Content-Type", "application/json");
+          res.setHeader("Cache-Control", "no-store");
+          res.end(await result.text());
           return;
         }
         if (path === "/api/catalog-version" && req.method === "GET") {

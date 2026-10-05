@@ -1937,9 +1937,57 @@ function newCustomProductId() {
   return `custom_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+const orderBlocks = new Set();
+
+function blockProductOrders(id) {
+  const key = String(id || "");
+  if (!key || orderBlocks.has(key)) return;
+  orderBlocks.add(key);
+  emitStoreChange();
+}
+
+function isProductOrderBlocked(id) {
+  return orderBlocks.has(String(id || ""));
+}
+
+async function fetchProductLive(id) {
+  const key = String(id || "");
+  if (!key) return false;
+  try {
+    const res = await fetch(`/api/catalog-snapshot?part=status&id=${encodeURIComponent(key)}`, { cache: "no-store" });
+    if (!res.ok) return true;
+    const data = await res.json();
+    return data?.live !== false;
+  } catch {
+    return true;
+  }
+}
+
+async function rejectIfProductsOffline(ids) {
+  const catalogIds = [...new Set((ids || []).map(String).filter((id) => id && !id.startsWith("custom_")))];
+  let blocked = false;
+  await Promise.all(catalogIds.map(async (id) => {
+    const live = await fetchProductLive(id);
+    if (!live) {
+      blockProductOrders(id);
+      blocked = true;
+    }
+  }));
+  return blocked ? { ok: false, error: "discontinued" } : { ok: true };
+}
+
+function listSalesUnits() {
+  const units = new Set();
+  PRODUCTS.forEach((product) => {
+    const unit = String(product?.salesUnit || product?.unit || "").trim();
+    if (unit) units.add(unit);
+  });
+  return [...units].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+}
+
 function addToCart(productId, { intent, qty, silentInvite = false } = {}) {
   const product = getProduct(productId);
-  if (!product || isDiscontinued(product) || !isOrderable(product)) return getCart();
+  if (!product || isDiscontinued(product) || !isOrderable(product) || isProductOrderBlocked(productId)) return getCart();
   const guest = !isLoggedIn();
   const draft = getDraft();
   const minQty = Math.max(1, Number(product.moq) || 1);
@@ -2466,7 +2514,7 @@ function submitRfq(productIds, options = {}) {
   const selectedSet = new Set(selectedIds);
   const selectedLines = draft.lines.filter((l) => selectedSet.has(String(l.productId)));
   if (!selectedLines.length) return { ok: false, error: "none_selected" };
-  const blocked = selectedLines.filter((l) => !l.custom && !isOrderable(getProduct(l.productId)));
+  const blocked = selectedLines.filter((l) => !l.custom && (isProductOrderBlocked(l.productId) || !isOrderable(getProduct(l.productId))));
   if (blocked.length) return { ok: false, error: "discontinued" };
 
   const totals = draftTotals({ ...draft, lines: selectedLines });
@@ -4108,7 +4156,7 @@ function openWhatsappDraft(lines, kind, options = {}) {
 
 function whatsappNow(productId, { qty, kind, lang = "zh", skipCart = false } = {}) {
   const product = getProduct(productId);
-  if (!product || isDiscontinued(product) || !isOrderable(product)) return { ok: false, error: "discontinued" };
+  if (!product || isDiscontinued(product) || !isOrderable(product) || isProductOrderBlocked(productId)) return { ok: false, error: "discontinued" };
   const intent = kind === "buy" ? "buy" : "quote";
   const minQty = Math.max(1, Number(product.moq) || 1);
   const addQty = Math.max(minQty, Math.floor(Number(qty)) || minQty);
@@ -4308,7 +4356,25 @@ async function inviteStaff(target) {
   };
 }
 
-async function createStaff({ email, name }) {
+const actionFlights = new Map();
+
+function singleFlight(key, fn) {
+  const current = actionFlights.get(key);
+  if (current) return current;
+  const run = Promise.resolve().then(fn);
+  actionFlights.set(key, run);
+  const clear = () => {
+    if (actionFlights.get(key) === run) actionFlights.delete(key);
+  };
+  run.then(clear, clear);
+  return run;
+}
+
+function createStaff(input) {
+  return singleFlight("create-staff", () => createStaffNow(input));
+}
+
+async function createStaffNow({ email, name }) {
   const gate = requireStaff();
   if (!gate.ok) return gate;
   const nextEmail = normalizeEmail(email);
@@ -4332,7 +4398,11 @@ async function createStaff({ email, name }) {
   return inviteStaff(account);
 }
 
-async function resendStaffInvite(email) {
+function resendStaffInvite(email) {
+  return singleFlight(`resend:${normalizeEmail(email)}`, () => resendStaffInviteNow(email));
+}
+
+async function resendStaffInviteNow(email) {
   const gate = requireStaff();
   if (!gate.ok) return gate;
   const target = getStaffAccount(email);
@@ -6615,7 +6685,11 @@ function nextTmpSku() {
   return `TMP-${String(seq).padStart(4, "0")}`;
 }
 
-async function createAdminProduct(fields) {
+function createAdminProduct(fields) {
+  return singleFlight("create-product", () => createAdminProductNow(fields));
+}
+
+async function createAdminProductNow(fields) {
   const gate = requireStaff();
   if (!gate.ok) return gate;
   if (!String(fields.name || "").trim()) return { ok: false, error: "name" };
@@ -6650,6 +6724,8 @@ async function createAdminProduct(fields) {
     imageSource: fields.image ? (fields.imageSource || "upload") : "generated",
     supplier: "Mattex",
     specs: [],
+    price: fields.priceUponRequest || !(Number(fields.price) > 0) ? null : Number(fields.price),
+    priceUponRequest: Boolean(fields.priceUponRequest) || !(Number(fields.price) > 0),
     published: false,
     description: fields.sizeDesc || "",
     standard: fields.certifications || "",
@@ -6668,7 +6744,11 @@ async function createAdminProduct(fields) {
   return { ok: true, product };
 }
 
-async function updateAdminProduct(id, fields) {
+function updateAdminProduct(id, fields) {
+  return singleFlight(`update:${id}`, () => updateAdminProductNow(id, fields));
+}
+
+async function updateAdminProductNow(id, fields) {
   const gate = requireStaff();
   if (!gate.ok) return gate;
   const product = PRODUCTS.find((p) => p.id === id);
@@ -6757,7 +6837,11 @@ function productCatalogStatus(product) {
   return "unpublished";
 }
 
-async function publishAdminProduct(id) {
+function publishAdminProduct(id) {
+  return singleFlight(`publish:${id}`, () => publishAdminProductNow(id));
+}
+
+async function publishAdminProductNow(id) {
   const gate = requireStaff();
   if (!gate.ok) return gate;
   const product = PRODUCTS.find((p) => p.id === id);
@@ -7533,6 +7617,11 @@ export {
   addCustomLine,
   addSpecMatchLines,
   getCatalogEtag,
+  fetchProductLive,
+  blockProductOrders,
+  isProductOrderBlocked,
+  rejectIfProductsOffline,
+  listSalesUnits,
   getCatalogSyncError,
   updateCustomLine,
   setLineQty,

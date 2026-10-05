@@ -25,6 +25,7 @@ import {
   setLineQty,
   setLineIntent,
   setLineRequestedPrice,
+  rejectIfProductsOffline,
   submitRfq,
   updateCustomLine,
   requireBuyerAuth,
@@ -36,7 +37,7 @@ import {
   completeCartWhatsappSubmit,
   takeLastCartWhatsappResult,
 } from "../lib/store";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import SiteHeader from "../components/SiteHeader";
 import CustomProductForm from "../components/CustomProductForm";
 import { useLanguage } from "../i18n";
@@ -81,6 +82,7 @@ export default function RfqPage() {
   const [showAddCustom, setShowAddCustom] = useState(false);
   const [confirmKind, setConfirmKind] = useState(null);
   const [confirmChannel, setConfirmChannel] = useState("rfq");
+  const submitLock = useRef(false);
   const { revealIssue } = useRevealFormIssue();
 
   const selectableLineIds = totals.lines
@@ -390,8 +392,11 @@ export default function RfqPage() {
     });
   }
 
-  function onSubmitKind(kind) {
+  async function onSubmitKind(kind) {
+    if (submitLock.current) return;
+    submitLock.current = true;
     const viaWhatsapp = confirmChannel === "whatsapp";
+    try {
     if (!viaWhatsapp && !requireBuyerAuth()) return;
     const ids = totals.lines
       .filter((line) => (kind === "buy" ? line.intent === "buy" : line.intent !== "buy"))
@@ -401,6 +406,14 @@ export default function RfqPage() {
     if (under.length) {
       setFormErrorKind(kind);
       setFormError(t("qtyBelowMoq", { n: under[0].moq || 1 }));
+      revealIssue();
+      return;
+    }
+    const offline = await rejectIfProductsOffline(ids);
+    if (!offline.ok) {
+      setFormErrorKind(kind);
+      setFormErrorField("discontinued");
+      setFormError(t("discontinuedSubmitError"));
       revealIssue();
       return;
     }
@@ -460,6 +473,9 @@ export default function RfqPage() {
     setConfirmChannel("rfq");
     setSuccess(result.rfq);
     setSuccessKind(kind);
+    } finally {
+      submitLock.current = false;
+    }
   }
 
   function onSubmit() {

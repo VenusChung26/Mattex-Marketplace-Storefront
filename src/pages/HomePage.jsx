@@ -32,9 +32,17 @@ import {
 } from "../lib/store";
 
 const CATEGORY_PREVIEW_COUNT = 8;
+const SECTION_PREVIEW = 8;
 const SUPPLIER_PREVIEW_COUNT = 9;
 const CATALOG_BATCH = 24;
 const CATALOG_VIEW_KEY = "subbie_catalog_view";
+
+function fitColumns(count, width, minTile) {
+  const n = Math.max(0, count);
+  if (n <= 1) return 1;
+  const gap = 16;
+  return Math.max(1, Math.min(n, Math.floor((width + gap) / (minTile + gap))));
+}
 
 function pickFillColumns(count, width, { minTile, maxTile, target }) {
   const n = Math.max(0, count);
@@ -203,8 +211,8 @@ export default function HomePage() {
   const visibleCategories = categoriesExpanded
     ? categories
     : categories.slice(0, CATEGORY_PREVIEW_COUNT);
-  const top = useMemo(() => getTopProducts(), [catalogEpoch]);
-  const greens = useMemo(() => getGreenProducts(5), [catalogEpoch]);
+  const top = useMemo(() => getTopProducts(SECTION_PREVIEW), [catalogEpoch]);
+  const greens = useMemo(() => getGreenProducts(SECTION_PREVIEW), [catalogEpoch]);
   const suppliers = useMemo(() => getSuppliers(), [catalogEpoch]);
   const visibleSuppliers = suppliersExpanded
     ? suppliers
@@ -212,8 +220,8 @@ export default function HomePage() {
   const hiddenSupplierCount = Math.max(suppliers.length - SUPPLIER_PREVIEW_COUNT, 0);
   const contentWidth = useContentWidth();
   const categoryCols = pickFillColumns(visibleCategories.length, contentWidth, { minTile: 132, maxTile: 210, target: 8 });
-  const greenCols = pickFillColumns(greens.length, contentWidth, { minTile: 230, maxTile: 460, target: 4 });
-  const topCols = pickFillColumns(top.length, contentWidth, { minTile: 230, maxTile: 460, target: 4 });
+  const greenCols = fitColumns(greens.length, contentWidth, 260);
+  const topCols = fitColumns(top.length, contentWidth, 260);
 
   const products = useMemo(() => {
     let list = searchProducts(searchQuery, selectedCategories, { fields: searchFields });
@@ -293,9 +301,24 @@ export default function HomePage() {
     requestAnimationFrame(() => requestAnimationFrame(run));
   }
 
+  function openFilteredCatalog(kind) {
+    setSelectedCategories([]);
+    setSearchQuery("");
+    setSearchFields([]);
+    if (kind === "hot") {
+      setGreenOnly(false);
+      setPriceFilter("hot");
+    } else {
+      setPriceFilter("all");
+      setGreenOnly(true);
+    }
+    scrollToCatalog();
+  }
+
   const urlQ = params.get("q");
   const urlCat = params.get("cat");
   const urlFilter = params.get("filter");
+  const urlGreen = params.get("green");
   useEffect(() => {
     if (urlCat) {
       const dest = catalogPathForCategory(urlCat);
@@ -308,13 +331,26 @@ export default function HomePage() {
       const found = getCategoryBySlug(urlFilter) || getCategoryByName(urlFilter);
       if (found) setSelectedCategories([found.name]);
     }
+    if (urlGreen === "1") {
+      setGreenOnly(true);
+      setPriceFilter("all");
+      setSelectedCategories([]);
+      setSearchQuery("");
+      setSearchFields([]);
+      const next = new URLSearchParams(params);
+      next.delete("green");
+      const qs = next.toString();
+      navigate({ pathname: withLocale(lang, "/"), search: qs ? `?${qs}` : "", hash: "products" }, { replace: true });
+      const timer = window.setTimeout(() => scrollToCatalog(), 80);
+      return () => window.clearTimeout(timer);
+    }
     if (!urlQ) return undefined;
     setSearchQuery(urlQ);
     setNavQuery(urlQ);
     setGreenOnly(/\bgreen\b/i.test(urlQ));
     const timer = window.setTimeout(() => scrollToCatalog(), 80);
     return () => window.clearTimeout(timer);
-  }, [urlQ, urlCat, urlFilter, lang, navigate]);
+  }, [urlQ, urlCat, urlFilter, urlGreen, lang, navigate, params]);
 
   function handleAdd(productId, intent = "quote", qty) {
     const result = addFromStorefront(productId, intent, qty, lang);
@@ -556,12 +592,13 @@ export default function HomePage() {
                   {t("greenSupport")}
                 </p>
               </div>
-              <Link
-                to={withLocale(lang, "/green")}
+              <button
+                type="button"
+                onClick={() => openFilteredCatalog("green")}
                 className="inline-flex shrink-0 items-center bg-brand-400 px-5 py-3 text-sm font-semibold text-charcoal hover:bg-brand-200 transition-colors"
               >
                 {t("shopAllGreen")}
-              </Link>
+              </button>
             </div>
           </div>
           <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${greenCols}, minmax(0, 1fr))` }}>
@@ -580,18 +617,15 @@ export default function HomePage() {
               <h2 className="font-display text-3xl font-semibold text-brand-800">{t("topProducts")}</h2>
               <p className="mt-2 text-sm text-mute">{t("topLabelHint")}</p>
             </div>
-            <a
-              href="#products"
+            <button
+              type="button"
               className="text-sm font-semibold text-brand-600 hover:text-brand-700"
-              onClick={(e) => {
-                e.preventDefault();
-                scrollToCatalog();
-              }}
+              onClick={() => openFilteredCatalog("hot")}
             >
-              {t("fullCatalog")} →
-            </a>
+              {t("allHitProducts")} →
+            </button>
           </div>
-          <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${topCols}, minmax(0, 1fr))` }}>
+          <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${topCols}, minmax(0, 1fr))` }}>
             {catalogLoading && !top.length ? (
               <ProductCardSkeleton compact count={4} />
             ) : (
@@ -942,7 +976,7 @@ export default function HomePage() {
             </div>
             {catalogLoading && !products.length ? (
               <div
-                className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4"}
+                className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"}
                 aria-busy="true"
                 aria-live="polite"
               >
@@ -963,7 +997,7 @@ export default function HomePage() {
               </div>
             ) : (
               <>
-                <div className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4"}>
+                <div className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"}>
                   {visibleCatalog.map((p) =>
                     catalogView === "list" ? (
                       <ProductListRow key={p.id} product={p} onAdd={handleAdd} />

@@ -285,6 +285,14 @@ export async function GET(request) {
   if (partOf(request) === "version") {
     return Response.json(await handleCatalogVersion(), { headers });
   }
+  if (partOf(request) === "status") {
+    const id = new URL(request.url).searchParams.get("id") || "";
+    const snapshot = await handleCatalogGet();
+    if (!snapshot) return Response.json({ ok: true, found: true, live: true }, { headers });
+    const product = (snapshot.products || []).find((row) => String(row.id) === id) || null;
+    const live = Boolean(product) && product.published !== false && !product.deleted && !product.held;
+    return Response.json({ ok: true, found: Boolean(product), live }, { headers });
+  }
   const snapshot = await handleCatalogGet();
   if (!snapshot) return Response.json({ etag: SEED }, { status: 404, headers });
   return Response.json(snapshot, { headers });

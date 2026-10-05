@@ -382,7 +382,7 @@ function tailorInitialFromProduct(product, qty) {
   };
 }
 
-export function ProductActions({ product, onAdd, size = "card", qty: qtyProp, onQtyChange, hideQty = false, autoOpenTailor = false }) {
+export function ProductActions({ product, onAdd, size = "card", qty: qtyProp, onQtyChange, hideQty = false, autoOpenTailor = false, disabled = false }) {
   const { t } = useLanguage();
   const { draft } = useStore();
   const minQty = Math.max(1, Number(product.moq) || 1);
@@ -414,7 +414,7 @@ export function ProductActions({ product, onAdd, size = "card", qty: qtyProp, on
   }
 
   function fire(intent) {
-    if (qty < minQty) return;
+    if (disabled || qty < minQty) return;
     const guestCartOk = intent === "quote-now" || intent === "quote" || intent === "buy";
     if (!guestCartOk && !requireBuyerAuth({ productId: product.id, intent, qty })) return;
     onAdd?.(product.id, intent, qty);
@@ -454,7 +454,8 @@ export function ProductActions({ product, onAdd, size = "card", qty: qtyProp, on
   const primaryBtn = (
     <button
       type="button"
-      className={primaryClass}
+      className={`${primaryClass} disabled:opacity-40`}
+      disabled={disabled}
       onClick={() => fire(priced ? "buy-now" : "quote-now")}
     >
       {priced ? t("buyNowAction") : t("requestNow")}
@@ -462,7 +463,7 @@ export function ProductActions({ product, onAdd, size = "card", qty: qtyProp, on
   );
 
   const addBtn = (
-    <button type="button" className={addClass} onClick={() => fire(cartIntent)}>
+    <button type="button" className={`${addClass} disabled:opacity-40`} disabled={disabled} onClick={() => fire(cartIntent)}>
       {addLabel}
     </button>
   );
@@ -470,9 +471,10 @@ export function ProductActions({ product, onAdd, size = "card", qty: qtyProp, on
   const quoteLink = priced ? (
     <button
       type="button"
-      className={`shrink-0 font-semibold text-brand-700 hover:text-brand-800 hover:underline ${
+      className={`shrink-0 font-semibold text-brand-700 hover:text-brand-800 hover:underline disabled:opacity-40 ${
         compactBtn ? "text-[11px]" : "text-xs"
       }`}
+      disabled={disabled}
       onClick={() => fire("quote-now")}
     >
       {t("orRequestNow")}
@@ -624,7 +626,7 @@ export function ProductListRow({ product, onAdd }) {
   );
 }
 
-export default function ProductCard({ product, onAdd, rank = null }) {
+export default function ProductCard({ product, onAdd, rank = null, compact = false }) {
   const { t, lang } = useLanguage();
   const supplierName = supplierDisplayName(product.supplier);
 
@@ -633,7 +635,7 @@ export default function ProductCard({ product, onAdd, rank = null }) {
       <ProductBadges product={product} rank={rank} />
       <Link
         to={withLocale(lang, `/details/${product.id}`)}
-        className="aspect-[16/10] max-h-48 sm:max-h-56 overflow-hidden bg-brand-50 block"
+        className="block h-40 overflow-hidden bg-brand-50 lg:aspect-[3/2] lg:h-auto"
       >
         <ProductImage
           src={product.image}
@@ -643,7 +645,7 @@ export default function ProductCard({ product, onAdd, rank = null }) {
           imgClassName="w-full h-full object-cover transition-transform duration-500 ease-out hover:scale-[1.04]"
         />
       </Link>
-      <div className="flex flex-col flex-1 p-3.5">
+      <div className={`flex flex-col flex-1 ${compact ? "p-3" : "p-3.5"}`}>
         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-600">
           <Link
             to={withLocale(lang, catalogPathForCategory(product.category))}
@@ -652,7 +654,7 @@ export default function ProductCard({ product, onAdd, rank = null }) {
             {product.category}
           </Link>
         </p>
-        <h3 className="mt-1 font-semibold text-ink leading-snug text-base line-clamp-3">
+        <h3 className={`mt-1 font-semibold text-ink leading-snug line-clamp-3 ${compact ? "text-sm" : "text-base"}`}>
           <Link to={withLocale(lang, `/details/${product.id}`)} className="hover:text-brand-600 transition-colors">
             {product.name}
           </Link>

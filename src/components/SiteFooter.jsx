@@ -35,7 +35,7 @@ export default function SiteFooter() {
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/40 mb-3">{t("footerCatalog")}</p>
           <ul className="space-y-2 text-sm text-white/70">
             <li>
-              <Link to={lp("/green")} className="hover:text-white">
+              <Link to={{ pathname: lp("/"), search: "?green=1", hash: "products" }} className="hover:text-white">
                 {t("greenProducts")}
               </Link>
             </li>

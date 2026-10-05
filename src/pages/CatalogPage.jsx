@@ -240,7 +240,7 @@ export default function CatalogPage() {
             </div>
             {catalogLoading && !products.length ? (
               <div
-                className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4"}
+                className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"}
                 aria-busy="true"
                 aria-live="polite"
               >
@@ -248,7 +248,7 @@ export default function CatalogPage() {
               </div>
             ) : products.length ? (
               <>
-                <div className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4"}>
+                <div className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"}>
                   {products.slice(0, catalogShown).map((p) =>
                     catalogView === "list" ? (
                       <ProductListRow key={p.id} product={p} onAdd={handleAdd} />

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import CopyLinkButton from "../components/CopyLinkButton";
 import SiteHeader from "../components/SiteHeader";
@@ -15,7 +15,10 @@ import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { seoCopy } from "../lib/seoCopy";
 import {
   addFromStorefront,
+  blockProductOrders,
   canDirectBuy,
+  fetchProductLive,
+  isProductOrderBlocked,
   catalogPathForCategory,
   displayLeadTime,
   getEffectivePrice,
@@ -61,6 +64,8 @@ export default function DetailsPage() {
   const [params, setSearchParams] = useSearchParams();
   useStore();
   const product = getProduct(id) || bootProduct(id);
+  const offline = Boolean(product && isProductOrderBlocked(product.id));
+  const orderLock = useRef(false);
   const { t, lang } = useLanguage();
   const [qty, setQty] = useState(1);
   const autoOpenTailor = params.get("tailor") === "1";
@@ -128,9 +133,20 @@ export default function DetailsPage() {
     .filter((term) => term && !/^\d+\.\s/.test(term));
   const remark = String(product.remark || "").trim();
 
-  function goToRfq(intent, nextQty = qty) {
-    const sendQty = Math.max(minQty, Math.floor(Number(nextQty)) || minQty);
-    addFromStorefront(product.id, intent, sendQty, lang);
+  async function goToRfq(intent, nextQty = qty) {
+    if (orderLock.current || offline) return;
+    orderLock.current = true;
+    try {
+      const live = await fetchProductLive(product.id);
+      if (!live) {
+        blockProductOrders(product.id);
+        return;
+      }
+      const sendQty = Math.max(minQty, Math.floor(Number(nextQty)) || minQty);
+      addFromStorefront(product.id, intent, sendQty, lang);
+    } finally {
+      orderLock.current = false;
+    }
   }
 
   const origin = siteOrigin();
@@ -256,6 +272,7 @@ export default function DetailsPage() {
                   product={product}
                   qty={qty}
                   onQtyChange={setQty}
+                  disabled={offline}
                   onAdd={(_, intent, nextQty) => goToRfq(intent, nextQty)}
                   size="detail"
                   autoOpenTailor={autoOpenTailor}
@@ -339,6 +356,7 @@ export default function DetailsPage() {
               product={product}
               qty={qty}
               onQtyChange={setQty}
+              disabled={offline}
               onAdd={(_, intent, nextQty) => goToRfq(intent, nextQty)}
               size="bar"
             />
