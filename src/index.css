@@ -171,13 +171,13 @@ body {
 
 .cat-tile {
   content-visibility: auto;
-  contain-intrinsic-size: auto 9rem;
+  contain-intrinsic-size: auto 12rem;
   position: relative;
   isolation: isolate;
   overflow: hidden;
   border: 0;
   border-radius: 0.65rem;
-  aspect-ratio: 1 / 1.05;
+  aspect-ratio: 1 / 1;
   background: #1b4633;
   cursor: pointer;
   transition: transform 0.28s ease, box-shadow 0.28s ease;
@@ -367,9 +367,6 @@ body {
   }
 }
 @media (max-height: 800px) {
-  .cat-tile {
-    aspect-ratio: 16 / 9;
-  }
   .nav-dropdown-panel {
     max-height: calc(100vh - 5.5rem);
   }
