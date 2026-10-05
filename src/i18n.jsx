@@ -9,7 +9,7 @@ const messages = {
     brandName: "Mattex Marketplace",
     brandSub: "Marketplace",
     categories: "Categories",
-    green: "Green",
+    green: "Green products",
     sales: "Sales",
     suppliers: "Suppliers",
     catalog: "Catalog",
