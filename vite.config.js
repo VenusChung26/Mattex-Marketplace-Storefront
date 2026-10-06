@@ -10,7 +10,7 @@ import { GET as handleCatalogRequest, handleCatalogCommit, handleCatalogGet, han
 import { handleProductImage } from "./api/product-image.js";
 import { handleSpecMatch, handleSpecMatchStatus } from "./api/spec-match.js";
 import { handlePromoGet, handlePromoSave } from "./api/promo.js";
-import { handleCatalogGroupsGet, handleCatalogGroupsSave } from "./api/catalog-groups.js";
+import { handleCatalogGroupsGet, handleCatalogGroupsSave } from "./server/catalog-groups.js";
 
 const GA_MEASUREMENT_ID = "G-F89GE7J3CR";
 

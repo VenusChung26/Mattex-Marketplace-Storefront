@@ -61,19 +61,3 @@ export function handleCatalogGroupsSave(body, request) {
   chain = run.then(() => {}).catch(() => {});
   return run;
 }
-
-export async function GET() {
-  const result = await handleCatalogGroupsGet();
-  return Response.json(result.body, { status: result.status || 200, headers: { "cache-control": "no-store" } });
-}
-
-export async function POST(request) {
-  let body = {};
-  try {
-    body = await request.json();
-  } catch {
-    return Response.json({ ok: false, error: "invalid json" }, { status: 400 });
-  }
-  const result = await handleCatalogGroupsSave(body, request);
-  return Response.json(result.body, { status: result.status || 200, headers: { "cache-control": "no-store" } });
-}

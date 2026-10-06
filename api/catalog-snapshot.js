@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { readSession } from "./auth.js";
+import { handleCatalogGroupsGet, handleCatalogGroupsSave } from "../server/catalog-groups.js";
 
 const DIR = path.join(process.cwd(), "data");
 const SNAPSHOT_FILE = path.join(DIR, "catalog-snapshot.json");
@@ -282,6 +283,10 @@ function partOf(request) {
 
 export async function GET(request) {
   const headers = { "cache-control": "no-store" };
+  if (partOf(request) === "groups") {
+    const result = await handleCatalogGroupsGet();
+    return Response.json(result.body, { status: result.status || 200, headers });
+  }
   if (partOf(request) === "version") {
     return Response.json(await handleCatalogVersion(), { headers });
   }
@@ -299,6 +304,16 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  if (partOf(request) === "groups") {
+    let body = {};
+    try {
+      body = await request.json();
+    } catch {
+      return Response.json({ ok: false, error: "invalid json" }, { status: 400 });
+    }
+    const result = await handleCatalogGroupsSave(body, request);
+    return Response.json(result.body, { status: result.status || 200, headers: { "cache-control": "no-store" } });
+  }
   if (partOf(request) !== "commit") {
     return Response.json({ ok: false, error: "invalid" }, { status: 404, headers: { "cache-control": "no-store" } });
   }
