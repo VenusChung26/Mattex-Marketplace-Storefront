@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { readSession } from "./auth.js";
+import { readSession } from "../api/auth.js";
 
 const FILE = path.join(process.cwd(), "data", "catalog-groups.json");
 
