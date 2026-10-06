@@ -17,6 +17,7 @@
     { "source": "/api/catalog-version", "destination": "/api/catalog-snapshot?part=version" },
     { "source": "/api/catalog/commit", "destination": "/api/catalog-snapshot?part=commit" },
     { "source": "/api/catalog", "destination": "/api/catalog-snapshot?part=get" },
+    { "source": "/api/catalog-groups", "destination": "/api/catalog-snapshot?part=groups" },
     { "source": "/((?!api/|assets/|og/|og-default\\.webp|robots\\.txt|sitemap\\.xml).*)", "destination": "/index.html" }
   ]
 }
