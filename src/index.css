@@ -1,4 +1,19 @@
 html { scroll-behavior: smooth; }
+#root > .min-h-screen:not(.flex),
+#root > .min-h-dvh:not(.flex),
+#root > .min-h-screen.flex-col,
+#root > .min-h-dvh.flex-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+#root > .min-h-screen > footer,
+#root > .min-h-dvh > footer,
+#root > .min-h-screen > div:has(> footer),
+#root > .min-h-dvh > div:has(> footer) {
+  margin-top: auto;
+}
 body {
   margin: 0;
   background:
@@ -46,12 +61,17 @@ body {
   to { transform: scale(1.06) translate3d(-1.5%, 0, 0); }
 }
 
+.offer-banner-fade {
+  transition: opacity 400ms ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-shell::before { animation: none; }
   .reveal, .reveal-delay, .reveal-delay-2 { animation: none !important; opacity: 1; transform: none; }
   .btn-added { animation: none; }
   .btn-added-check { animation: none; }
   .metric-ring { animation: none; }
+  .offer-banner-fade { transition: none; }
 }
 
 .sheet {

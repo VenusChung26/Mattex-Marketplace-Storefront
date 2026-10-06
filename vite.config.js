@@ -10,6 +10,7 @@ import { GET as handleCatalogRequest, handleCatalogCommit, handleCatalogGet, han
 import { handleProductImage } from "./api/product-image.js";
 import { handleSpecMatch, handleSpecMatchStatus } from "./api/spec-match.js";
 import { handlePromoGet, handlePromoSave } from "./api/promo.js";
+import { handleCatalogGroupsGet, handleCatalogGroupsSave } from "./api/catalog-groups.js";
 
 const GA_MEASUREMENT_ID = "G-F89GE7J3CR";
 
@@ -160,6 +161,31 @@ function jsonPlugin() {
         }
         if (path === "/api/promo" && req.method === "GET") {
           const result = await handlePromoGet();
+          res.statusCode = result.status || 200;
+          res.setHeader("Content-Type", "application/json");
+          res.setHeader("Cache-Control", "no-store");
+          res.end(JSON.stringify(result.body));
+          return;
+        }
+        if (path === "/api/catalog-groups" && req.method === "GET") {
+          const result = await handleCatalogGroupsGet();
+          res.statusCode = result.status || 200;
+          res.setHeader("Content-Type", "application/json");
+          res.setHeader("Cache-Control", "no-store");
+          res.end(JSON.stringify(result.body));
+          return;
+        }
+        if (path === "/api/catalog-groups" && req.method === "POST") {
+          let posted = {};
+          try {
+            ({ body: posted } = await readJsonBody(req));
+          } catch {
+            res.statusCode = 400;
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ ok: false, error: "invalid json" }));
+            return;
+          }
+          const result = await handleCatalogGroupsSave(posted, localRequest(req, path));
           res.statusCode = result.status || 200;
           res.setHeader("Content-Type", "application/json");
           res.setHeader("Cache-Control", "no-store");

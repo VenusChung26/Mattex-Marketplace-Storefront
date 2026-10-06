@@ -4,11 +4,11 @@ import { allProductsTo, withLocale } from "../lib/locale";
 import { MATTEX_SITE_URL, WHATSAPP_DISPLAY, WHATSAPP_HREF } from "../lib/store";
 import { SHOW_RFQ } from "../lib/flags";
 
-export default function SiteFooter() {
+export default function SiteFooter({ className = "" }) {
   const { t, lang } = useLanguage();
   const lp = (path) => withLocale(lang, path);
   return (
-    <footer id="contact" className="bg-charcoal text-white">
+    <footer id="contact" className={`bg-charcoal text-white ${className}`.trim()}>
       <div className={`max-w-7xl mx-auto px-4 py-12 grid grid-cols-2 gap-8 ${SHOW_RFQ ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
         <div className="col-span-2 md:col-span-1">
           <a

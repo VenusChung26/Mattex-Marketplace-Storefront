@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { compressImageFile } from "../../lib/compressImage";
+import { useStore } from "../../hooks/useStore";
+import { listAdminProducts } from "../../lib/store";
 
 const EMPTY = {
   visible: true,
@@ -48,9 +50,12 @@ const DEMO_COPY = {
 function MarketplaceSentenceDemo({ form }) {
   const [lang, setLang] = useState("zh");
   const copy = DEMO_COPY[lang];
-  const sentence = String((lang === "zh" ? form.sentenceZh : form.sentenceEn) || "").trim();
-  const poster = form.banners?.[0];
-  const src = poster?.preview || poster?.src || "";
+  const poster = (form.banners || []).find((banner) => (banner.products || []).length > 0) || form.banners?.[0];
+  const shared = String((lang === "zh" ? form.sentenceZh : form.sentenceEn) || "").trim();
+  const own = String((lang === "zh" ? poster?.sentenceZh : poster?.sentenceEn) || "").trim();
+  const sentence = own || shared;
+  const title = String((lang === "zh" ? poster?.nameZh : poster?.nameEn) || "").trim() || (lang === "zh" ? "中文名" : "English name");
+  const src = poster?.heroSrc || poster?.preview || poster?.src || "";
 
   return (
     <section className="mb-4 rounded-xl border border-dashed border-brand-300 bg-paper p-4">
@@ -80,24 +85,14 @@ function MarketplaceSentenceDemo({ form }) {
       </div>
 
       <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-mute">Homepage</p>
-      <div className="mt-2 grid overflow-hidden border border-line bg-white lg:grid-cols-[minmax(0,1.25fr)_minmax(12rem,0.75fr)]">
-        <div className="relative flex flex-col justify-center bg-brand-50/70 px-5 py-6">
-          <div className="absolute left-0 top-0 h-full w-1.5 bg-brand-400" aria-hidden />
-          <p className="font-display text-2xl font-semibold leading-tight text-brand-800">{copy.title}</p>
-          <p className={`mt-3 max-w-lg text-sm leading-relaxed ${sentence ? "text-mute" : "text-mute/70 italic"}`}>
+      <div className="relative mt-2 h-36 overflow-hidden border border-line bg-brand-800">
+        {src ? <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover object-center" /> : null}
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,#143528_0%,#143528_40%,rgba(20,53,40,0)_68%)]" aria-hidden />
+        <div className="relative flex h-full w-[46%] flex-col justify-center px-4">
+          <p className="font-display text-lg font-semibold leading-tight text-white">{title}</p>
+          <p className={`mt-1 text-xs leading-relaxed ${sentence ? "text-white/85" : "text-white/50 italic"}`}>
             {sentence || "The sentence you type above appears here."}
           </p>
-          <span className="mt-5 inline-flex w-fit items-center bg-brand-600 px-4 py-2 text-sm font-semibold text-white">
-            {copy.cta}
-            <span aria-hidden className="ml-2">→</span>
-          </span>
-        </div>
-        <div className="relative min-h-40 bg-brand-50">
-          {src ? (
-            <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover object-top" />
-          ) : (
-            <p className="absolute inset-0 flex items-center justify-center px-4 text-center text-xs text-mute">Row 1 poster</p>
-          )}
         </div>
       </div>
 
@@ -109,7 +104,7 @@ function MarketplaceSentenceDemo({ form }) {
         <div className="absolute inset-0 bg-gradient-to-r from-brand-800 via-brand-800/92 to-brand-800/75" aria-hidden />
         <div className="relative flex flex-col gap-4 px-5 py-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <p className="font-display text-2xl font-semibold leading-tight">{copy.title}</p>
+            <p className="font-display text-2xl font-semibold leading-tight">{title}</p>
             <p className={`mt-2 max-w-2xl text-sm leading-relaxed ${sentence ? "text-white/75" : "text-white/50 italic"}`}>
               {sentence || "The sentence you type above appears here."}
             </p>
@@ -133,10 +128,14 @@ function RequiredMark() {
 }
 
 export default function BannersPanel({ note }) {
+  const { catalogEpoch } = useStore();
+  const catalog = useMemo(() => listAdminProducts().filter((product) => !product.deleted), [catalogEpoch]);
+  const [productQuery, setProductQuery] = useState({});
   const [form, setForm] = useState(EMPTY);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [pendingDelete, setPendingDelete] = useState("");
   const [dragId, setDragId] = useState("");
   const [overId, setOverId] = useState("");
@@ -167,8 +166,43 @@ export default function BannersPanel({ note }) {
     };
   }, []);
 
-  function patchBanner(id, patch) {
+  useEffect(() => {
+    if (!dirty) return undefined;
+    function onLeave(event) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    window.addEventListener("beforeunload", onLeave);
+    return () => window.removeEventListener("beforeunload", onLeave);
+  }, [dirty]);
+
+  function markDirty() {
     setSaved(false);
+    setDirty(true);
+  }
+
+  function heldBanner(productId, bannerId) {
+    return form.banners.find(
+      (banner) => banner.id !== bannerId && (banner.products || []).some((row) => row.productId === productId)
+    );
+  }
+
+  function addOfferProduct(bannerId, product) {
+    const other = heldBanner(product.id, bannerId);
+    if (other) {
+      note?.({ ok: false, error: `Already on ${other.nameEn || other.nameZh || "another banner"}.` });
+      return;
+    }
+    const banner = form.banners.find((row) => row.id === bannerId);
+    if ((banner?.products || []).some((row) => row.productId === product.id)) return;
+    patchBanner(bannerId, {
+      products: [...(banner?.products || []), { productId: product.id, price: "", endsOn: "" }],
+    });
+    setProductQuery((current) => ({ ...current, [bannerId]: "" }));
+  }
+
+  function patchBanner(id, patch) {
+    markDirty();
     setForm((current) => ({
       ...current,
       banners: current.banners.map((banner) => (banner.id === id ? { ...banner, ...patch } : banner)),
@@ -177,7 +211,7 @@ export default function BannersPanel({ note }) {
 
   function reorder(fromId, toId) {
     if (!fromId || !toId || fromId === toId) return;
-    setSaved(false);
+    markDirty();
     setForm((current) => {
       const banners = current.banners.slice();
       const from = banners.findIndex((banner) => banner.id === fromId);
@@ -192,12 +226,12 @@ export default function BannersPanel({ note }) {
   async function addFiles(fileList) {
     try {
       const images = await filesToWebp(fileList);
-      setSaved(false);
+      markDirty();
       setForm((current) => ({
         ...current,
         banners: [
           ...current.banners,
-          ...images.map((image) => ({ id: newId(), nameZh: "", nameEn: "", src: "", image, preview: image })),
+          ...images.map((image) => ({ id: newId(), nameZh: "", nameEn: "", src: "", image, preview: image, products: [] })),
         ],
       }));
     } catch (error) {
@@ -215,6 +249,13 @@ export default function BannersPanel({ note }) {
   }
 
   async function save() {
+    const incomplete = form.banners.some((banner) =>
+      (banner.products || []).some((row) => !(Number(row.price) > 0) || !/^\d{4}-\d{2}-\d{2}$/.test(String(row.endsOn || "")))
+    );
+    if (incomplete) {
+      note?.({ ok: false, error: "Each offer product needs a price and an end date." });
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -226,7 +267,15 @@ export default function BannersPanel({ note }) {
           nameZh: banner.nameZh,
           nameEn: banner.nameEn,
           src: banner.src || "",
+          heroSrc: banner.heroSrc || "",
           image: banner.image || "",
+          sentenceZh: banner.sentenceZh || "",
+          sentenceEn: banner.sentenceEn || "",
+          products: (banner.products || []).map((row) => ({
+            productId: row.productId,
+            price: Number(row.price),
+            endsOn: row.endsOn,
+          })),
         })),
       };
       const response = await fetch("/api/promo", {
@@ -248,6 +297,7 @@ export default function BannersPanel({ note }) {
       });
       setPendingDelete("");
       setSaved(true);
+      setDirty(false);
       note?.({ ok: true }, "Saved");
     } finally {
       setSaving(false);
@@ -262,10 +312,11 @@ export default function BannersPanel({ note }) {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="font-display text-2xl text-brand-900">Banners</h1>
-            {saved ? <p className="text-sm font-semibold text-brand-800">Saved</p> : null}
+            {dirty ? <p className="text-sm font-semibold text-amber-800">Unsaved changes</p> : null}
+            {saved && !dirty ? <p className="text-sm font-semibold text-brand-800">Saved</p> : null}
           </div>
           <p className="text-sm text-mute">
-            Row 1 is the homepage poster. Drag a row to the top to change it. Words printed on a poster change only when that image is replaced. Not on the marketplace until you Save.
+            Banners with at least one product rotate on the homepage, in this order. A banner with no products stays off the homepage. Not on the marketplace until you Save.
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
@@ -274,12 +325,25 @@ export default function BannersPanel({ note }) {
               type="checkbox"
               checked={form.visible !== false}
               onChange={(event) => {
-                setSaved(false);
+                markDirty();
                 setForm((current) => ({ ...current, visible: event.target.checked }));
               }}
             />
             Show on marketplace
           </label>
+          <button
+            type="button"
+            className={`rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60 ${dirty ? "ring-2 ring-amber-400 ring-offset-2" : ""}`}
+            disabled={saving}
+            onClick={save}
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+      {dirty ? (
+        <div className="sticky top-0 z-30 -mx-6 mb-4 flex flex-wrap items-center justify-between gap-3 border-y border-amber-200 bg-amber-50 px-6 py-2.5 shadow-sm">
+          <p className="text-sm font-semibold text-amber-950">Unsaved changes. Not on the marketplace until you Save.</p>
           <button
             type="button"
             className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
@@ -289,19 +353,19 @@ export default function BannersPanel({ note }) {
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
-      </div>
+      ) : null}
       {form.visible === false ? (
         <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">Hidden on marketplace</p>
       ) : null}
 
       <section className="mb-4 grid gap-4 lg:grid-cols-2">
-        <p className="text-sm text-mute lg:col-span-2">These two sentences are what shoppers read on the homepage and the offer page.</p>
+        <p className="text-sm text-mute lg:col-span-2">Shared sentence. A banner uses this when its own sentence is empty.</p>
         <label className="block text-sm font-semibold text-ink">
           Sentence（中文）<RequiredMark />
           <textarea
             value={form.sentenceZh}
             onChange={(event) => {
-              setSaved(false);
+              markDirty();
               setForm((current) => ({ ...current, sentenceZh: event.target.value }));
             }}
             rows={2}
@@ -313,7 +377,7 @@ export default function BannersPanel({ note }) {
           <textarea
             value={form.sentenceEn}
             onChange={(event) => {
-              setSaved(false);
+              markDirty();
               setForm((current) => ({ ...current, sentenceEn: event.target.value }));
             }}
             rows={2}
@@ -338,9 +402,19 @@ export default function BannersPanel({ note }) {
           <tbody>
             {form.banners.map((banner, index) => {
               const preview = banner.preview || banner.src;
+              const products = banner.products || [];
+              const q = String(productQuery[banner.id] || "").trim().toLowerCase();
+              const matches = q
+                ? catalog
+                    .filter((product) => {
+                      const hay = `${product.name || ""} ${product.productNo || ""} ${product.id || ""}`.toLowerCase();
+                      return hay.includes(q);
+                    })
+                    .slice(0, 6)
+                : [];
               return (
+                <Fragment key={banner.id}>
                 <tr
-                  key={banner.id}
                   className={`border-t border-line/80 ${overId === banner.id ? "bg-brand-50" : ""}`}
                   onDragOver={(event) => {
                     if (!dragId || event.dataTransfer.types?.includes("Files")) return;
@@ -404,18 +478,18 @@ export default function BannersPanel({ note }) {
                     </button>
                   </td>
                   <td className="px-3 py-3 align-middle">
-                    <div className="mb-1 flex items-center gap-2">
-                      <span className="text-xs font-semibold text-mute">{index + 1}</span>
-                      {index === 0 ? (
-                        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-800">Homepage</span>
+                    <div className="flex items-center gap-2">
+                      <span className="shrink-0 text-xs font-semibold text-mute">{index + 1}</span>
+                      {products.length > 0 ? (
+                        <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-800">Homepage</span>
                       ) : null}
+                      <input
+                        value={banner.nameZh || ""}
+                        onChange={(event) => patchBanner(banner.id, { nameZh: event.target.value })}
+                        placeholder="中文名"
+                        className="min-w-0 flex-1 rounded-lg border border-line px-3 py-2 text-sm"
+                      />
                     </div>
-                    <input
-                      value={banner.nameZh || ""}
-                      onChange={(event) => patchBanner(banner.id, { nameZh: event.target.value })}
-                      placeholder="中文名"
-                      className="w-full rounded-lg border border-line px-3 py-2 text-sm"
-                    />
                   </td>
                   <td className="px-3 py-3 align-middle">
                     <input
@@ -431,7 +505,7 @@ export default function BannersPanel({ note }) {
                         type="button"
                         className="rounded-lg bg-red-700 px-3 py-1.5 text-xs font-semibold text-white"
                         onClick={() => {
-                          setSaved(false);
+                          markDirty();
                           setForm((current) => ({
                             ...current,
                             banners: current.banners.filter((row) => row.id !== banner.id),
@@ -452,6 +526,106 @@ export default function BannersPanel({ note }) {
                     )}
                   </td>
                 </tr>
+                <tr className="border-b border-line/80">
+                  <td colSpan={5} className="px-3 pb-4">
+                    <p className="text-xs font-semibold text-ink">Products on this banner</p>
+                    <p className="mt-0.5 text-xs text-mute">No limit. Each product needs a promo price and an end date, and can belong to only one banner.</p>
+                    <ul className="mt-2 space-y-2">
+                      {products.map((row) => {
+                        const product = catalog.find((item) => item.id === row.productId);
+                        return (
+                          <li key={row.productId} className="flex flex-wrap items-center gap-2">
+                            <span className="min-w-0 flex-1 truncate text-sm text-ink">{product?.name || row.productId}</span>
+                            <input
+                              type="number"
+                              min="0.01"
+                              step="0.01"
+                              value={row.price}
+                              placeholder="Price"
+                              aria-label="Promo price"
+                              className="w-28 rounded-lg border border-line px-2 py-1.5 text-sm"
+                              onChange={(event) =>
+                                patchBanner(banner.id, {
+                                  products: products.map((item) =>
+                                    item.productId === row.productId ? { ...item, price: event.target.value } : item
+                                  ),
+                                })
+                              }
+                            />
+                            <input
+                              type="date"
+                              value={row.endsOn || ""}
+                              aria-label="Offer end date"
+                              className="rounded-lg border border-line px-2 py-1.5 text-sm"
+                              onChange={(event) =>
+                                patchBanner(banner.id, {
+                                  products: products.map((item) =>
+                                    item.productId === row.productId ? { ...item, endsOn: event.target.value } : item
+                                  ),
+                                })
+                              }
+                            />
+                            <button
+                              type="button"
+                              className="text-xs font-semibold text-mute"
+                              onClick={() =>
+                                patchBanner(banner.id, {
+                                  products: products.filter((item) => item.productId !== row.productId),
+                                })
+                              }
+                            >
+                              Remove
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <input
+                      value={productQuery[banner.id] || ""}
+                      onChange={(event) => setProductQuery((current) => ({ ...current, [banner.id]: event.target.value }))}
+                      placeholder="Search product name or SKU"
+                      className="mt-2 w-full max-w-md rounded-lg border border-line px-3 py-2 text-sm"
+                    />
+                    {matches.length ? (
+                      <ul className="mt-1 max-w-md rounded-lg border border-line bg-white">
+                        {matches.map((product) => (
+                          <li key={product.id}>
+                            <button
+                              type="button"
+                              className="w-full px-3 py-2 text-left text-sm hover:bg-brand-50"
+                              onClick={() => addOfferProduct(banner.id, product)}
+                            >
+                              {product.name}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                      <label className="block text-sm font-semibold text-ink">
+                        Sentence（中文）
+                        <textarea
+                          value={banner.sentenceZh || ""}
+                          onChange={(event) => patchBanner(banner.id, { sentenceZh: event.target.value })}
+                          rows={2}
+                          placeholder="Leave blank to use the shared sentence"
+                          className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm font-normal"
+                        />
+                      </label>
+                      <label className="block text-sm font-semibold text-ink">
+                        Sentence (English)
+                        <textarea
+                          value={banner.sentenceEn || ""}
+                          onChange={(event) => patchBanner(banner.id, { sentenceEn: event.target.value })}
+                          rows={2}
+                          placeholder="Leave blank to use the shared sentence"
+                          className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm font-normal"
+                        />
+                      </label>
+                    </div>
+                  </td>
+                </tr>
+                </Fragment>
               );
             })}
           </tbody>

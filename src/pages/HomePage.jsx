@@ -11,9 +11,10 @@ import SiteHeader from "../components/SiteHeader";
 import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
 import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
-import { SHOW_SPEC_MATCH } from "../lib/flags";
 import { siteOrigin, withLocale } from "../lib/locale";
-import { bannerName, promoBanners, sentenceOf, usePromo } from "../lib/promo";
+import { bannerHeroSrc, bannerName, bannerSentence, landingBanners, usePromo } from "../lib/promo";
+import { bannerProductOffers } from "../lib/offer";
+import { collapseCatalog, catalogGroupIndex, useCatalogGroups } from "../lib/catalogGroups";
 import { seoCopy } from "../lib/seoCopy";
 import {
   addCustomLine,
@@ -22,14 +23,17 @@ import {
   getCategoryBySlug,
   getCategoryDefs,
   getEffectivePrice,
+  getProduct,
   getGreenProducts,
   getSuppliers,
   getTopProducts,
   isHitProduct,
   requireBuyerAuth,
   addFromStorefront,
+  recommendProducts,
   searchProducts,
 } from "../lib/store";
+import SearchSuggestions from "../components/SearchSuggestions";
 
 const CATEGORY_PREVIEW_COUNT = 8;
 const SECTION_PREVIEW = 8;
@@ -111,8 +115,38 @@ function readCatalogView() {
 export default function HomePage() {
   const { user, cartCount, catalogEpoch, catalogLoading } = useStore();
   const { t, lang } = useLanguage();
+  const groupEpoch = useCatalogGroups();
   const { promo, live } = usePromo();
-  const topBanner = promoBanners(promo)[0];
+  const slides = useMemo(() => landingBanners(promo), [promo]);
+  const [offerIndex, setOfferIndex] = useState(0);
+  const [offerPaused, setOfferPaused] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setReduceMotion(media.matches);
+    apply();
+    media.addEventListener?.("change", apply);
+    return () => media.removeEventListener?.("change", apply);
+  }, []);
+  useEffect(() => {
+    setOfferIndex((current) => (slides.length ? Math.min(current, slides.length - 1) : 0));
+  }, [slides.length]);
+  useEffect(() => {
+    if (slides.length < 2 || offerPaused || reduceMotion) return undefined;
+    const timer = window.setInterval(() => {
+      setOfferIndex((current) => (current + 1) % slides.length);
+    }, 6000);
+    return () => window.clearInterval(timer);
+  }, [slides.length, offerPaused, reduceMotion, offerIndex]);
+  const offerBanner = slides[offerIndex] || null;
+  const offerProducts = useMemo(() => {
+    if (!offerBanner) return [];
+    return bannerProductOffers(offerBanner)
+      .map((row) => getProduct(row.productId))
+      .filter(Boolean);
+  }, [offerBanner, catalogEpoch]);
+  const offerCards = offerProducts.slice(0, 4);
+  const offerRest = Math.max(0, offerProducts.length - offerCards.length);
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [customOpen, setCustomOpen] = useState(false);
@@ -211,8 +245,14 @@ export default function HomePage() {
   const visibleCategories = categoriesExpanded
     ? categories
     : categories.slice(0, CATEGORY_PREVIEW_COUNT);
-  const top = useMemo(() => getTopProducts(SECTION_PREVIEW), [catalogEpoch]);
-  const greens = useMemo(() => getGreenProducts(SECTION_PREVIEW), [catalogEpoch]);
+  const top = useMemo(
+    () => collapseCatalog(getTopProducts(), catalogGroupIndex()).slice(0, SECTION_PREVIEW),
+    [catalogEpoch, groupEpoch]
+  );
+  const greens = useMemo(
+    () => collapseCatalog(getGreenProducts(), catalogGroupIndex()).slice(0, SECTION_PREVIEW),
+    [catalogEpoch, groupEpoch]
+  );
   const suppliers = useMemo(() => getSuppliers(), [catalogEpoch]);
   const visibleSuppliers = suppliersExpanded
     ? suppliers
@@ -228,8 +268,8 @@ export default function HomePage() {
     if (greenOnly) list = list.filter((p) => p.green);
     if (priceFilter === "unpriced") list = list.filter((p) => getEffectivePrice(p).displayPrice == null);
     if (priceFilter === "hot") list = list.filter((p) => isHitProduct(p));
-    return list;
-  }, [searchQuery, selectedCategories, greenOnly, priceFilter, searchFields, catalogEpoch]);
+    return collapseCatalog(list, catalogGroupIndex());
+  }, [searchQuery, selectedCategories, greenOnly, priceFilter, searchFields, catalogEpoch, groupEpoch]);
 
   useEffect(() => {
     setCatalogShown(CATALOG_BATCH);
@@ -355,12 +395,14 @@ export default function HomePage() {
   function handleAdd(productId, intent = "quote", qty) {
     const result = addFromStorefront(productId, intent, qty, lang);
     if (!result?.ok || intent === "quote-now") return;
-    const product =
-      products.find((p) => p.id === productId) ||
-      top.find((p) => p.id === productId) ||
-      greens.find((p) => p.id === productId);
+    const entry =
+      products.find((row) => row.product.id === productId) ||
+      top.find((row) => row.product.id === productId) ||
+      greens.find((row) => row.product.id === productId);
     showToast(
-      t(intent === "buy" || intent === "buy-now" ? "addedBuyToRfq" : "addedQuoteToRfq", { name: product?.name || "item" })
+      t(intent === "buy" || intent === "buy-now" ? "addedBuyToRfq" : "addedQuoteToRfq", {
+        name: entry?.product.name || getProduct(productId)?.name || "item",
+      })
     );
   }
 
@@ -388,8 +430,8 @@ export default function HomePage() {
   const suggestions = useMemo(() => {
     const query = searchQuery.trim();
     if (!query) return [];
-    return searchProducts(query).slice(0, 8);
-  }, [searchQuery, catalogEpoch]);
+    return recommendProducts(query, selectedCategories);
+  }, [searchQuery, selectedCategories, catalogEpoch]);
 
   function scrollToResults() {
     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -483,45 +525,76 @@ export default function HomePage() {
               <Link to={withLocale(lang, "/rfq")} className="btn-ghost !px-6 !py-3.5">
                 {t("openRfqDraft")}
               </Link>
-              {SHOW_SPEC_MATCH ? (
-                <Link to={withLocale(lang, "/spec-match")} className="btn-ghost !px-6 !py-3.5">
-                  {t("uploadSpecMatch")}
-                </Link>
-              ) : null}
             </div>
           </div>
         </section>
       </div>
 
       <div className="sheet relative z-10">
-        {live && topBanner ? (
+        {live && offerBanner ? (
           <section className="max-w-7xl mx-auto px-4 pt-8 sm:pt-10">
-            <div className="grid overflow-hidden border border-line bg-white lg:grid-cols-[minmax(0,1.25fr)_minmax(16rem,0.75fr)]">
-              <div className="relative flex flex-col justify-center bg-brand-50/70 px-6 py-10 sm:px-10 sm:py-12">
-                <div className="absolute left-0 top-0 h-full w-1.5 bg-brand-400" aria-hidden />
-                <h2 className="font-display text-3xl font-semibold leading-[1.12] tracking-tight text-brand-800 sm:text-4xl">
-                  {t("midAutumnTitle")}
-                </h2>
-                <p className="mt-4 max-w-lg text-base leading-relaxed text-mute">{sentenceOf(promo, lang)}</p>
-                <Link
-                  to={`${withLocale(lang, "/promo")}?banner=${encodeURIComponent(topBanner.id)}`}
-                  className="mt-8 inline-flex self-start items-center justify-center gap-2 bg-brand-600 px-6 py-3.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(36,90,65,0.22)] transition-colors hover:bg-brand-700"
-                >
-                  {t("midAutumnCta")}
-                  <span aria-hidden>→</span>
-                </Link>
-              </div>
+            <div
+              className="relative overflow-hidden border border-line max-sm:min-h-[200px]"
+              onMouseEnter={() => setOfferPaused(true)}
+              onMouseLeave={() => setOfferPaused(false)}
+            >
               <Link
-                to={`${withLocale(lang, "/promo")}?banner=${encodeURIComponent(topBanner.id)}`}
-                className="relative block min-h-[18rem] overflow-hidden lg:min-h-0"
+                to={`${withLocale(lang, "/promo")}?banner=${encodeURIComponent(offerBanner.id)}`}
+                aria-label={bannerName(offerBanner, lang)}
+                className="relative block overflow-hidden max-sm:min-h-[200px]"
               >
-                <img
-                  src={topBanner.src}
-                  alt={bannerName(topBanner, lang)}
-                  className="absolute inset-0 h-full w-full object-cover object-top"
+                <img src={bannerHeroSrc(slides[0])} alt="" className="block h-auto w-full opacity-0" />
+                {slides.map((banner, index) => (
+                  <img
+                    key={banner.id}
+                    src={bannerHeroSrc(banner)}
+                    alt=""
+                    className={`offer-banner-fade absolute inset-0 h-full w-full object-cover ${index === offerIndex ? "opacity-100" : "opacity-0"}`}
+                  />
+                ))}
+                <div
+                  className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,#143528_0%,#143528_58%,rgba(20,53,40,0)_84%)] sm:bg-[linear-gradient(90deg,#143528_0%,#143528_40%,rgba(20,53,40,0)_68%)]"
+                  aria-hidden
                 />
               </Link>
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex w-[62%] flex-col justify-center px-4 py-4 sm:w-[46%] sm:px-10">
+                <h2 className="font-display text-xl font-semibold leading-[1.12] tracking-tight text-white sm:text-3xl">
+                  {bannerName(offerBanner, lang)}
+                </h2>
+                <p className="mt-2 max-w-md text-sm leading-relaxed text-white/85">{bannerSentence(offerBanner, promo, lang)}</p>
+                {slides.length > 1 ? (
+                  <div className="pointer-events-auto mt-4 flex gap-2">
+                    {slides.map((banner, index) => (
+                      <button
+                        key={banner.id}
+                        type="button"
+                        aria-label={`${index + 1} / ${slides.length}`}
+                        aria-current={index === offerIndex ? "true" : undefined}
+                        className={`h-1.5 w-6 ${index === offerIndex ? "bg-white" : "bg-white/45"}`}
+                        onClick={() => setOfferIndex(index)}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </div>
+            {offerCards.length ? (
+              <div className="mt-6">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {offerCards.map((product) => (
+                    <ProductCard key={product.id} product={product} onAdd={handleAdd} />
+                  ))}
+                </div>
+                {offerRest > 0 ? (
+                  <Link
+                    to={`${withLocale(lang, "/promo")}?banner=${encodeURIComponent(offerBanner.id)}`}
+                    className="mt-4 inline-flex text-sm font-semibold text-brand-700 hover:text-brand-800"
+                  >
+                    {t("offerRemaining", { n: offerRest })}
+                  </Link>
+                ) : null}
+              </div>
+            ) : null}
           </section>
         ) : null}
         <section id="categories" className="max-w-7xl mx-auto px-4 pt-9 sm:pt-11" style={{ scrollMarginTop: navHeight }}>
@@ -605,7 +678,16 @@ export default function HomePage() {
             {catalogLoading && !greens.length ? (
               <ProductCardSkeleton compact count={4} />
             ) : (
-              greens.map((p) => <ProductCard key={p.id} product={p} compact onAdd={handleAdd} />)
+              greens.map((entry) => (
+                <ProductCard
+                  key={entry.product.id}
+                  product={entry.product}
+                  compact
+                  grouped={entry.grouped}
+                  title={entry.groupName}
+                  onAdd={handleAdd}
+                />
+              ))
             )}
           </div>
         </section>
@@ -629,7 +711,17 @@ export default function HomePage() {
             {catalogLoading && !top.length ? (
               <ProductCardSkeleton compact count={4} />
             ) : (
-              top.map((p) => <ProductCard key={p.id} product={p} compact rank={p.featuredRank} onAdd={handleAdd} />)
+              top.map((entry) => (
+                <ProductCard
+                  key={entry.product.id}
+                  product={entry.product}
+                  compact
+                  rank={entry.product.featuredRank}
+                  grouped={entry.grouped}
+                  title={entry.groupName}
+                  onAdd={handleAdd}
+                />
+              ))
             )}
           </div>
         </section>
@@ -827,25 +919,13 @@ export default function HomePage() {
                       aria-expanded={suggestOpen && suggestions.length > 0}
                       role="combobox"
                     />
-                    {suggestOpen && suggestions.length ? (
-                      <ul role="listbox" className="absolute left-0 right-0 top-full z-40 mt-1 max-h-80 overflow-auto border border-line bg-white text-ink shadow-lg">
-                        {suggestions.map((product, index) => (
-                          <li key={product.id}>
-                            <button
-                              type="button"
-                              role="option"
-                              aria-selected={index === suggestIndex}
-                              className={`block w-full px-3 py-2 text-left text-sm ${index === suggestIndex ? "bg-brand-50" : "hover:bg-paper"}`}
-                              onMouseDown={(event) => {
-                                event.preventDefault();
-                                runCatalogSearch(product.name);
-                              }}
-                            >
-                              {product.name}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
+                    {suggestOpen ? (
+                      <SearchSuggestions
+                        query={searchQuery}
+                        suggestions={suggestions}
+                        activeIndex={suggestIndex}
+                        onPick={(product) => runCatalogSearch(product.name)}
+                      />
                     ) : null}
                     <span className="w-px self-stretch my-1.5 bg-line" aria-hidden />
                     <SearchFieldsSelect
@@ -906,14 +986,6 @@ export default function HomePage() {
                   >
                     {t("priceFilterHot")}
                   </button>
-                  {SHOW_SPEC_MATCH ? (
-                    <Link
-                      to={withLocale(lang, "/spec-match")}
-                      className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide bg-white text-charcoal rounded-full"
-                    >
-                      {t("uploadSpecMatch")}
-                    </Link>
-                  ) : null}
                 </div>
               </div>
             </div>
@@ -940,6 +1012,8 @@ export default function HomePage() {
                     jumpToResultsRef.current = true;
                     setCatalogPinned(true);
                     holdCatalogPinRef.current = true;
+                    setSearchQuery("");
+                    setNavQuery("");
                     setSelectedCategories([category.name]);
                   }}
                 />
@@ -998,11 +1072,23 @@ export default function HomePage() {
             ) : (
               <>
                 <div className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"}>
-                  {visibleCatalog.map((p) =>
+                  {visibleCatalog.map((entry) =>
                     catalogView === "list" ? (
-                      <ProductListRow key={p.id} product={p} onAdd={handleAdd} />
+                      <ProductListRow
+                        key={entry.product.id}
+                        product={entry.product}
+                        grouped={entry.grouped}
+                        title={entry.groupName}
+                        onAdd={handleAdd}
+                      />
                     ) : (
-                      <ProductCard key={p.id} product={p} onAdd={handleAdd} />
+                      <ProductCard
+                        key={entry.product.id}
+                        product={entry.product}
+                        grouped={entry.grouped}
+                        title={entry.groupName}
+                        onAdd={handleAdd}
+                      />
                     )
                   )}
                 </div>

@@ -9,7 +9,8 @@ import { useLanguage } from "../i18n";
 import { stripLocale, withLocale } from "../lib/locale";
 import { SHOW_RFQ } from "../lib/flags";
 import { usePromo } from "../lib/promo";
-import { closeAuthModal, getCategoryByName, getCategoryDefs, logoutUser, searchProducts } from "../lib/store";
+import { closeAuthModal, getCategoryByName, getCategoryDefs, logoutUser, recommendProducts } from "../lib/store";
+import SearchSuggestions from "./SearchSuggestions";
 
 function CartIcon({ className = "h-4 w-4" }) {
   return (
@@ -77,7 +78,7 @@ export default function SiteHeader({
   const suggestions = useMemo(() => {
     const text = String(query || "").trim();
     if (!text) return [];
-    return searchProducts(text).slice(0, 8);
+    return recommendProducts(text);
   }, [query, catalogEpoch]);
   const lp = (path) => withLocale(lang, path);
 
@@ -291,26 +292,16 @@ export default function SiteHeader({
               aria-label={t("search")}
               role="combobox"
             />
-            {suggestOpen && suggestions.length ? (
-              <ul role="listbox" className="absolute left-0 right-0 top-full z-50 mt-1 max-h-80 overflow-auto border border-line bg-white text-ink shadow-lg">
-                {suggestions.map((product, index) => (
-                  <li key={product.id}>
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={index === suggestIndex}
-                      className={`block w-full px-3 py-2 text-left text-sm ${index === suggestIndex ? "bg-brand-50" : "hover:bg-paper"}`}
-                      onMouseDown={(event) => {
-                        event.preventDefault();
-                        setSearch(product.name);
-                        submitSearch(event, product.name);
-                      }}
-                    >
-                      {product.name}
-                    </button>
-                  </li>
-                ))}
-              </ul>
+            {suggestOpen ? (
+              <SearchSuggestions
+                query={query}
+                suggestions={suggestions}
+                activeIndex={suggestIndex}
+                onPick={(product) => {
+                  setSearch(product.name);
+                  submitSearch(null, product.name);
+                }}
+              />
             ) : null}
           </form>
 
@@ -451,16 +442,30 @@ export default function SiteHeader({
                 </button>
               ))}
             </div>
-            <form onSubmit={submitSearch}>
+            <form className="relative mb-2" onSubmit={submitSearch}>
               <input
                 type="search"
                 value={query}
                 onChange={(e) => setSearch(e.target.value)}
+                onFocus={() => setSuggestOpen(Boolean(String(query || "").trim()))}
                 placeholder={t("navSearchPlaceholder")}
-                className="w-full bg-white/10 border border-white/20 text-white placeholder:text-white/45 px-3 py-2 text-sm mb-2"
+                className="w-full bg-white/10 border border-white/20 text-white placeholder:text-white/45 px-3 py-2 text-sm"
                 autoComplete="off"
                 aria-label={t("search")}
+                role="combobox"
               />
+              {suggestOpen ? (
+                <SearchSuggestions
+                  query={query}
+                  suggestions={suggestions}
+                  activeIndex={suggestIndex}
+                  onPick={(product) => {
+                    closeMenu();
+                    setSearch(product.name);
+                    submitSearch(null, product.name);
+                  }}
+                />
+              ) : null}
             </form>
             {navLinks.map((l) => (
               <Link

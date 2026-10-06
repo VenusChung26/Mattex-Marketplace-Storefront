@@ -15,6 +15,13 @@ function legacyImageUrl(url) {
   return "";
 }
 import { marketplaceHomeHref } from "../../lib/origins";
+import {
+  groupOf,
+  groupSelectedProducts,
+  releaseSelectedProducts,
+  saveCatalogGroups,
+  useCatalogGroups,
+} from "../../lib/catalogGroups";
 import { phoneSlotLabel } from "../../lib/phone";
 import {
   addAdminCategory,
@@ -1888,6 +1895,7 @@ function SalesUnitField({ value, onChange }) {
 }
 
 function ProductsPanel({ products, product, editing, setEditing, note, reports = [], focusReport, onClearFocus, openProductId, onOpenedProduct }) {
+  useCatalogGroups();
   const jumped = openProductId ? products.find((row) => row.id === openProductId) : null;
   const [form, setForm] = useState(() => (jumped || (focusReport && product) ? toForm(jumped || product) : null));
   const [modal, setModal] = useState(() => (jumped || focusReport ? "edit" : null));
@@ -2274,6 +2282,29 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
             </button>
             <button
               type="button"
+              className="rounded-lg border border-brand-600 bg-white px-3 py-1.5 text-xs font-semibold text-brand-800 disabled:opacity-50"
+              disabled={selectedProducts.length < 2}
+              title="Select at least two products"
+              onClick={async () => {
+                const result = await saveCatalogGroups(groupSelectedProducts(selectedProducts));
+                if (!result.ok) note?.({ ok: false, error: result.error || "Unable to save the group" });
+              }}
+            >
+              Group as one product
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink disabled:opacity-50"
+              disabled={!selectedProducts.some((row) => groupOf(row.id))}
+              onClick={async () => {
+                const result = await saveCatalogGroups(releaseSelectedProducts(selectedProducts.map((row) => row.id)));
+                if (!result.ok) note?.({ ok: false, error: result.error || "Unable to update the group" });
+              }}
+            >
+              Remove from group
+            </button>
+            <button
+              type="button"
               className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700"
               onClick={() => openBulkConfirm("delete")}
             >
@@ -2355,6 +2386,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                         <ProductThumb product={p} />
                         <div className="min-w-0">
                           <p className="font-medium leading-snug">{cellText(p.name)}</p>
+                          {groupOf(p.id) ? <p className="mt-0.5 text-[11px] font-semibold text-brand-700">{groupOf(p.id).name}</p> : null}
                           {getCatalogSyncError(p.id) === "quota" ? (
                             <p className="mt-1 text-xs font-semibold text-[#8a2b2b]">這次未送出，稍後再試</p>
                           ) : null}

@@ -11,6 +11,7 @@ import { productImageList } from "../lib/compressImage";
 import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
 import { bootProduct } from "../lib/bootPage";
+import { groupOf, useCatalogGroups } from "../lib/catalogGroups";
 import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { seoCopy } from "../lib/seoCopy";
 import {
@@ -63,7 +64,12 @@ export default function DetailsPage() {
   const { id } = useParams();
   const [params, setSearchParams] = useSearchParams();
   useStore();
+  useCatalogGroups();
   const product = getProduct(id) || bootProduct(id);
+  const group = groupOf(product?.id);
+  const variantOptions = (group?.members || [])
+    .map((member) => ({ ...member, product: getProduct(member.productId) }))
+    .filter((member) => member.product && isBuyerVisible(member.product));
   const offline = Boolean(product && isProductOrderBlocked(product.id));
   const orderLock = useRef(false);
   const { t, lang } = useLanguage();
@@ -228,6 +234,30 @@ export default function DetailsPage() {
             <h1 className="mt-2 font-display text-3xl sm:text-4xl font-semibold text-brand-800 leading-tight">
               {product.name}
             </h1>
+            {variantOptions.length > 1 ? (
+              <div className="mt-4">
+                <p className="text-sm font-semibold text-ink">{t("variantOption")}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {variantOptions.map((member) => {
+                    const selected = member.productId === product.id;
+                    return (
+                      <Link
+                        key={member.productId}
+                        to={withLocale(lang, `/details/${member.productId}`)}
+                        aria-current={selected ? "true" : undefined}
+                        className={`rounded-full border px-3 py-1.5 text-sm ${
+                          selected
+                            ? "border-brand-700 bg-brand-50 font-semibold text-brand-800"
+                            : "border-line bg-white text-ink hover:border-brand-400"
+                        }`}
+                      >
+                        {member.option}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
             <p className="mt-3 text-sm text-mute">
               {t("supplierLabel")}:{" "}
               {product.supplier ? (

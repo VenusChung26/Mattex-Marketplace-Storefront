@@ -7,13 +7,49 @@
       "id": "prices",
       "nameZh": "中秋限定價目",
       "nameEn": "Promotional price list",
-      "src": "/assets/promo/offer-prices.webp"
+      "src": "/assets/promo/offer-prices.webp",
+      "heroSrc": "/assets/promo/offer-hero-prices.jpg",
+      "sentenceZh": "憑海報即享專屬特價。買得多，折得多，額外優惠高達 5%。",
+      "sentenceEn": "Show this poster for the special price. Extra discount up to 5% when you buy more.",
+      "products": [
+        {
+          "productId": "mkt-mesh-a142",
+          "price": 88,
+          "endsOn": "2026-12-31"
+        },
+        {
+          "productId": "mkt-mesh-a193",
+          "price": 96,
+          "endsOn": "2026-12-31"
+        },
+        {
+          "productId": "mkt-mesh-a252",
+          "price": 110,
+          "endsOn": "2026-12-31"
+        },
+        {
+          "productId": "mkt-mesh-a393",
+          "price": 128,
+          "endsOn": "2026-12-31"
+        },
+        {
+          "productId": "mkt-mesh-b503",
+          "price": 140,
+          "endsOn": "2026-12-31"
+        },
+        {
+          "productId": "mkt-tiles-the-divine-light-series-600x1200mm",
+          "price": 30,
+          "endsOn": "2026-10-28"
+        }
+      ]
     },
     {
       "id": "range",
       "nameZh": "現貨及推廣建材",
       "nameEn": "Products on promotion",
-      "src": "/assets/promo/offer-range.webp"
+      "src": "/assets/promo/offer-range.webp",
+      "products": []
     }
   ]
 }

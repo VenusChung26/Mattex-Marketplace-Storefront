@@ -26,6 +26,7 @@ import CatalogUpdateBanner from "./components/CatalogUpdateBanner";
 import FloatingActions from "./components/FloatingActions";
 import { getCategoryByName, ensureBuyerSession } from "./lib/store";
 import { adminOrigin, isAdminSurface } from "./lib/origins";
+import { preferredLocale, withLocale } from "./lib/locale";
 import { useStore } from "./hooks/useStore";
 
 function BuyerSessionGuard() {
@@ -50,7 +51,7 @@ function BuyerSessionGuard() {
 function LangLayout() {
   const { lang } = useParams();
   if (lang !== "en" && lang !== "zh") {
-    return <Navigate to="/en" replace />;
+    return <Navigate to={withLocale(preferredLocale(), "/")} replace />;
   }
   return (
     <>
@@ -73,10 +74,14 @@ function QuoteLegacyRedirect() {
   return <Navigate to={`/zh/quote/${token}`} replace />;
 }
 
+function PreferredRedirect({ to = "/" }) {
+  return <Navigate to={withLocale(preferredLocale(), to)} replace />;
+}
+
 function LegacyParam({ prefix }) {
   const params = useParams();
   const id = params.id || params.slug || params.rfqId;
-  return <Navigate to={`/en/${prefix}/${id}`} replace />;
+  return <Navigate to={withLocale(preferredLocale(), `/${prefix}/${id}`)} replace />;
 }
 
 function CatalogIndexRedirect() {
@@ -96,7 +101,7 @@ function RfqsRoute() {
 
 function UnknownLangPath() {
   const { lang } = useParams();
-  return <Navigate to={`/${lang === "zh" ? "zh" : "en"}`} replace />;
+  return <Navigate to={withLocale(preferredLocale(), "/")} replace />;
 }
 
 function AdminHostRedirect() {
@@ -145,24 +150,24 @@ export default function App() {
         <ScrollToTop />
         <GoogleAnalytics />
         <Routes>
-          <Route path="/" element={<Navigate to="/en" replace />} />
-          <Route path="/green" element={<Navigate to={{ pathname: "/en", search: "?green=1", hash: "products" }} replace />} />
-          <Route path="/sales" element={<Navigate to="/en" replace />} />
+          <Route path="/" element={<PreferredRedirect />} />
+          <Route path="/green" element={<PreferredRedirect to={{ pathname: "/", search: "?green=1", hash: "products" }} />} />
+          <Route path="/sales" element={<PreferredRedirect />} />
           <Route path="/admin" element={<AdminHostRedirect />} />
           <Route path="/admin/*" element={<AdminHostRedirect />} />
-          <Route path="/catalog" element={<Navigate to={{ pathname: "/en", hash: "products" }} replace />} />
+          <Route path="/catalog" element={<PreferredRedirect to={{ pathname: "/", hash: "products" }} />} />
           <Route path="/catalog/:slug" element={<LegacyParam prefix="catalog" />} />
-          <Route path="/login" element={<Navigate to="/en/login" replace />} />
-          <Route path="/signup" element={<Navigate to="/en/signup" replace />} />
-          <Route path="/forgot-password" element={<Navigate to="/en/forgot-password" replace />} />
-          <Route path="/reset-password" element={<Navigate to="/en/reset-password" replace />} />
-          <Route path="/rfq" element={<Navigate to="/en/rfq" replace />} />
+          <Route path="/login" element={<PreferredRedirect to="/login" />} />
+          <Route path="/signup" element={<PreferredRedirect to="/signup" />} />
+          <Route path="/forgot-password" element={<PreferredRedirect to="/forgot-password" />} />
+          <Route path="/reset-password" element={<PreferredRedirect to="/reset-password" />} />
+          <Route path="/rfq" element={<PreferredRedirect to="/rfq" />} />
           <Route path="/mid-autumn" element={<Navigate to="/zh/promo" replace />} />
           <Route path="/promo" element={<Navigate to="/zh/promo" replace />} />
-          <Route path="/spec-match" element={<Navigate to={SHOW_SPEC_MATCH ? "/en/spec-match" : "/en"} replace />} />
-          <Route path="/rfqs" element={<Navigate to={SHOW_RFQ ? "/en/rfqs" : "/en"} replace />} />
-          <Route path="/whatsapp" element={<Navigate to="/en/whatsapp" replace />} />
-          <Route path="/whatsapp-chat" element={<Navigate to="/en/whatsapp-chat" replace />} />
+          <Route path="/spec-match" element={<PreferredRedirect to={SHOW_SPEC_MATCH ? "/spec-match" : "/"} />} />
+          <Route path="/rfqs" element={<PreferredRedirect to={SHOW_RFQ ? "/rfqs" : "/"} />} />
+          <Route path="/whatsapp" element={<PreferredRedirect to="/whatsapp" />} />
+          <Route path="/whatsapp-chat" element={<PreferredRedirect to="/whatsapp-chat" />} />
           <Route path="/details/:id" element={<LegacyParam prefix="details" />} />
           <Route path="/supplier/:slug" element={<LegacyParam prefix="supplier" />} />
           <Route path="/whatsapp/:id" element={<LegacyParam prefix="whatsapp" />} />

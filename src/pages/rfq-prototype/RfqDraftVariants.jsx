@@ -538,6 +538,7 @@ export function ConfirmRfqView(props) {
     selectedIds,
     onSubmitKind,
     setConfirmKind,
+    onBack,
     formError,
     setLineQty,
     removeLine,
@@ -560,7 +561,7 @@ export function ConfirmRfqView(props) {
     <div className="max-w-7xl mx-auto px-4 py-8 sm:py-10">
       <button
         type="button"
-        onClick={() => setConfirmKind(null)}
+        onClick={() => (onBack ? onBack() : setConfirmKind(null))}
         className="text-sm font-semibold text-brand-700 hover:text-brand-800"
       >
         ← {t("confirmPageBack")}

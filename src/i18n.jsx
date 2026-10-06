@@ -48,6 +48,9 @@ const messages = {
     promoNext: "Next banner",
     openRfqDraft: "Open Cart",
     uploadSpecMatch: "Upload spec to match",
+    offerEnds: "Offer ends {date}",
+    offerRemaining: "{n} more in this offer",
+    variantOption: "Option",
     catalogUpdated: "Catalog updated",
     catalogOffline: "This product is no longer available. Ordering is closed.",
     catalogReload: "Reload",
@@ -838,6 +841,9 @@ const messages = {
     promoNext: "下一張",
     openRfqDraft: "開啟購物車",
     uploadSpecMatch: "上傳規格配對",
+    offerEnds: "優惠至 {date}",
+    offerRemaining: "還有 {n} 件",
+    variantOption: "類別",
     catalogUpdated: "目錄有更新",
     catalogOffline: "這件貨已下架，不能落單",
     catalogReload: "重新載入",
@@ -1609,7 +1615,12 @@ export function LanguageProvider({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const urlLang = localeFromPath(location.pathname);
-  const [lang, setLangState] = useState(() => urlLang || readSavedLang() || "en");
+  const [lang, setLangState] = useState(() => {
+    if (urlLang) return urlLang;
+    const saved = readSavedLang();
+    if (saved) return saved;
+    return import.meta.env?.VITE_SURFACE === "admin" ? "en" : "zh";
+  });
 
   useEffect(() => {
     if (urlLang && urlLang !== lang) setLangState(urlLang);

@@ -7,6 +7,7 @@ const UPLOAD_DIR = path.join(process.cwd(), "public", "assets", "promo", "upload
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const ID_RE = /^[a-zA-Z0-9_-]{1,40}$/;
 const SRC_RE = /^\/assets\/promo\/[a-zA-Z0-9._/-]+$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MIME_EXT = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -23,6 +24,13 @@ const SEED = {
       nameZh: "中秋限定價目",
       nameEn: "Promotional price list",
       src: "/assets/promo/offer-prices.webp",
+      products: [
+        { productId: "mkt-mesh-a142", price: 88, endsOn: "2026-12-31" },
+        { productId: "mkt-mesh-a193", price: 96, endsOn: "2026-12-31" },
+        { productId: "mkt-mesh-a252", price: 110, endsOn: "2026-12-31" },
+        { productId: "mkt-mesh-a393", price: 128, endsOn: "2026-12-31" },
+        { productId: "mkt-mesh-b503", price: 140, endsOn: "2026-12-31" },
+      ],
     },
     {
       id: "range",
@@ -34,6 +42,21 @@ const SEED = {
 };
 
 let chain = Promise.resolve();
+
+function cleanProducts(list) {
+  const seen = new Set();
+  const products = [];
+  for (const row of Array.isArray(list) ? list : []) {
+    const productId = String(row?.productId || "").trim();
+    const price = Math.round(Number(row?.price) * 100) / 100;
+    const endsOn = String(row?.endsOn || "").trim();
+    if (!productId || seen.has(productId)) continue;
+    if (!Number.isFinite(price) || price <= 0 || !DATE_RE.test(endsOn)) continue;
+    seen.add(productId);
+    products.push({ productId, price, endsOn });
+  }
+  return products;
+}
 
 function publicPromo(doc) {
   return {
@@ -47,6 +70,10 @@ function publicPromo(doc) {
         nameZh: String(banner.nameZh || ""),
         nameEn: String(banner.nameEn || ""),
         src: String(banner.src),
+        ...(safeSrc(banner.heroSrc) ? { heroSrc: safeSrc(banner.heroSrc) } : {}),
+        sentenceZh: String(banner.sentenceZh || ""),
+        sentenceEn: String(banner.sentenceEn || ""),
+        products: cleanProducts(banner.products),
       })),
   };
 }
@@ -103,7 +130,37 @@ async function saveNow(body) {
       src = `/assets/promo/uploads/${filename}`;
     }
     if (!src) return { status: 400, body: { ok: false, error: "Each banner needs an image." } };
-    banners.push({ id, nameZh, nameEn, src });
+    const incomingProducts = Array.isArray(item?.products) ? item.products : [];
+    const products = [];
+    const productIds = new Set();
+    for (const row of incomingProducts) {
+      const productId = String(row?.productId || "").trim();
+      const price = Math.round(Number(row?.price) * 100) / 100;
+      const endsOn = String(row?.endsOn || "").trim();
+      if (!productId) continue;
+      if (!Number.isFinite(price) || price <= 0 || !DATE_RE.test(endsOn)) {
+        return { status: 400, body: { ok: false, error: "Each offer product needs a price and an end date." } };
+      }
+      if (productIds.has(productId)) return { status: 400, body: { ok: false, error: "A product can only be added once on a banner." } };
+      productIds.add(productId);
+      products.push({ productId, price, endsOn });
+    }
+    const bannerSentenceZh = String(item?.sentenceZh || "").trim();
+    const bannerSentenceEn = String(item?.sentenceEn || "").trim();
+    const heroSrc = safeSrc(item?.heroSrc);
+    const saved = { id, nameZh, nameEn, src, sentenceZh: bannerSentenceZh, sentenceEn: bannerSentenceEn, products };
+    if (heroSrc) saved.heroSrc = heroSrc;
+    banners.push(saved);
+  }
+  const owner = new Map();
+  for (const banner of banners) {
+    for (const row of banner.products) {
+      if (owner.has(row.productId)) {
+        const other = owner.get(row.productId);
+        return { status: 400, body: { ok: false, error: `Already on ${other}.` } };
+      }
+      owner.set(row.productId, banner.nameEn || banner.nameZh || banner.id);
+    }
   }
 
   const next = { visible, sentenceZh, sentenceEn, banners };

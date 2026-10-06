@@ -242,7 +242,7 @@ export function QtyStepper({ value, min = 1, unit = "", onChange, size = "card",
   const compact = size === "card" || size === "row" || size === "bar";
   const stretch = size !== "bar";
   const [draft, setDraft] = useState(String(value));
-  const [underMin, setUnderMin] = useState(false);
+  const [underMin, setUnderMin] = useState(() => Number(value) < min);
   const atMin = value <= min;
   const btn = compact
     ? "h-8 w-8 shrink-0 text-base leading-none text-brand-800 hover:bg-brand-50 disabled:text-mute disabled:hover:bg-transparent disabled:opacity-40"
@@ -251,7 +251,8 @@ export function QtyStepper({ value, min = 1, unit = "", onChange, size = "card",
 
   useEffect(() => {
     setDraft(String(value));
-  }, [value]);
+    setUnderMin(Number(value) < min);
+  }, [value, min]);
 
   function parseDraft(raw) {
     const n = Math.floor(Number(String(raw).replace(/[^\d]/g, "")));
@@ -382,8 +383,8 @@ function tailorInitialFromProduct(product, qty) {
   };
 }
 
-export function ProductActions({ product, onAdd, size = "card", qty: qtyProp, onQtyChange, hideQty = false, autoOpenTailor = false, disabled = false }) {
-  const { t } = useLanguage();
+export function ProductActions({ product, onAdd, size = "card", qty: qtyProp, onQtyChange, hideQty = false, autoOpenTailor = false, disabled = false, grouped = false }) {
+  const { t, lang } = useLanguage();
   const { draft } = useStore();
   const minQty = Math.max(1, Number(product.moq) || 1);
   const [innerQty, setInnerQty] = useState(minQty);
@@ -451,7 +452,12 @@ export function ProductActions({ product, onAdd, size = "card", qty: qtyProp, on
     <QtyStepper value={qty} min={minQty} unit={product.unit} onChange={setQty} size={size} t={t} />
   );
 
-  const primaryBtn = (
+  const chooseHref = withLocale(lang, `/details/${product.id}`);
+  const primaryBtn = grouped && size !== "detail" ? (
+    <Link to={chooseHref} className={`${primaryClass} inline-flex items-center justify-center`}>
+      {t("requestNow")}
+    </Link>
+  ) : (
     <button
       type="button"
       className={`${primaryClass} disabled:opacity-40`}
@@ -462,7 +468,11 @@ export function ProductActions({ product, onAdd, size = "card", qty: qtyProp, on
     </button>
   );
 
-  const addBtn = (
+  const addBtn = grouped && size !== "detail" ? (
+    <Link to={chooseHref} className={`${addClass} inline-flex items-center justify-center`}>
+      {t("addToCart")}
+    </Link>
+  ) : (
     <button type="button" className={`${addClass} disabled:opacity-40`} disabled={disabled} onClick={() => fire(cartIntent)}>
       {addLabel}
     </button>
@@ -578,8 +588,9 @@ export function ProductActions({ product, onAdd, size = "card", qty: qtyProp, on
   );
 }
 
-export function ProductListRow({ product, onAdd }) {
+export function ProductListRow({ product, onAdd, grouped = false, title = "" }) {
   const { t, lang } = useLanguage();
+  const label = title || product.name;
 
   return (
     <article className="relative flex flex-col sm:flex-row sm:items-center gap-3 border border-line bg-white p-3">
@@ -590,7 +601,7 @@ export function ProductListRow({ product, onAdd }) {
         <ProductImage
           src={product.image}
           fallback={product.imageFallback}
-          alt={product.name}
+          alt={label}
           compact
           className="h-full w-full"
           imgClassName="h-full w-full object-cover"
@@ -607,7 +618,7 @@ export function ProductListRow({ product, onAdd }) {
         </p>
         <h3 className="mt-0.5 font-semibold text-ink leading-snug text-sm sm:text-base break-words">
           <Link to={withLocale(lang, `/details/${product.id}`)} className="hover:text-brand-600">
-            {product.name}
+            {label}
           </Link>
         </h3>
         <p className="mt-0.5 text-xs text-mute truncate">
@@ -617,18 +628,19 @@ export function ProductListRow({ product, onAdd }) {
         <ProductMetaChips product={product} showTags className="mt-1.5" />
       </div>
       <div className="sm:w-32 shrink-0">
-        <ProductPrice product={product} className="!mt-0" />
+        <ProductPrice product={product} className="!mt-0" suppressOffer={grouped} />
       </div>
       <div className="sm:w-64 shrink-0">
-        <ProductActions product={product} onAdd={onAdd} size="row" />
+        <ProductActions product={product} onAdd={onAdd} size="row" grouped={grouped} />
       </div>
     </article>
   );
 }
 
-export default function ProductCard({ product, onAdd, rank = null, compact = false }) {
+export default function ProductCard({ product, onAdd, rank = null, compact = false, grouped = false, title = "" }) {
   const { t, lang } = useLanguage();
   const supplierName = supplierDisplayName(product.supplier);
+  const label = title || product.name;
 
   return (
     <article className="product-tile relative flex flex-col overflow-visible h-full">
@@ -640,7 +652,7 @@ export default function ProductCard({ product, onAdd, rank = null, compact = fal
         <ProductImage
           src={product.image}
           fallback={product.imageFallback}
-          alt={product.name}
+          alt={label}
           className="h-full w-full"
           imgClassName="w-full h-full object-cover transition-transform duration-500 ease-out hover:scale-[1.04]"
         />
@@ -656,7 +668,7 @@ export default function ProductCard({ product, onAdd, rank = null, compact = fal
         </p>
         <h3 className={`mt-1 font-semibold text-ink leading-snug line-clamp-3 ${compact ? "text-sm" : "text-base"}`}>
           <Link to={withLocale(lang, `/details/${product.id}`)} className="hover:text-brand-600 transition-colors">
-            {product.name}
+            {label}
           </Link>
         </h3>
         <p className="mt-1 text-xs text-mute truncate">
@@ -672,9 +684,9 @@ export default function ProductCard({ product, onAdd, rank = null, compact = fal
         <ProductRating product={product} className="mt-1.5" />
         <ProductMetaChips product={product} className="mt-2.5" />
         <div className="mt-auto mt-4">
-          <ProductPrice product={product} className="!mt-0" />
+          <ProductPrice product={product} className="!mt-0" suppressOffer={grouped} />
           <div className="mt-3">
-            <ProductActions product={product} onAdd={onAdd} size="card" />
+            <ProductActions product={product} onAdd={onAdd} size="card" grouped={grouped} />
           </div>
         </div>
       </div>

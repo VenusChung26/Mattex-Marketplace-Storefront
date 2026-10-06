@@ -2,6 +2,7 @@ import { collectAttachmentUrls, collectProductImageUrls, fitWhatsappUrls, publis
 import { buildQuotePdf, canSharePdfFile, downloadBlob, sharePdfFile } from "./quotePdf.js";
 import { fetchCatalogState, fetchQuoteSnapshot, fetchRemoteKv, fetchRemoteRfqs, fetchRfqStamp, fetchSessionState, isSupabaseConfigured, persistCatalogTables, persistKv, persistKvNow, probeRemoteData, shouldUseLocalSharedStore } from "./supabasePersist.js";
 import { adminOrigin, marketplaceOrigin } from "./origins.js";
+import { activeOfferPrice } from "./offer.js";
 import { foldHan } from "./han.js";
 import { contactFormFromAccount, normalizeRoles } from "./phone.js";
 import {
@@ -234,12 +235,25 @@ function isOrderable(product) {
   return isBuyerVisible(product) && !isDiscontinued(product);
 }
 
+function readableCertLine(raw) {
+  const line = String(raw || "").replace(/^[\s\-–—]+/, "").replace(/(\S)\(/g, "$1 (").trim();
+  if (!line || line === "-") return "";
+  if (!/\?{2,}/.test(line)) return line;
+  const cleaned = line
+    .replace(/\([^)\n]*\?{2,}[^)\n]*\)/g, "")
+    .replace(/\?{2,}/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  if (!cleaned || /^[\s\-–—:()/]+$/.test(cleaned)) return "";
+  return cleaned;
+}
+
 function certificationLines(product) {
   const seen = new Set();
   const lines = [];
   for (const raw of String(product?.certifications || "").split(/\n+/)) {
-    const line = raw.replace(/^[\s\-–—]+/, "").replace(/(\S)\(/g, "$1 (").trim();
-    if (!line || line === "-" || seen.has(line)) continue;
+    const line = readableCertLine(raw);
+    if (!line || seen.has(line)) continue;
     seen.add(line);
     lines.push(line);
   }
@@ -826,6 +840,37 @@ function searchProducts(query, category, options = {}) {
     const blob = productSearchText(p, options.fields);
     return tokens.every((token) => blob.includes(token));
   });
+}
+
+function recommendProducts(query, category, limit = 8) {
+  const tokens = foldHan(String(query || "").trim()).toLowerCase().split(/\s+/).filter(Boolean);
+  if (!tokens.length) return [];
+  const scored = [];
+  for (const product of getProductsByCategory(category)) {
+    const name = foldHan(product.name || "").toLowerCase();
+    const sku = foldHan([product.productNo, product.provisionalSku].filter(Boolean).join(" ")).toLowerCase();
+    const cat = foldHan(product.category || "").toLowerCase();
+    const words = name.split(/[^a-z0-9\u4e00-\u9fff]+/);
+    let score = 0;
+    let matched = true;
+    for (const token of tokens) {
+      const nameHit = name.includes(token);
+      const skuHit = sku.includes(token);
+      const catHit = cat.includes(token);
+      if (!nameHit && !skuHit && !catHit) {
+        matched = false;
+        break;
+      }
+      if (name.startsWith(token) || sku.startsWith(token)) score += 30;
+      else if (words.some((word) => word.startsWith(token))) score += 22;
+      else if (nameHit) score += 14;
+      else if (skuHit) score += 12;
+      else score += 8;
+    }
+    if (matched) scored.push({ product, score });
+  }
+  scored.sort((a, b) => b.score - a.score || String(a.product.name).localeCompare(String(b.product.name)));
+  return scored.slice(0, limit).map((row) => row.product);
 }
 
 function searchProductsUnion(queries, category, options = {}) {
@@ -2332,7 +2377,8 @@ function draftTotals(draft, productIds) {
       };
     }
     const product = getProduct(line.productId);
-    const unitPrice = product ? getEffectivePrice(product).displayPrice : null;
+    const offerPrice = product ? activeOfferPrice(product.id) : null;
+    const unitPrice = offerPrice != null ? offerPrice : product ? getEffectivePrice(product).displayPrice : null;
     if (unitPrice == null) unpricedCount += 1;
     else pricedSubtotal += unitPrice * line.qty;
     return {
@@ -7570,6 +7616,7 @@ export {
   getSalesProducts,
   getProductsByCategory,
   searchProducts,
+  recommendProducts,
   searchProductsUnion,
   supplierSlug,
   supplierPath,

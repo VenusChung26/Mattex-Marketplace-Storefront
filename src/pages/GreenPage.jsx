@@ -6,6 +6,7 @@ import SiteHeader from "../components/SiteHeader";
 import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
 import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
+import { catalogGroupIndex, collapseCatalog, useCatalogGroups } from "../lib/catalogGroups";
 import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { seoCopy } from "../lib/seoCopy";
 import { addFromStorefront, getGreenProducts, searchProducts } from "../lib/store";
@@ -13,6 +14,7 @@ import { addFromStorefront, getGreenProducts, searchProducts } from "../lib/stor
 export default function GreenPage() {
   const { t, lang } = useLanguage();
   const { catalogEpoch, catalogLoading } = useStore();
+  const groupEpoch = useCatalogGroups();
   const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState("");
   const [catalogShown, setCatalogShown] = useState(24);
@@ -26,8 +28,8 @@ export default function GreenPage() {
   const products = useMemo(() => {
     const q = searchQuery.trim();
     const list = q ? searchProducts(q).filter((p) => p.green) : getGreenProducts();
-    return list;
-  }, [searchQuery, catalogEpoch]);
+    return collapseCatalog(list, catalogGroupIndex());
+  }, [searchQuery, catalogEpoch, groupEpoch]);
 
   useEffect(() => {
     setCatalogShown(24);
@@ -36,9 +38,9 @@ export default function GreenPage() {
   function handleAdd(productId, intent = "quote", qty) {
     const result = addFromStorefront(productId, intent, qty, lang);
     if (!result?.ok || intent === "quote-now") return;
-    const product = products.find((p) => p.id === productId);
+    const entry = products.find((row) => row.product.id === productId);
     setToast(
-      t(intent === "buy" || intent === "buy-now" ? "addedBuyToRfq" : "addedQuoteToRfq", { name: product?.name || "item" })
+      t(intent === "buy" || intent === "buy-now" ? "addedBuyToRfq" : "addedQuoteToRfq", { name: entry?.product.name || "item" })
     );
   }
 
@@ -108,8 +110,14 @@ export default function GreenPage() {
         ) : products.length ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
-              {products.slice(0, catalogShown).map((p) => (
-                <ProductCard key={p.id} product={p} onAdd={handleAdd} />
+              {products.slice(0, catalogShown).map((entry) => (
+                <ProductCard
+                  key={entry.product.id}
+                  product={entry.product}
+                  grouped={entry.grouped}
+                  title={entry.groupName}
+                  onAdd={handleAdd}
+                />
               ))}
             </div>
             {catalogShown < products.length ? (

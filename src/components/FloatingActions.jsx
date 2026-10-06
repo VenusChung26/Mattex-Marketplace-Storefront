@@ -5,6 +5,7 @@ import { WHATSAPP_DISPLAY, WHATSAPP_HREF } from "../lib/store";
 export default function FloatingActions() {
   const { t } = useLanguage();
   const { pathname } = useLocation();
+  if (/\/spec-match\/?$/.test(pathname)) return null;
   const aboveBar = /\/details\//.test(pathname);
 
   return (

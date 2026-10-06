@@ -6,6 +6,7 @@ import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
 import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
 import { useLanguage } from "../i18n";
+import { catalogGroupIndex, collapseCatalog, useCatalogGroups } from "../lib/catalogGroups";
 import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { seoCopy } from "../lib/seoCopy";
 import { SHOW_RFQ } from "../lib/flags";
@@ -23,6 +24,7 @@ export default function SupplierPage() {
   const { slug } = useParams();
   const supplier = getSupplier(slug);
   const { t, lang } = useLanguage();
+  const groupEpoch = useCatalogGroups();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [priceFilter, setPriceFilter] = useState("all");
@@ -52,8 +54,8 @@ export default function SupplierPage() {
   }, [searchQuery, selectedCategory, priceFilter, stockFilter, greenOnly]);
 
   const top = useMemo(
-    () => (supplier ? getTopProductsForSupplier(supplier.slug) : []),
-    [supplier]
+    () => collapseCatalog(supplier ? getTopProductsForSupplier(supplier.slug) : [], catalogGroupIndex()),
+    [supplier, groupEpoch]
   );
   const catalog = useMemo(
     () => (supplier ? getProductsBySupplier(supplier.slug) : []),
@@ -79,8 +81,8 @@ export default function SupplierPage() {
     if (priceFilter === "unpriced") list = list.filter((p) => getEffectivePrice(p).displayPrice == null);
     if (priceFilter === "hot") list = list.filter((p) => isHitProduct(p));
     if (stockFilter !== "all") list = list.filter((p) => p.stockStatus === stockFilter);
-    return list;
-  }, [searched, selectedCategory, greenOnly, priceFilter, stockFilter]);
+    return collapseCatalog(list, catalogGroupIndex());
+  }, [searched, selectedCategory, greenOnly, priceFilter, stockFilter, groupEpoch]);
 
   if (!supplier) {
     return (
@@ -102,12 +104,12 @@ export default function SupplierPage() {
   function handleAdd(productId, intent = "quote", qty) {
     const result = addFromStorefront(productId, intent, qty, lang);
     if (!result?.ok || intent === "quote-now") return;
-    const product =
-      products.find((p) => p.id === productId) ||
-      catalog.find((p) => p.id === productId) ||
-      top.find((p) => p.id === productId);
+    const entry =
+      products.find((row) => row.product.id === productId) ||
+      top.find((row) => row.product.id === productId);
+    const named = entry?.product || catalog.find((row) => row.id === productId);
     setToast(
-      t(intent === "buy" || intent === "buy-now" ? "addedBuyToRfq" : "addedQuoteToRfq", { name: product?.name || "item" })
+      t(intent === "buy" || intent === "buy-now" ? "addedBuyToRfq" : "addedQuoteToRfq", { name: named?.name || "item" })
     );
   }
 
@@ -174,8 +176,16 @@ export default function SupplierPage() {
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
-            {top.map((p) => (
-              <ProductCard key={p.id} product={p} compact rank={p.featuredRank} onAdd={handleAdd} />
+            {top.map((entry) => (
+              <ProductCard
+                key={entry.product.id}
+                product={entry.product}
+                compact
+                rank={entry.product.featuredRank}
+                grouped={entry.grouped}
+                title={entry.groupName}
+                onAdd={handleAdd}
+              />
             ))}
           </div>
         </section>
@@ -287,8 +297,14 @@ export default function SupplierPage() {
               ) : (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {products.slice(0, catalogShown).map((p) => (
-                      <ProductCard key={p.id} product={p} onAdd={handleAdd} />
+                    {products.slice(0, catalogShown).map((entry) => (
+                      <ProductCard
+                        key={entry.product.id}
+                        product={entry.product}
+                        grouped={entry.grouped}
+                        title={entry.groupName}
+                        onAdd={handleAdd}
+                      />
                     ))}
                   </div>
                   {catalogShown < products.length ? (
