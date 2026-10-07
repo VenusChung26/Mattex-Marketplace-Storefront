@@ -4,6 +4,7 @@ import ProductCard from "../components/ProductCard";
 import SupplierLogo from "../components/SupplierLogo";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
+import CartToast from "../components/CartToast";
 import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
 import { useLanguage } from "../i18n";
 import { catalogGroupIndex, collapseCatalog, useCatalogGroups } from "../lib/catalogGroups";
@@ -30,14 +31,8 @@ export default function SupplierPage() {
   const [priceFilter, setPriceFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
   const [greenOnly, setGreenOnly] = useState(false);
-  const [toast, setToast] = useState("");
+  const [toast, setToast] = useState(null);
   const [catalogShown, setCatalogShown] = useState(24);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(""), 3200);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -103,14 +98,11 @@ export default function SupplierPage() {
 
   function handleAdd(productId, intent = "quote", qty) {
     const result = addFromStorefront(productId, intent, qty, lang);
-    if (!result?.ok || intent === "quote-now") return;
-    const entry =
-      products.find((row) => row.product.id === productId) ||
-      top.find((row) => row.product.id === productId);
-    const named = entry?.product || catalog.find((row) => row.id === productId);
-    setToast(
-      t(intent === "buy" || intent === "buy-now" ? "addedBuyToRfq" : "addedQuoteToRfq", { name: named?.name || "item" })
-    );
+    if (!result?.ok || intent === "quote-now" || intent === "buy-now") return;
+    setToast({
+      message: t(intent === "buy" ? "addedBuyToRfq" : "addedQuoteToRfq"),
+      href: withLocale(lang, "/rfq"),
+    });
   }
 
   const cats = `${supplier.categories.slice(0, 3).join(", ")}${
@@ -327,11 +319,7 @@ export default function SupplierPage() {
         <SiteFooter />
       </main>
 
-      {toast ? (
-        <div className="toast fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-charcoal text-white text-sm px-4 py-2.5 shadow-lg rounded-none">
-          {toast}
-        </div>
-      ) : null}
+      <CartToast toast={toast} onDone={() => setToast(null)} />
     </div>
   );
 }

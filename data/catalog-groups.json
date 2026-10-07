@@ -2913,6 +2913,382 @@
           "option": "500*500*25"
         }
       ]
+    },
+    {
+      "id": "石膏磚-gypsum-block-gypsum-block",
+      "name": "Gypsum Block",
+      "members": [
+        {
+          "productId": "mkt-gypsum-block-gypsum-block-500x500x80mm-1100-1200kg-m3",
+          "productNo": "MKT-GB-0001",
+          "option": "500*500*80mm"
+        },
+        {
+          "productId": "mkt-gypsum-block-gypsum-block-500x500x100mm-1100-1200kg-m3",
+          "productNo": "MKT-GB-0002",
+          "option": "500*500*100mm"
+        },
+        {
+          "productId": "mkt-gypsum-block-gypsum-block-500x250x150mm-1100-1200kg-m3",
+          "productNo": "MKT-GB-0003",
+          "option": "500*250*150mm"
+        }
+      ]
+    },
+    {
+      "id": "預製混凝土-precasted-concrete-precast-concrete-slabs-預製混凝土-precasted-concrete",
+      "name": "Precast Concrete Slabs — 預製混凝土, Precasted Concrete",
+      "members": [
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3000x500x120mm",
+          "productNo": "MKT-PC-0009",
+          "option": "3000*500*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3300x500x120mm",
+          "productNo": "MKT-PC-0010",
+          "option": "3300*500*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3600x500x120mm",
+          "productNo": "MKT-PC-0011",
+          "option": "3600*500*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3900x500x120mm",
+          "productNo": "MKT-PC-0012",
+          "option": "3900*500*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-4200x500x120mm",
+          "productNo": "MKT-PC-0013",
+          "option": "4200*500*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3000x600x120mm",
+          "productNo": "MKT-PC-0014",
+          "option": "3000*600*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3300x600x120mm",
+          "productNo": "MKT-PC-0015",
+          "option": "3300*600*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3600x600x120mm",
+          "productNo": "MKT-PC-0016",
+          "option": "3600*600*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3900x600x120mm",
+          "productNo": "MKT-PC-0017",
+          "option": "3900*600*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-4200x600x120mm",
+          "productNo": "MKT-PC-0018",
+          "option": "4200*600*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3000x500x150mm",
+          "productNo": "MKT-PC-0019",
+          "option": "3000*500*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3300x500x150mm",
+          "productNo": "MKT-PC-0020",
+          "option": "3300*500*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3600x500x150mm",
+          "productNo": "MKT-PC-0021",
+          "option": "3600*500*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3900x500x150mm",
+          "productNo": "MKT-PC-0022",
+          "option": "3900*500*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-4200x500x150mm",
+          "productNo": "MKT-PC-0023",
+          "option": "4200*500*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3000x600x150mm",
+          "productNo": "MKT-PC-0024",
+          "option": "3000*600*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3300x600x150mm",
+          "productNo": "MKT-PC-0025",
+          "option": "3300*600*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3600x600x150mm",
+          "productNo": "MKT-PC-0026",
+          "option": "3600*600*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3900x600x150mm",
+          "productNo": "MKT-PC-0027",
+          "option": "3900*600*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-4200x600x150mm",
+          "productNo": "MKT-PC-0028",
+          "option": "4200*600*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-customize",
+          "productNo": "MKT-PC-0029",
+          "option": "Customize"
+        }
+      ]
+    },
+    {
+      "id": "石膏板-gypsum-board-fire-resistant-gypsum-board-rock-wool-framework",
+      "name": "Fire-Resistant Gypsum Board / Rock Wool / Framework",
+      "members": [
+        {
+          "productId": "mkt-gypsum-board-fire-resistant-gypsum-board-rock-wool-fram",
+          "productNo": "MKT-GBOARD-0001",
+          "option": "1220*2440*9.5mm"
+        },
+        {
+          "productId": "mkt-gypsum-board-fire-resistant-gypsum-board-rock-wool-fram-2",
+          "productNo": "MKT-GBOARD-0002",
+          "option": "1220*2440*12mm"
+        },
+        {
+          "productId": "mkt-gypsum-board-fire-resistant-gypsum-board-rock-wool-fram-3",
+          "productNo": "MKT-GBOARD-0003",
+          "option": "1220*2440*12.5mm"
+        },
+        {
+          "productId": "mkt-gypsum-board-fire-resistant-gypsum-board-rock-wool-fram-4",
+          "productNo": "MKT-GB-0004",
+          "option": "1220*2440*15mm"
+        }
+      ]
+    },
+    {
+      "id": "沙井-渠道-manhole-channel-manhole-cover-cast-iron-double-triangular-desiltin",
+      "name": "Manhole Cover — Cast Iron Double-Triangular & Desilting Manhole Cover and Frame — Storm Water — opening 550mm",
+      "members": [
+        {
+          "productId": "mkt-loc-w938oa76-034",
+          "productNo": "MKT-LOC-W938OA76-034",
+          "option": "Clear opening 550mm · MKT-LOC-W938OA76-034"
+        },
+        {
+          "productId": "mkt-loc-w938oa76-036",
+          "productNo": "MKT-LOC-W938OA76-036",
+          "option": "Clear opening 550mm · MKT-LOC-W938OA76-036"
+        }
+      ]
+    },
+    {
+      "id": "沙井-渠道-manhole-channel-manhole-cover-cast-iron-double-triangular-desiltin-2",
+      "name": "Manhole Cover — Cast Iron Double-Triangular & Desilting Manhole Cover and Frame — Foul Water — opening 550mm",
+      "members": [
+        {
+          "productId": "mkt-loc-w938oa76-035",
+          "productNo": "MKT-LOC-W938OA76-035",
+          "option": "Clear opening 550mm · MKT-LOC-W938OA76-035"
+        },
+        {
+          "productId": "mkt-loc-w938oa76-037",
+          "productNo": "MKT-LOC-W938OA76-037",
+          "option": "Clear opening 550mm · MKT-LOC-W938OA76-037"
+        }
+      ]
+    },
+    {
+      "id": "沙井-渠道-manhole-channel-manhole-cover-square-one-piece-ductile-iron-double",
+      "name": "Manhole Cover — Square One-Piece Ductile Iron Double Seal Terminal Manhole Cover and Frame — Storm Water — opening 675mm x 675mm",
+      "members": [
+        {
+          "productId": "mkt-loc-w938oa76-046",
+          "productNo": "MKT-LOC-W938OA76-046",
+          "option": "Clear opening 675mm x 675mm · MKT-LOC-W938OA76-046"
+        },
+        {
+          "productId": "mkt-loc-w938oa76-048",
+          "productNo": "MKT-LOC-W938OA76-048",
+          "option": "Clear opening 675mm x 675mm · MKT-LOC-W938OA76-048"
+        }
+      ]
+    },
+    {
+      "id": "沙井-渠道-manhole-channel-manhole-cover-square-one-piece-ductile-iron-double-2",
+      "name": "Manhole Cover — Square One-Piece Ductile Iron Double Seal Terminal Manhole Cover and Frame — Foul Water — opening 675mm x 675mm",
+      "members": [
+        {
+          "productId": "mkt-loc-w938oa76-047",
+          "productNo": "MKT-LOC-W938OA76-047",
+          "option": "Clear opening 675mm x 675mm · MKT-LOC-W938OA76-047"
+        },
+        {
+          "productId": "mkt-loc-w938oa76-049",
+          "productNo": "MKT-LOC-W938OA76-049",
+          "option": "Clear opening 675mm x 675mm · MKT-LOC-W938OA76-049"
+        }
+      ]
+    },
+    {
+      "id": "沙井-渠道-manhole-channel-manhole-cover-square-ductile-iron-surface-box-open",
+      "name": "Manhole Cover — Square Ductile Iron Surface Box — opening 300mm x 300mm",
+      "members": [
+        {
+          "productId": "mkt-loc-w938oa76-050",
+          "productNo": "MKT-LOC-W938OA76-050",
+          "option": "Clear opening 300mm x 300mm · MKT-LOC-W938OA76-050"
+        },
+        {
+          "productId": "mkt-loc-w938oa76-051",
+          "productNo": "MKT-LOC-W938OA76-051",
+          "option": "Clear opening 300mm x 300mm · MKT-LOC-W938OA76-051"
+        }
+      ]
+    },
+    {
+      "id": "油漆-paint-interior-wall-paint",
+      "name": "Interior Wall Paint",
+      "members": [
+        {
+          "productId": "mkt-pnt-0001",
+          "productNo": "MKT-PNT-0001",
+          "option": "Archi+ Pietra Intonaco"
+        },
+        {
+          "productId": "mkt-pnt-0002",
+          "productNo": "MKT-PNT-0002",
+          "option": "Crystal Diamond Sand Paint"
+        },
+        {
+          "productId": "mkt-pnt-0003",
+          "productNo": "MKT-PNT-0003",
+          "option": "Nalan Starry Glitter Paint"
+        },
+        {
+          "productId": "mkt-pnt-0004",
+          "productNo": "MKT-PNT-0004",
+          "option": "Eggshell Wall Paint 3.0"
+        },
+        {
+          "productId": "mkt-pnt-0005",
+          "productNo": "MKT-PNT-0005",
+          "option": "Velvet Wall Paint"
+        },
+        {
+          "productId": "mkt-pnt-0006",
+          "productNo": "MKT-PNT-0006",
+          "option": "Liquid Polish Paint"
+        },
+        {
+          "productId": "mkt-pnt-0007",
+          "productNo": "MKT-PNT-0007",
+          "option": "Elegance Spar Paint"
+        },
+        {
+          "productId": "mkt-pnt-0008",
+          "productNo": "MKT-PNT-0008",
+          "option": "Skin Texture Paint"
+        },
+        {
+          "productId": "mkt-pnt-0009",
+          "productNo": "MKT-PNT-0009",
+          "option": "Microcement Paint"
+        },
+        {
+          "productId": "mkt-pnt-0010",
+          "productNo": "MKT-PNT-0010",
+          "option": "Interior Latex Paint"
+        },
+        {
+          "productId": "mkt-pnt-0011",
+          "productNo": "MKT-PNT-0011",
+          "option": "Waterborne Metallic Paint"
+        },
+        {
+          "productId": "mkt-pnt-0012",
+          "productNo": "MKT-PNT-0012",
+          "option": "Antileakage Waterproof Coating"
+        },
+        {
+          "productId": "mkt-pnt-0013",
+          "productNo": "MKT-PNT-0013",
+          "option": "Matte Multicolored Art Paint"
+        },
+        {
+          "productId": "mkt-pnt-0014",
+          "productNo": "MKT-PNT-0014",
+          "option": "Venetian Plaster"
+        },
+        {
+          "productId": "mkt-pnt-0015",
+          "productNo": "MKT-PNT-0015",
+          "option": "Granite Stone Coating-A"
+        }
+      ]
+    },
+    {
+      "id": "油漆-paint-exterior-wall-paint",
+      "name": "Exterior Wall Paint",
+      "members": [
+        {
+          "productId": "mkt-pnt-0016",
+          "productNo": "MKT-PNT-0016",
+          "option": "Liquid Stone Coating"
+        },
+        {
+          "productId": "mkt-pnt-0017",
+          "productNo": "MKT-PNT-0017",
+          "option": "Granite Stone Coating-B"
+        },
+        {
+          "productId": "mkt-pnt-0018",
+          "productNo": "MKT-PNT-0018",
+          "option": "Crystal Diamond Sand Paint"
+        },
+        {
+          "productId": "mkt-pnt-0019",
+          "productNo": "MKT-PNT-0019",
+          "option": "Texture Series"
+        },
+        {
+          "productId": "mkt-pnt-0020",
+          "productNo": "MKT-PNT-0020",
+          "option": "Exterior Latex Paint"
+        },
+        {
+          "productId": "mkt-pnt-0021",
+          "productNo": "MKT-PNT-0021",
+          "option": "Natural Stone Paint"
+        }
+      ]
+    },
+    {
+      "id": "油漆-paint-floor-paint",
+      "name": "Floor Paint",
+      "members": [
+        {
+          "productId": "mkt-pnt-0022",
+          "productNo": "MKT-PNT-0022",
+          "option": "Mineral Sand Paint"
+        },
+        {
+          "productId": "mkt-pnt-0023",
+          "productNo": "MKT-PNT-0023",
+          "option": "Microcement"
+        },
+        {
+          "productId": "mkt-pnt-0024",
+          "productNo": "MKT-PNT-0024",
+          "option": "Epoxy Floor Paint"
+        }
+      ]
     }
   ]
 }

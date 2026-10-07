@@ -1,5 +1,34 @@
 const CODE_RE = /^[A-Z]{1,3}\d{2,4}$/;
 
+function optionFromProduct(product) {
+  const size = String(product?.sizeDesc || product?.primarySpec || "").split("\n")[0].trim();
+  const head = size.split(/[,;]/)[0].trim();
+  return head || String(product?.unit || product?.productNo || product?.id || "");
+}
+
+function exactNameParts(product) {
+  const name = String(product?.name || "").replace(/\s+/g, " ").trim();
+  if (!name) return null;
+  return {
+    key: `${product.category || ""} :: ${name}`,
+    name,
+    option: optionFromProduct(product),
+  };
+}
+
+function groupsFromBuckets(buckets) {
+  const groups = [];
+  for (const [key, bucket] of buckets) {
+    if (bucket.members.length < 2) continue;
+    groups.push({
+      id: slug(key),
+      name: bucket.name,
+      members: withUniqueOptions(bucket.members),
+    });
+  }
+  return groups;
+}
+
 function seriesParts(product) {
   const name = String(product?.name || "");
   const bits = name.split(/\s*[—–]\s*/);
@@ -33,30 +62,48 @@ function withUniqueOptions(members) {
   );
 }
 
+function pushMember(buckets, parts, product) {
+  const bucket = buckets.get(parts.key) || { name: parts.name, members: [] };
+  bucket.members.push({
+    productId: String(product.id),
+    productNo: String(product.productNo || ""),
+    option: parts.option,
+  });
+  buckets.set(parts.key, bucket);
+}
+
+export function buildExactNameGroups(products) {
+  const buckets = new Map();
+  for (const product of products || []) {
+    if (!product?.id || product.deleted) continue;
+    const parts = exactNameParts(product);
+    if (!parts) continue;
+    pushMember(buckets, parts, product);
+  }
+  return groupsFromBuckets(buckets);
+}
+
 export function buildAutoGroups(products) {
   const buckets = new Map();
+  const listed = new Set();
   for (const product of products || []) {
     if (!product?.id || product.deleted) continue;
     const parts = seriesParts(product);
     if (!parts) continue;
-    const bucket = buckets.get(parts.key) || { name: parts.name, members: [] };
-    bucket.members.push({
-      productId: String(product.id),
-      productNo: String(product.productNo || ""),
-      option: parts.option,
-    });
-    buckets.set(parts.key, bucket);
+    pushMember(buckets, parts, product);
   }
   const groups = [];
   for (const [key, bucket] of buckets) {
     if (bucket.members.length < 2 || bucket.members.length > 12) continue;
+    for (const member of bucket.members) listed.add(member.productId);
     groups.push({
       id: slug(key),
       name: bucket.name,
       members: withUniqueOptions(bucket.members),
     });
   }
-  return groups;
+  const exact = buildExactNameGroups((products || []).filter((product) => product?.id && !listed.has(String(product.id))));
+  return [...groups, ...exact];
 }
 
 export function indexGroups(groups) {

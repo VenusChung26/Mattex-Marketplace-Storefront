@@ -6,6 +6,7 @@
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { draftTotals, formatPrice, getEffectivePrice, getProduct, isDiscontinued } from "../../lib/store";
+import { usePromo } from "../../lib/promo";
 import CustomProductForm from "../../components/CustomProductForm";
 import CustomProductModal from "../../components/CustomProductModal";
 import AttachmentLinks, { PreviewThumb } from "../../components/AttachmentLinks";
@@ -19,7 +20,7 @@ export const RFQ_PROTOTYPE_VARIANTS = [
 ];
 
 export const CUSTOM_PLACEMENT = {
-  A: "inline",
+  A: "modal",
   B: "modal",
   C: "drawer",
 };
@@ -226,6 +227,7 @@ function IntentDraftSections(props) {
     onAddCustom,
   } = props;
   const { t } = useLanguage();
+  usePromo();
   const { buyLines, quoteLines } = splitDraftLines(lines);
   const buySelected = selectedFor(buyLines, selectedIds);
   const quoteSelected = selectedFor(quoteLines, selectedIds);
@@ -335,6 +337,7 @@ function IntentDraftSections(props) {
     dragging,
     overSection,
     onDragLineStart: showBuySection ? beginDrag : undefined,
+    onMoveLine: moveLine,
   };
 
   function sectionClass(target) {
@@ -385,7 +388,7 @@ function IntentDraftSections(props) {
           allSelected={buyAll}
           toggleAll={() => toggleSection(buyLines.map((l) => String(l.productId)))}
           title={t("sectionBuy")}
-          subtitle={t("sectionBuyHint")}
+          subtitle={t("sectionBuyLead")}
           selectAllLabel={t("selectAllBuy")}
           allowCustom={false}
           tone="buy"
@@ -424,7 +427,7 @@ function IntentDraftSections(props) {
           allSelected={quoteAll}
           toggleAll={() => toggleSection(quoteLines.map((l) => String(l.productId)))}
           title={t("sectionQuote")}
-          subtitle={showBuySection ? t("sectionQuoteHint") : t("sectionQuoteHintOnly")}
+          subtitle={t("sectionQuoteLead")}
           selectAllLabel={t("selectAllQuote")}
           allowCustom
           tone="quote"
@@ -558,7 +561,7 @@ export function ConfirmRfqView(props) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 sm:py-10">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
       <button
         type="button"
         onClick={() => (onBack ? onBack() : setConfirmKind(null))}
@@ -663,7 +666,7 @@ export function VariantA(props) {
   const hasBuy = (props.lines || []).some((line) => line.intent === "buy");
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 sm:py-10">
+    <div className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
       <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">{t("rfqDraft")}</p>
       <h1 className="reveal mt-1 text-2xl sm:text-3xl font-bold text-brand-800">{t("reviewQuote")}</h1>
       <p className="mt-2 text-sm text-mute">{hasBuy ? t("reviewQuoteHint") : t("reviewQuoteHintQuoteOnly")}</p>
@@ -955,6 +958,37 @@ export function VariantC(props) {
   );
 }
 
+function MoveControl({ line, unpriced, canDrag, onDragLineStart, onMoveLine, dropIntent, t }) {
+  const inBuy = isBuyLine(line);
+  const moveIntent = inBuy ? "quote" : "buy";
+  const moveLabel = line.custom ? "" : inBuy ? t("moveToQuote") : !unpriced && canBuyFromStock(line) ? t("moveToBuy") : "";
+  if (!moveLabel) return <div className="w-8 shrink-0" aria-hidden="true" />;
+  return (
+    <div className="flex shrink-0 flex-col items-center gap-0.5">
+      {canDrag ? (
+        <DragGrip
+          hint={t("dragGripHint")}
+          onPointerDown={(e) => {
+            onDragLineStart(line, dropIntent || (inBuy ? "buy" : "quote"), e);
+          }}
+        />
+      ) : null}
+      {moveLabel && onMoveLine ? (
+        <button
+          type="button"
+          aria-label={moveLabel}
+          title={moveLabel}
+          className="text-center text-[10px] font-semibold leading-tight text-brand-700 hover:underline"
+          onClick={() => onMoveLine(line.productId, moveIntent)}
+        >
+          <span className="block">{t("moveAs")}</span>
+          <span className="block">{inBuy ? t("moveQuoteShort") : t("moveBuyShort")}</span>
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function DragGrip({ hint, onPointerDown }) {
   return (
     <button
@@ -962,11 +996,11 @@ function DragGrip({ hint, onPointerDown }) {
       title={hint}
       aria-label={hint}
       onPointerDown={onPointerDown}
-      className="shrink-0 group inline-flex items-center justify-center h-11 w-6 bg-transparent border-0 p-0 text-mute/60 hover:text-brand-700 cursor-grab active:cursor-grabbing select-none touch-none"
+      className="shrink-0 inline-flex items-center justify-center h-9 w-6 bg-transparent border-0 p-0 text-mute/80 hover:text-brand-700 cursor-grab active:cursor-grabbing select-none touch-none"
     >
-      <span className="grid grid-cols-2 gap-y-[3px] gap-x-[4px] pointer-events-none" aria-hidden="true">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <span key={i} className="h-[3.5px] w-[3.5px] rounded-full bg-current" />
+      <span className="grid grid-cols-2 gap-y-[3px] gap-x-[3px] pointer-events-none" aria-hidden="true">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <span key={i} className="h-[3px] w-[3px] rounded-full bg-current" />
         ))}
       </span>
     </button>
@@ -1000,6 +1034,7 @@ function LinesList({
   dropIntent,
   dragging,
   onDragLineStart,
+  onMoveLine,
   customPlacement = "inline",
 }) {
   const { t } = useLanguage();
@@ -1008,37 +1043,26 @@ function LinesList({
   useEffect(() => {
     if (showAddCustom) bodyRef.current?.scrollTo({ top: 0 });
   }, [showAddCustom]);
-  const headerBg =
-    tone === "buy" ? "bg-brand-50" : tone === "quote" ? "bg-[#f3f4f3]" : "bg-brand-50/50";
+  const titleBand =
+    tone === "buy"
+      ? "bg-brand-800 text-white"
+      : "bg-brand-50 text-brand-800 border-b border-brand-200";
+  const leadClass = tone === "buy" ? "text-white/80" : "text-mute";
 
   return (
     <div className={embedded ? "flex flex-col flex-1 min-h-0" : "bg-white border border-line rounded-xl overflow-hidden"}>
-      <div className={`px-4 sm:px-5 py-3.5 border-b border-line shrink-0 ${headerBg}`}>
-        {title ? (
-          <div className="mb-2.5 flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-bold text-brand-800">{title}</h2>
-                <span className="inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full bg-white border border-line text-[11px] font-semibold text-ink tabular-nums">
-                  {lines.length}
-                </span>
-              </div>
-              {subtitle ? <p className="mt-1 text-xs text-mute leading-snug">{subtitle}</p> : null}
-              {onDragLineStart ? (
-                <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-mute cursor-default pointer-events-none select-none">
-                  <span className="inline-flex h-5 w-4 items-center justify-center text-mute/60" aria-hidden>
-                    <span className="grid grid-cols-2 gap-y-[2px] gap-x-[3px]">
-                      {Array.from({ length: 8 }).map((_, i) => (
-                        <span key={i} className="h-[3px] w-[3px] rounded-full bg-current" />
-                      ))}
-                    </span>
-                  </span>
-                  {t("dragToMove")}
-                </p>
-              ) : null}
-            </div>
+      {title ? (
+        <div className={`px-4 sm:px-5 py-3 shrink-0 ${titleBand}`}>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold">{title}</h2>
+            <span className={`inline-flex items-center justify-center min-w-[1.5rem] h-5 px-1.5 rounded-full text-[11px] font-semibold tabular-nums ${tone === "buy" ? "bg-white/15 text-white" : "bg-white text-brand-800"}`}>
+              {lines.length}
+            </span>
           </div>
-        ) : null}
+          {subtitle ? <p className={`mt-1 text-xs leading-snug ${leadClass}`}>{subtitle}</p> : null}
+        </div>
+      ) : null}
+      <div className="py-3 pl-3 pr-4 sm:pr-5 border-b border-line shrink-0">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="inline-flex flex-wrap items-center gap-x-3 gap-y-1">
             <label className="inline-flex items-center gap-2 text-sm font-medium text-ink cursor-pointer">
@@ -1078,16 +1102,13 @@ function LinesList({
                 }}
                 className={
                   showAddCustom
-                    ? "btn-soft !px-3 !py-2 !text-sm"
-                    : "btn-primary !px-3 !py-2 !text-sm"
+                    ? "btn-soft !h-7 !-my-1 !px-2.5 !py-0 !text-xs !leading-none whitespace-nowrap"
+                    : "btn-primary !h-7 !-my-1 !px-2.5 !py-0 !text-xs !leading-none whitespace-nowrap"
                 }
               >
                 {showAddCustom ? t("cancel") : `+ ${t("addCustomProduct")}`}
               </button>
             ) : null}
-            <p className="text-xs text-mute tabular-nums">
-              {t("selectedCountShort", { selected: selectedIds.length, total: lines.length })}
-            </p>
           </div>
         </div>
       </div>
@@ -1137,12 +1158,15 @@ function LinesList({
                     className="h-4 w-4 accent-brand-600"
                   />
                 </label>
-                {!isEditing && onDragLineStart ? (
-                  <DragGrip
-                    hint={unpriced ? t("dropInvalidStock") : t("dragGripHint")}
-                    onPointerDown={(e) => {
-                      onDragLineStart(l, dropIntent || (isBuyLine(l) ? "buy" : "quote"), e);
-                    }}
+                {!isEditing ? (
+                  <MoveControl
+                    line={l}
+                    unpriced={unpriced}
+                    canDrag={Boolean(onDragLineStart)}
+                    onDragLineStart={onDragLineStart}
+                    onMoveLine={onMoveLine}
+                    dropIntent={dropIntent}
+                    t={t}
                   />
                 ) : null}
                 {isEditing && l.custom ? (
@@ -1168,7 +1192,7 @@ function LinesList({
                     <LineThumb line={l} className="h-14 w-14 sm:h-16 sm:w-20" />
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <p className="font-semibold text-ink text-sm truncate">{l.name}</p>
+                        <p className="w-full font-semibold text-ink text-sm leading-snug line-clamp-2">{l.name}</p>
                         {l.green ? <GreenProductTag t={t} /> : null}
                         {showIntent ? <IntentBadge intent={l.intent} t={t} /> : null}
                         {l.custom ? (
@@ -1182,7 +1206,7 @@ function LinesList({
                           </span>
                         ) : null}
                       </div>
-                      {meta ? <p className="mt-0.5 text-[11px] text-mute truncate">{meta}</p> : null}
+                      {meta ? <p className="mt-0.5 text-[11px] leading-snug text-mute line-clamp-2">{meta}</p> : null}
                       {l.custom && l.description ? (
                         <p className="mt-0.5 text-[11px] text-mute whitespace-pre-wrap break-words line-clamp-3">
                           <span className="font-medium text-ink/80">{t("customProductDesc")}: </span>
@@ -1859,11 +1883,6 @@ function SubmitBar({
           <p className="text-xl font-bold text-brand-600 mt-0.5">
             {formatPrice(selectedTotals.pricedSubtotal)}
           </p>
-          {selectedTotals.unpricedCount ? (
-            <p className="text-xs text-mute mt-1">
-              {selectedTotals.unpricedCount} line(s) priced on request
-            </p>
-          ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
           {showKeepShopping && !bare ? (

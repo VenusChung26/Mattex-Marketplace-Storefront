@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import ProductCard, { ProductCardSkeleton } from "../components/ProductCard";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
+import CartToast from "../components/CartToast";
 import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
 import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
@@ -16,14 +17,8 @@ export default function GreenPage() {
   const { catalogEpoch, catalogLoading } = useStore();
   const groupEpoch = useCatalogGroups();
   const [searchQuery, setSearchQuery] = useState("");
-  const [toast, setToast] = useState("");
+  const [toast, setToast] = useState(null);
   const [catalogShown, setCatalogShown] = useState(24);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(""), 3200);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   const products = useMemo(() => {
     const q = searchQuery.trim();
@@ -37,11 +32,11 @@ export default function GreenPage() {
 
   function handleAdd(productId, intent = "quote", qty) {
     const result = addFromStorefront(productId, intent, qty, lang);
-    if (!result?.ok || intent === "quote-now") return;
-    const entry = products.find((row) => row.product.id === productId);
-    setToast(
-      t(intent === "buy" || intent === "buy-now" ? "addedBuyToRfq" : "addedQuoteToRfq", { name: entry?.product.name || "item" })
-    );
+    if (!result?.ok || intent === "quote-now" || intent === "buy-now") return;
+    setToast({
+      message: t(intent === "buy" ? "addedBuyToRfq" : "addedQuoteToRfq"),
+      href: withLocale(lang, "/rfq"),
+    });
   }
 
   return (
@@ -149,14 +144,7 @@ export default function GreenPage() {
       </main>
 
       <SiteFooter />
-      {toast ? (
-        <div
-          className="fixed bottom-44 right-6 z-50 max-w-sm border border-brand-700 bg-charcoal text-white px-4 py-3 text-sm toast shadow-lg"
-          role="status"
-        >
-          {toast}
-        </div>
-      ) : null}
+      <CartToast toast={toast} onDone={() => setToast(null)} />
     </div>
   );
 }

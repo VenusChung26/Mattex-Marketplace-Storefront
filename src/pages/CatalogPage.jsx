@@ -8,6 +8,7 @@ import SearchFieldsSelect from "../components/SearchFieldsSelect";
 import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
+import CartToast from "../components/CartToast";
 import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
 import { catalogGroupIndex, collapseCatalog, useCatalogGroups } from "../lib/catalogGroups";
@@ -49,19 +50,13 @@ export default function CatalogPage() {
   const [priceFilter, setPriceFilter] = useState("all");
   const [greenOnly, setGreenOnly] = useState(false);
   const [catalogView, setCatalogView] = useState(readCatalogView);
-  const [toast, setToast] = useState("");
+  const [toast, setToast] = useState(null);
   const [catalogShown, setCatalogShown] = useState(CATALOG_BATCH);
   const origin = siteOrigin();
   const copy = seoCopy(lang);
   const category = slug ? getCategoryBySlug(slug) : null;
   const catQuery = params.get("cat") || "";
   const catFromQuery = !slug && catQuery ? getCategoryByName(catQuery) : null;
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(""), 3200);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   useEffect(() => {
     try {
@@ -107,11 +102,11 @@ export default function CatalogPage() {
 
   function handleAdd(productId, intent = "quote", qty) {
     const result = addFromStorefront(productId, intent, qty, lang);
-    if (!result?.ok || intent === "quote-now") return;
-    const entry = products.find((row) => row.product.id === productId);
-    setToast(
-      t(intent === "buy" || intent === "buy-now" ? "addedBuyToRfq" : "addedQuoteToRfq", { name: entry?.product.name || "item" })
-    );
+    if (!result?.ok || intent === "quote-now" || intent === "buy-now") return;
+    setToast({
+      message: t(intent === "buy" ? "addedBuyToRfq" : "addedQuoteToRfq"),
+      href: withLocale(lang, "/rfq"),
+    });
   }
 
   function clearFilters() {
@@ -344,14 +339,7 @@ export default function CatalogPage() {
         </div>
       </main>
       <SiteFooter />
-      {toast ? (
-        <div
-          className="fixed bottom-44 right-6 z-50 max-w-sm border border-brand-700 bg-charcoal text-white px-4 py-3 text-sm toast shadow-lg"
-          role="status"
-        >
-          {toast}
-        </div>
-      ) : null}
+      <CartToast toast={toast} onDone={() => setToast(null)} />
     </div>
   );
 }

@@ -23,8 +23,6 @@ export default function MidAutumnPage() {
   const found = banners.findIndex((banner) => banner.id === requested);
   const index = found >= 0 ? found : 0;
   const active = banners[index] || null;
-  const total = banners.length;
-  const ask = `https://wa.me/85256013989?text=${encodeURIComponent(t("midAutumnTitle"))}`;
   const offerProducts = useMemo(() => {
     if (!active) return [];
     return bannerProductOffers(active)
@@ -67,22 +65,28 @@ export default function MidAutumnPage() {
           activeId={active.id}
           onSelect={select}
           lang={lang}
-          askLabel={t("midAutumnAsk")}
-          browseLabel={t("browseCatalog")}
-          askHref={ask}
-          browseTo={withLocale(lang, "/")}
-          remaining={total > 1 ? t("promoRemaining", { n: total - index - 1 }) : ""}
+          listLabel={t("promoPosterList")}
           heading="h1"
-        />
-      ) : null}
-      {offerProducts.length ? (
-        <section className="mx-auto max-w-7xl px-4 pb-12">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {offerProducts.map((product) => (
-              <ProductCard key={product.id} product={product} onAdd={handleAdd} />
-            ))}
-          </div>
-        </section>
+        >
+          {offerProducts.length ? (
+            <section className="mt-8 border-t border-line pt-6">
+              <div className="mb-5 flex items-end justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="font-display text-2xl font-semibold text-brand-800 sm:text-3xl">{t("promoProductsTitle")}</h2>
+                  <p className="mt-1 truncate text-sm text-mute">{bannerName(active, lang)}</p>
+                </div>
+                <p className="shrink-0 text-sm text-mute">
+                  {offerProducts.length === 1 ? t("productCountOne") : t("productsCount", { n: offerProducts.length })}
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {offerProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} onAdd={handleAdd} />
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </PromoOfferLayout>
       ) : null}
       <SiteFooter />
     </div>

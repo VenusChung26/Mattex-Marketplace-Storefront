@@ -14,6 +14,41 @@ html { scroll-behavior: smooth; }
 #root > .min-h-dvh > div:has(> footer) {
   margin-top: auto;
 }
+.group\/act { position: relative; }
+.buy-now-hint { display: none; }
+@media (hover: hover) {
+  .group\/act:hover > .buy-now-hint {
+    display: block;
+    position: absolute;
+    z-index: 40;
+    left: 50%;
+    bottom: calc(100% + 6px);
+    width: max-content;
+    max-width: 12rem;
+    margin: 0;
+    padding: 0.3rem 0.45rem;
+    border-radius: 0.35rem;
+    background: #101513;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: center;
+    white-space: normal;
+    transform: translateX(-50%);
+    box-shadow: 0 8px 18px rgba(16, 21, 19, 0.22);
+    pointer-events: none;
+  }
+  .group\/act:hover > .buy-now-hint::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: #101513;
+  }
+}
 body {
   margin: 0;
   background:
@@ -181,6 +216,7 @@ body {
   to { background-position: -100% 0; }
 }
 .product-tile:hover {
+  content-visibility: visible;
   transform: translateY(-4px);
   border-color: rgba(36, 90, 65, 0.28);
   box-shadow: 0 16px 32px rgba(16, 21, 19, 0.1);

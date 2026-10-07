@@ -42,14 +42,8 @@ async function filesToWebp(fileList) {
   return images;
 }
 
-const DEMO_COPY = {
-  zh: { title: "限時優惠", cta: "限時優惠", ask: "WhatsApp 查詢", browse: "瀏覽目錄" },
-  en: { title: "Limited offer", cta: "Limited offer", ask: "Ask on WhatsApp", browse: "Browse catalog" },
-};
-
 function MarketplaceSentenceDemo({ form }) {
   const [lang, setLang] = useState("zh");
-  const copy = DEMO_COPY[lang];
   const poster = (form.banners || []).find((banner) => (banner.products || []).length > 0) || form.banners?.[0];
   const shared = String((lang === "zh" ? form.sentenceZh : form.sentenceEn) || "").trim();
   const own = String((lang === "zh" ? poster?.sentenceZh : poster?.sentenceEn) || "").trim();
@@ -99,20 +93,14 @@ function MarketplaceSentenceDemo({ form }) {
       <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-mute">Offer page</p>
       <div className="relative mt-2 overflow-hidden bg-brand-800 text-white">
         {src ? (
-          <div className="absolute inset-0 bg-cover bg-top opacity-30" style={{ backgroundImage: `url("${src}")` }} aria-hidden />
+          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${src}")` }} aria-hidden />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-800 via-brand-800/92 to-brand-800/75" aria-hidden />
-        <div className="relative flex flex-col gap-4 px-5 py-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <p className="font-display text-2xl font-semibold leading-tight">{title}</p>
-            <p className={`mt-2 max-w-2xl text-sm leading-relaxed ${sentence ? "text-white/75" : "text-white/50 italic"}`}>
-              {sentence || "The sentence you type above appears here."}
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-wrap gap-2">
-            <span className="inline-flex items-center bg-white px-4 py-2 text-sm font-semibold text-brand-800">{copy.ask}</span>
-            <span className="inline-flex items-center border border-white/40 px-4 py-2 text-sm font-semibold text-white">{copy.browse}</span>
-          </div>
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,#143528_0%,#143528_46%,rgba(20,53,40,0.2)_82%)]" aria-hidden />
+        <div className="relative px-5 py-4">
+          <p className="font-display text-2xl font-semibold leading-tight">{title}</p>
+          <p className={`mt-1.5 max-w-2xl text-sm leading-relaxed ${sentence ? "text-white/75" : "text-white/50 italic"}`}>
+            {sentence || "The sentence you type above appears here."}
+          </p>
         </div>
       </div>
     </section>

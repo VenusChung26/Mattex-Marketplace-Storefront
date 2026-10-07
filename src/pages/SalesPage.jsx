@@ -3,29 +3,28 @@ import { Link } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
+import CartToast from "../components/CartToast";
 import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
+import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
+import { catalogGroupIndex, collapseCatalog, useCatalogGroups } from "../lib/catalogGroups";
 import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { seoCopy } from "../lib/seoCopy";
 import { addFromStorefront, getSalesProducts, searchProducts } from "../lib/store";
 
 export default function SalesPage() {
   const { t, lang } = useLanguage();
+  const { catalogEpoch } = useStore();
+  const groupEpoch = useCatalogGroups();
   const [searchQuery, setSearchQuery] = useState("");
-  const [toast, setToast] = useState("");
+  const [toast, setToast] = useState(null);
   const [catalogShown, setCatalogShown] = useState(24);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(""), 3200);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   const products = useMemo(() => {
     const q = searchQuery.trim();
     const list = q ? searchProducts(q).filter((p) => p.sales) : getSalesProducts();
-    return list;
-  }, [searchQuery]);
+    return collapseCatalog(list, catalogGroupIndex());
+  }, [searchQuery, catalogEpoch, groupEpoch]);
 
   useEffect(() => {
     setCatalogShown(24);
@@ -33,11 +32,11 @@ export default function SalesPage() {
 
   function handleAdd(productId, intent = "quote", qty) {
     const result = addFromStorefront(productId, intent, qty, lang);
-    if (!result?.ok || intent === "quote-now") return;
-    const product = products.find((p) => p.id === productId);
-    setToast(
-      t(intent === "buy" || intent === "buy-now" ? "addedBuyToRfq" : "addedQuoteToRfq", { name: product?.name || "item" })
-    );
+    if (!result?.ok || intent === "quote-now" || intent === "buy-now") return;
+    setToast({
+      message: t(intent === "buy" ? "addedBuyToRfq" : "addedQuoteToRfq"),
+      href: withLocale(lang, "/rfq"),
+    });
   }
 
   return (
@@ -98,8 +97,14 @@ export default function SalesPage() {
         {products.length ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {products.slice(0, catalogShown).map((p) => (
-                <ProductCard key={p.id} product={p} onAdd={handleAdd} />
+              {products.slice(0, catalogShown).map((entry) => (
+                <ProductCard
+                  key={entry.product.id}
+                  product={entry.product}
+                  grouped={entry.grouped}
+                  title={entry.groupName}
+                  onAdd={handleAdd}
+                />
               ))}
             </div>
             {catalogShown < products.length ? (
@@ -131,14 +136,7 @@ export default function SalesPage() {
       </main>
 
       <SiteFooter />
-      {toast ? (
-        <div
-          className="fixed bottom-24 right-6 z-50 max-w-sm border border-brand-700 bg-charcoal text-white px-4 py-3 text-sm toast shadow-lg"
-          role="status"
-        >
-          {toast}
-        </div>
-      ) : null}
+      <CartToast toast={toast} onDone={() => setToast(null)} />
     </div>
   );
 }

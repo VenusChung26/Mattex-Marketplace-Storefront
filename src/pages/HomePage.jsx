@@ -34,6 +34,7 @@ import {
   searchProducts,
 } from "../lib/store";
 import SearchSuggestions from "../components/SearchSuggestions";
+import CartToast from "../components/CartToast";
 
 const CATEGORY_PREVIEW_COUNT = 8;
 const SECTION_PREVIEW = 8;
@@ -150,7 +151,7 @@ export default function HomePage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [customOpen, setCustomOpen] = useState(false);
-  const [toast, setToast] = useState("");
+  const [toast, setToast] = useState(null);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestOpen, setSuggestOpen] = useState(false);
@@ -234,12 +235,6 @@ export default function HomePage() {
       window.removeEventListener("resize", onScroll);
     };
   }, [navHeight]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(""), 3200);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   const categories = useMemo(() => getCategoryDefs(), [catalogEpoch]);
   const visibleCategories = categoriesExpanded
@@ -394,16 +389,11 @@ export default function HomePage() {
 
   function handleAdd(productId, intent = "quote", qty) {
     const result = addFromStorefront(productId, intent, qty, lang);
-    if (!result?.ok || intent === "quote-now") return;
-    const entry =
-      products.find((row) => row.product.id === productId) ||
-      top.find((row) => row.product.id === productId) ||
-      greens.find((row) => row.product.id === productId);
-    showToast(
-      t(intent === "buy" || intent === "buy-now" ? "addedBuyToRfq" : "addedQuoteToRfq", {
-        name: entry?.product.name || getProduct(productId)?.name || "item",
-      })
-    );
+    if (!result?.ok || intent === "quote-now" || intent === "buy-now") return;
+    showToast({
+      message: t(intent === "buy" ? "addedBuyToRfq" : "addedQuoteToRfq"),
+      href: withLocale(lang, "/rfq"),
+    });
   }
 
   function clearFilters() {
@@ -588,9 +578,10 @@ export default function HomePage() {
                 {offerRest > 0 ? (
                   <Link
                     to={`${withLocale(lang, "/promo")}?banner=${encodeURIComponent(offerBanner.id)}`}
-                    className="mt-4 inline-flex text-sm font-semibold text-brand-700 hover:text-brand-800"
+                    className="mt-3 flex items-center justify-center gap-2 border border-line bg-white px-4 py-2.5 text-sm font-semibold text-brand-800 hover:border-brand-700"
                   >
-                    {t("offerRemaining", { n: offerRest })}
+                    <span>{t("offerRemaining", { n: offerRest })}</span>
+                    <span aria-hidden="true">→</span>
                   </Link>
                 ) : null}
               </div>
@@ -1118,14 +1109,7 @@ export default function HomePage() {
         onClose={() => setCustomOpen(false)}
         onSubmit={handleAddCustom}
       />
-      {toast ? (
-        <div
-          className="fixed bottom-44 right-6 z-50 max-w-sm border border-brand-700 bg-charcoal text-white px-4 py-3 text-sm toast shadow-lg"
-          role="status"
-        >
-          {toast}
-        </div>
-      ) : null}
+      <CartToast toast={toast} onDone={() => setToast(null)} />
     </>
   );
 }

@@ -322,7 +322,8 @@ function activeCatalog(list) {
 }
 
 function canDirectBuy(product) {
-  if (isDiscontinued(product)) return false;
+  if (!product || isDiscontinued(product)) return false;
+  if (activeOfferPrice(product.id) != null) return true;
   return getEffectivePrice(product).displayPrice != null;
 }
 
@@ -2037,11 +2038,11 @@ function addToCart(productId, { intent, qty, silentInvite = false } = {}) {
   const draft = getDraft();
   const minQty = Math.max(1, Number(product.moq) || 1);
   const addQty = Math.max(minQty, Math.floor(Number(qty)) || minQty);
-  const nextIntent = intent || (getEffectivePrice(product).displayPrice != null ? "buy" : "quote");
+  const nextIntent = intent || (canDirectBuy(product) ? "buy" : "quote");
   const existing = draft.lines.find((l) => l.productId === productId && !l.custom);
   if (existing) {
-    existing.qty = (existing.qty || 0) + addQty;
-    existing.intent = nextIntent;
+    if (existing.intent !== nextIntent) existing.intent = nextIntent;
+    else existing.qty = (existing.qty || 0) + addQty;
   } else {
     draft.lines.push({ productId, qty: addQty, intent: nextIntent });
   }
@@ -2211,8 +2212,7 @@ function setLineIntent(productId, intent) {
   if (next === "buy") {
     if (line.custom) return { ok: false, reason: "unpriced" };
     const product = getProduct(line.productId);
-    const price = product ? getEffectivePrice(product).displayPrice : null;
-    if (price == null) return { ok: false, reason: "unpriced" };
+    if (!canDirectBuy(product)) return { ok: false, reason: "unpriced" };
   }
   line.intent = next;
   if (next === "buy") delete line.requestedUnitPrice;
@@ -2529,7 +2529,7 @@ function submitRfq(productIds, options = {}) {
   const allowGuest = Boolean(options.allowGuest);
   if (!user?.email && !allowGuest) return { ok: false, error: "not_logged_in" };
   const email = accountKey();
-  let draft = getDraft();
+  let draft = options.draft || getDraft();
   if (!draft.lines.length) return { ok: false, error: "empty" };
   const skipLogistics = Boolean(options.skipLogistics);
   if (!skipLogistics) {
@@ -3355,19 +3355,14 @@ function requireBuyerAuth(pending = {}) {
 }
 
 function addFromStorefront(productId, intent = "quote", qty, lang) {
-  if (intent === "quote-now") {
+  if (intent === "quote-now" || intent === "buy-now") {
     if (!isLoggedIn() && !isAuthInviteHidden()) {
-      setPendingCart(productId, "quote-now", qty);
+      setPendingCart(productId, intent, qty);
       openAuthModal("invite");
       return { ok: false, error: "auth_invite" };
     }
-    return whatsappNow(productId, { qty, kind: "quote", lang, skipCart: true });
-  }
-  if (intent === "buy-now") {
-    if (!requireBuyerAuth({ productId, intent, qty })) {
-      return { ok: false, error: "not_logged_in" };
-    }
-    return whatsappNow(productId, { qty, kind: "buy", lang });
+    const kind = intent === "buy-now" ? "buy" : "quote";
+    return whatsappNow(productId, { qty, kind, lang, skipCart: true });
   }
   addToCart(productId, { intent, qty });
   return { ok: true };
@@ -3394,8 +3389,12 @@ function consumePendingInviteContinue() {
   } catch {
     return;
   }
-  if (intent === "quote-now" && productId) {
-    whatsappNow(productId, { qty, kind: "quote", skipCart: true });
+  if ((intent === "quote-now" || intent === "buy-now") && productId) {
+    whatsappNow(productId, {
+      qty,
+      kind: intent === "buy-now" ? "buy" : "quote",
+      skipCart: true,
+    });
   }
 }
 
@@ -3431,12 +3430,13 @@ function consumePendingAfterAuth() {
     } catch {
       productId = pendingCart;
     }
-    if (intent === "quote-now") {
-      whatsappNow(productId, { qty, kind: "quote", skipCart: true });
+    if (intent === "quote-now" || intent === "buy-now") {
+      whatsappNow(productId, {
+        qty,
+        kind: intent === "buy-now" ? "buy" : "quote",
+        skipCart: true,
+      });
       stayPut = true;
-    } else if (intent === "buy-now") {
-      whatsappNow(productId, { qty, kind: "buy" });
-      wentToRfq = true;
     } else {
       addToCart(productId, { intent, qty, silentInvite: true });
     }

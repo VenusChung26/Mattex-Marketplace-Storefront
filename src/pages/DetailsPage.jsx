@@ -7,6 +7,7 @@ import Seo, { breadcrumbJsonLd, orgJsonLd, productJsonLd } from "../components/S
 import ProductPrice from "../components/ProductPrice";
 import ProductRating from "../components/ProductRating";
 import { ProductActions, ProductBadges, ProductImage } from "../components/ProductCard";
+import CartToast from "../components/CartToast";
 import { productImageList } from "../lib/compressImage";
 import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
@@ -14,6 +15,7 @@ import { bootProduct } from "../lib/bootPage";
 import { groupOf, useCatalogGroups } from "../lib/catalogGroups";
 import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { seoCopy } from "../lib/seoCopy";
+import { usePromo } from "../lib/promo";
 import {
   addFromStorefront,
   blockProductOrders,
@@ -73,7 +75,9 @@ export default function DetailsPage() {
   const offline = Boolean(product && isProductOrderBlocked(product.id));
   const orderLock = useRef(false);
   const { t, lang } = useLanguage();
+  usePromo();
   const [qty, setQty] = useState(1);
+  const [toast, setToast] = useState(null);
   const autoOpenTailor = params.get("tailor") === "1";
   const gallery = productImageList(product);
   const [activeImage, setActiveImage] = useState(gallery[0] || product?.image || "");
@@ -117,7 +121,7 @@ export default function DetailsPage() {
       : priceStatus === "expired-requote"
         ? t("quotedPriceExpiredRequote")
         : priced
-          ? `${t("buyNowHint")} ${t("requestQuoteHint")}`
+          ? t("requestQuoteHint")
           : t("requestQuoteOnlyHint");
   const minQty = Math.max(1, Number(product.moq) || 1);
   const leadTime = displayLeadTime(product) || "—";
@@ -149,7 +153,13 @@ export default function DetailsPage() {
         return;
       }
       const sendQty = Math.max(minQty, Math.floor(Number(nextQty)) || minQty);
-      addFromStorefront(product.id, intent, sendQty, lang);
+      const result = addFromStorefront(product.id, intent, sendQty, lang);
+      if (result?.ok && intent !== "quote-now" && intent !== "buy-now") {
+        setToast({
+          message: t(intent === "buy" ? "addedBuyToRfq" : "addedQuoteToRfq"),
+          href: withLocale(lang, "/rfq"),
+        });
+      }
     } finally {
       orderLock.current = false;
     }
@@ -393,6 +403,7 @@ export default function DetailsPage() {
           </div>
         )}
       </div>
+      <CartToast toast={toast} onDone={() => setToast(null)} />
     </div>
   );
 }

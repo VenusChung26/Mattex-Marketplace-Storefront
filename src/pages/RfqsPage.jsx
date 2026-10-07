@@ -357,19 +357,19 @@ const UNASSIGNED_PROJECT = "__unassigned__";
 function RfqDocSwitcher({ list, selectedId, onSelect, onViewQuote, acceptedByRfq, t }) {
   const rootRef = useRef(null);
   const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [projectFilter, setProjectFilter] = useState("all");
 
   const selected = list.find((rfq) => rfq.id === selectedId) || list[0] || null;
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!listOpen) return undefined;
     function onPointer(e) {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+      if (rootRef.current && !rootRef.current.contains(e.target)) setListOpen(false);
     }
     function onKey(e) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") setListOpen(false);
     }
     document.addEventListener("mousedown", onPointer);
     document.addEventListener("keydown", onKey);
@@ -377,7 +377,7 @@ function RfqDocSwitcher({ list, selectedId, onSelect, onViewQuote, acceptedByRfq
       document.removeEventListener("mousedown", onPointer);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [listOpen]);
 
   const counts = useMemo(() => {
     const next = { all: list.length, quoted: 0, submitted: 0, accepted: 0 };
@@ -424,7 +424,7 @@ function RfqDocSwitcher({ list, selectedId, onSelect, onViewQuote, acceptedByRfq
     onSelect(id);
     if (SHOW_RFQ_QUOTES && rfq && rfqDocStatus(rfq, acceptedByRfq) === "quoted") onViewQuote?.(id);
     setQuery("");
-    setOpen(false);
+    setListOpen(false);
   }
 
   if (!list.length || !selected) return null;
@@ -436,8 +436,28 @@ function RfqDocSwitcher({ list, selectedId, onSelect, onViewQuote, acceptedByRfq
     { id: "submitted", label: t("docFilterSubmitted"), count: counts.submitted },
     { id: "accepted", label: SHOW_RFQ_QUOTES ? t("docFilterAccepted") : t("rfqStatusInReview"), count: counts.accepted },
   ];
+  const selectedStatus = rfqDocStatus(selected, acceptedByRfq);
   return (
-    <div ref={rootRef} className="relative mb-3">
+    <div ref={rootRef} className="relative mb-3 lg:sticky lg:top-28 lg:mb-0 lg:max-h-[calc(100vh-8rem)] lg:overflow-auto">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-white px-3 py-2.5 text-left lg:hidden"
+        aria-expanded={listOpen}
+        onClick={() => setListOpen((open) => !open)}
+      >
+        <span className="min-w-0">
+          <span className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-brand-800">{selected.id}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide text-brand-600">
+              {rfqDocStatusLabel(selectedStatus, t)}
+            </span>
+          </span>
+          <span className="mt-0.5 block truncate text-xs text-mute">{rfqLineSummary(selected, t)}</span>
+        </span>
+        <span className="shrink-0 text-sm font-semibold tabular-nums text-ink">{formatPrice(rfqListSubtotal(selected))}</span>
+        <span className="shrink-0 text-[10px] text-mute" aria-hidden="true">{listOpen ? "▴" : "▾"}</span>
+      </button>
+      <div className={`${listOpen ? "mt-2 block" : "hidden"} lg:mt-0 lg:block`}>
       <div className="bg-white border border-line rounded-xl px-3 py-2.5">
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-mute mr-auto">
@@ -515,7 +535,7 @@ function RfqDocSwitcher({ list, selectedId, onSelect, onViewQuote, acceptedByRfq
           })}
         </div>
 
-        <div id="rfq-doc-results" role="listbox" className="mt-2 max-h-64 overflow-auto divide-y divide-line border-t border-line">
+        <div id="rfq-doc-results" role="listbox" className="mt-2 max-h-64 overflow-auto divide-y divide-line border-t border-line lg:max-h-[calc(100vh-18rem)]">
           {results.length ? (
             results.map((rfq) => {
               const active = rfq.id === selectedId;
@@ -590,6 +610,7 @@ function RfqDocSwitcher({ list, selectedId, onSelect, onViewQuote, acceptedByRfq
           })}
         </ul>
       ) : null}
+      </div>
     </div>
   );
 }
@@ -814,7 +835,7 @@ export default function RfqsPage() {
   }
 
   return (
-    <Shell wide>
+    <Shell fluid>
       <div className="mb-3">
         <h1 className="reveal text-2xl font-bold text-brand-800">{t("myRfqsTitle")}</h1>
         {usingDemo ? (
@@ -836,7 +857,7 @@ export default function RfqsPage() {
           </div>
         </section>
       ) : (
-        <>
+        <div className="lg:grid lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start lg:gap-5">
       <RfqDocSwitcher
         list={list}
         selectedId={selected?.id || selectedId}
@@ -1201,7 +1222,7 @@ export default function RfqsPage() {
             <p className="text-sm text-mute">{t("selectRfqHint")}</p>
           )}
         </section>
-        </>
+        </div>
       )}
     </Shell>
   );

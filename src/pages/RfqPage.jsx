@@ -260,7 +260,7 @@ export default function RfqPage() {
     const member = Boolean(user?.email);
     return (
       <Shell>
-        <div className="max-w-7xl mx-auto px-4 py-10 space-y-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-10 space-y-4">
           <div className="bg-white border border-line rounded-xl p-8 text-center">
             <p className="text-lg font-semibold text-brand-800">{t("emptyDraft")}</p>
             <p className="mt-2 text-sm text-mute">{t("emptyDraftHint")}</p>
@@ -572,9 +572,9 @@ function Shell({ children }) {
   return (
     <div className="bg-paper min-h-screen">
       <Seo lang={lang} path={withLocale(lang, "/rfq")} title={`${t("rfqDraftTitle")} | Mattex Marketplace`} description={t("reviewQuoteHint")} noindex />
-      <SiteHeader />
+      <SiteHeader fluid />
       {specFile?.url ? (
-        <p className="max-w-7xl mx-auto px-4 pt-4 text-sm text-ink">
+        <p className="w-full px-4 sm:px-6 lg:px-8 pt-4 text-sm text-ink">
           <a className="font-semibold text-brand-700 hover:underline" href={specFile.url} target="_blank" rel="noreferrer">
             {specFile.name}
           </a>
