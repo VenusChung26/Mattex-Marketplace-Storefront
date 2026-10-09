@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
+import { ProductSearchBox } from "../components/SearchSuggestions";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
 import CartToast from "../components/CartToast";
@@ -8,6 +9,7 @@ import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
 import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
 import { catalogGroupIndex, collapseCatalog, useCatalogGroups } from "../lib/catalogGroups";
+import { jumpToId } from "../lib/jumpTo";
 import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { seoCopy } from "../lib/seoCopy";
 import { addFromStorefront, getSalesProducts, searchProducts } from "../lib/store";
@@ -20,6 +22,7 @@ export default function SalesPage() {
   const [toast, setToast] = useState(null);
   const [catalogShown, setCatalogShown] = useState(24);
 
+  const suggestPool = useMemo(() => getSalesProducts(), [catalogEpoch]);
   const products = useMemo(() => {
     const q = searchQuery.trim();
     const list = q ? searchProducts(q).filter((p) => p.sales) : getSalesProducts();
@@ -54,7 +57,16 @@ export default function SalesPage() {
           ]),
         ]}
       />
-      <SiteHeader />
+      <SiteHeader
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        onSearchSubmit={(event, value) => {
+          event?.preventDefault();
+          setSearchQuery(value ?? "");
+          jumpToId("catalog-results");
+        }}
+        suggestProducts={suggestPool}
+      />
 
       <section className="relative overflow-hidden bg-brand-800 text-white">
         <div
@@ -81,22 +93,31 @@ export default function SalesPage() {
               {products.length === 1 ? t("productLabelOne") : t("productsLabel", { n: products.length })}
             </p>
           </div>
-          <label className="relative max-w-md w-full sm:w-80 block">
+          <label className="relative block w-full max-w-md sm:w-80">
             <span className="sr-only">{t("search")}</span>
-            <input
-              type="search"
+            <ProductSearchBox
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onValue={setSearchQuery}
+              onTerm={(term) => {
+                setSearchQuery(term);
+                jumpToId("catalog-results");
+              }}
+              onProduct={(product) => {
+                setSearchQuery(product.name);
+                jumpToId("catalog-results");
+              }}
+              products={suggestPool}
               placeholder={t("navSearchPlaceholder")}
-              className="field-input"
-              autoComplete="off"
+              ariaLabel={t("search")}
+              inputClassName="field-input w-full"
             />
           </label>
         </div>
 
+        <div id="catalog-results">
         {products.length ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {products.slice(0, catalogShown).map((entry) => (
                 <ProductCard
                   key={entry.product.id}
@@ -133,6 +154,7 @@ export default function SalesPage() {
             </div>
           </div>
         )}
+        </div>
       </main>
 
       <SiteFooter />

@@ -15,6 +15,13 @@ export function bannerName(banner, lang) {
   return lang === "zh" ? banner.nameZh || banner.nameEn || "" : banner.nameEn || banner.nameZh || "";
 }
 
+export function sectionTitle(promo, lang) {
+  if (!promo) return "";
+  const zh = String(promo.titleZh || "").trim();
+  const en = String(promo.titleEn || "").trim();
+  return lang === "zh" ? zh || en : en || zh;
+}
+
 export function sentenceOf(promo, lang) {
   if (!promo) return "";
   return lang === "zh" ? promo.sentenceZh || promo.sentenceEn || "" : promo.sentenceEn || promo.sentenceZh || "";
@@ -26,14 +33,22 @@ export function bannerSentence(banner, promo, lang) {
   return String(own || other || sentenceOf(promo, lang) || "").trim();
 }
 
-export function bannerHeroSrc(banner) {
-  const hero = String(banner?.heroSrc || "");
-  if (/^\/assets\/promo\/[a-zA-Z0-9._/-]+$/.test(hero) && !hero.includes("..")) return hero;
-  return String(banner?.src || "");
+function promoAssetSrc(value) {
+  const src = String(value || "");
+  if (/^\/assets\/promo\/[a-zA-Z0-9._/-]+$/.test(src) && !src.includes("..")) return src;
+  if (/^https:\/\/[a-z0-9.-]+\.public\.blob\.vercel-storage\.com\/promo\/[A-Za-z0-9._~/-]+$/.test(src)) return src;
+  return "";
 }
 
+export function bannerHeroSrc(banner) {
+  return promoAssetSrc(banner?.heroSrc) || promoAssetSrc(banner?.src) || String(banner?.src || "");
+}
+
+export const OFFER_SECTION_HERO = "/assets/promo/offer-hero-prices.jpg";
+
 export function landingBanners(promo) {
-  return promoBanners(promo).filter((banner) => Array.isArray(banner.products) && banner.products.length > 0);
+  const banners = promoBanners(promo);
+  return banners.length ? [banners[0]] : [];
 }
 
 let pending = null;

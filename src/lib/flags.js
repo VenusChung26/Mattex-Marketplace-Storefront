@@ -9,3 +9,6 @@ export const SHOW_PRODUCT_IMPORT = false;
 
 /** Upload-spec match. Off on mattex-marketplace-dev-1. */
 export const SHOW_SPEC_MATCH = false;
+
+/** TMS product and iRFQ links. Off on mattex-marketplace-dev-1. */
+export const SHOW_TMS_LINK = false;

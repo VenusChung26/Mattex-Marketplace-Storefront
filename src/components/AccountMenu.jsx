@@ -26,7 +26,7 @@ export default function AccountMenu({ user, light = false }) {
   }, []);
 
   const triggerClass = light
-    ? "hidden sm:inline-flex items-center gap-1.5 bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-500 transition-colors"
+    ? "hidden lg:inline-flex items-center gap-1.5 bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-500 transition-colors"
     : "inline-flex items-center gap-1.5 bg-brand-600 px-3 sm:px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700";
 
   if (!user) {
@@ -38,7 +38,7 @@ export default function AccountMenu({ user, light = false }) {
   }
 
   return (
-    <div className={light ? "relative hidden sm:block" : "relative"} ref={ref}>
+    <div className={light ? "relative hidden lg:block" : "relative"} ref={ref}>
       <button
         type="button"
         className={triggerClass}

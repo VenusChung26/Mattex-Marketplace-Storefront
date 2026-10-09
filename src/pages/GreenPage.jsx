@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import ProductCard, { ProductCardSkeleton } from "../components/ProductCard";
+import { ProductSearchBox } from "../components/SearchSuggestions";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
 import CartToast from "../components/CartToast";
@@ -8,6 +9,7 @@ import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
 import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
 import { catalogGroupIndex, collapseCatalog, useCatalogGroups } from "../lib/catalogGroups";
+import { jumpToId } from "../lib/jumpTo";
 import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { seoCopy } from "../lib/seoCopy";
 import { addFromStorefront, getGreenProducts, searchProducts } from "../lib/store";
@@ -20,6 +22,7 @@ export default function GreenPage() {
   const [toast, setToast] = useState(null);
   const [catalogShown, setCatalogShown] = useState(24);
 
+  const suggestPool = useMemo(() => getGreenProducts(), [catalogEpoch]);
   const products = useMemo(() => {
     const q = searchQuery.trim();
     const list = q ? searchProducts(q).filter((p) => p.green) : getGreenProducts();
@@ -54,7 +57,16 @@ export default function GreenPage() {
           ]),
         ]}
       />
-      <SiteHeader />
+      <SiteHeader
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        onSearchSubmit={(event, value) => {
+          event?.preventDefault();
+          setSearchQuery(value ?? "");
+          jumpToId("catalog-results");
+        }}
+        suggestProducts={suggestPool}
+      />
 
       <section className="relative overflow-hidden bg-brand-800 text-white">
         <div
@@ -85,19 +97,28 @@ export default function GreenPage() {
                   : t("productsLabel", { n: products.length })}
             </p>
           </div>
-          <label className="relative max-w-md w-full sm:w-80 block">
+          <label className="relative block w-full max-w-md sm:w-80">
             <span className="sr-only">{t("search")}</span>
-            <input
-              type="search"
+            <ProductSearchBox
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onValue={setSearchQuery}
+              onTerm={(term) => {
+                setSearchQuery(term);
+                jumpToId("catalog-results");
+              }}
+              onProduct={(product) => {
+                setSearchQuery(product.name);
+                jumpToId("catalog-results");
+              }}
+              products={suggestPool}
               placeholder={t("navSearchPlaceholder")}
-              className="field-input"
-              autoComplete="off"
+              ariaLabel={t("search")}
+              inputClassName="field-input w-full"
             />
           </label>
         </div>
 
+        <div id="catalog-results">
         {catalogLoading && !products.length ? (
           <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4" aria-busy="true">
             <ProductCardSkeleton count={6} />
@@ -141,6 +162,7 @@ export default function GreenPage() {
             </div>
           </div>
         )}
+        </div>
       </main>
 
       <SiteFooter />

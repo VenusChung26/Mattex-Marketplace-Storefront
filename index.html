@@ -65,12 +65,21 @@
         clip: rect(0, 0, 0, 0);
         border: 0;
       }
+      html:has(.mattex-boot:not([hidden])),
+      body:has(.mattex-boot:not([hidden])) {
+        overflow: hidden;
+        height: 100%;
+      }
       .mattex-boot {
         position: fixed;
         inset: 0;
         z-index: 80;
-        min-height: 100vh;
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
         margin: 0;
+        overflow: hidden;
+        overscroll-behavior: none;
         display: grid;
         place-items: center;
         background:
@@ -79,7 +88,8 @@
           #101513;
         color: #f6f7f5;
         text-align: center;
-        padding: 2rem 1.25rem;
+        padding: 1.5rem 1.25rem;
+        touch-action: none;
       }
       .mattex-boot-orb {
         position: relative;
@@ -108,19 +118,20 @@
         filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.38));
         animation: mattex-boot-float 2.4s ease-in-out infinite;
       }
-      .mattex-boot h1 {
-        margin: 0;
-        font-family: "IBM Plex Serif", Georgia, serif;
-        font-size: clamp(1.45rem, 3vw, 1.9rem);
-        font-weight: 600;
-        letter-spacing: -0.03em;
-      }
       .mattex-boot p {
-        margin: 0.7rem auto 0;
-        max-width: 28rem;
-        color: rgba(246, 247, 245, 0.72);
+        margin: 0.85rem auto 0;
+        max-width: 18rem;
+        color: rgba(246, 247, 245, 0.78);
         font-size: 0.95rem;
-        line-height: 1.55;
+        line-height: 1.5;
+      }
+      @media (max-height: 700px) {
+        .mattex-boot-orb {
+          width: 5.25rem;
+          height: 5.25rem;
+          margin-bottom: 0.75rem;
+        }
+        .mattex-boot-logo { width: 3.4rem; height: 3.4rem; }
       }
       .mattex-boot-status {
         margin-top: 0.35rem;
@@ -172,10 +183,18 @@
       <div class="mattex-boot-orb" aria-hidden="true">
         <img class="mattex-boot-logo" src="/assets/mattex-logo.webp" alt="" />
       </div>
-      <h1>Mattex Marketplace</h1>
-      <p>Engineering products, ready to quote. Specs first, then a clear quote path for construction buyers.</p>
+      <p class="mattex-boot-copy">工程產品，即時報價。</p>
       <div class="mattex-boot-bar" aria-hidden="true"><span></span></div>
-      <p class="mattex-boot-status">Loading catalog</p>
+      <p class="mattex-boot-status">載入目錄</p>
+      <script>
+        (function () {
+          var en = location.pathname === "/en" || location.pathname.indexOf("/en/") === 0;
+          var copy = document.querySelector(".mattex-boot-copy");
+          var status = document.querySelector(".mattex-boot-status");
+          if (copy) copy.textContent = en ? "Engineering products, ready to quote." : "工程產品，即時報價。";
+          if (status) status.textContent = en ? "Loading catalog" : "載入目錄";
+        })();
+      </script>
     </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

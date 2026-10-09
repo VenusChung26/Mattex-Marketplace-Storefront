@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
+import { ProductSearchBox } from "../components/SearchSuggestions";
 import SupplierLogo from "../components/SupplierLogo";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
@@ -8,6 +9,7 @@ import CartToast from "../components/CartToast";
 import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
 import { useLanguage } from "../i18n";
 import { catalogGroupIndex, collapseCatalog, useCatalogGroups } from "../lib/catalogGroups";
+import { jumpToId } from "../lib/jumpTo";
 import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { seoCopy } from "../lib/seoCopy";
 import { SHOW_RFQ } from "../lib/flags";
@@ -64,6 +66,10 @@ export default function SupplierPage() {
     });
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [catalog]);
+  const suggestPool = useMemo(
+    () => (selectedCategory ? catalog.filter((product) => product.category === selectedCategory) : catalog),
+    [catalog, selectedCategory]
+  );
   const searched = useMemo(
     () => (supplier ? searchSupplierProducts(supplier.slug, searchQuery) : []),
     [supplier, searchQuery]
@@ -125,7 +131,16 @@ export default function SupplierPage() {
           ]),
         ]}
       />
-      <SiteHeader />
+      <SiteHeader
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        onSearchSubmit={(event, value) => {
+          event?.preventDefault();
+          setSearchQuery(value ?? "");
+          jumpToId("supplier-products");
+        }}
+        suggestProducts={suggestPool}
+      />
 
       <section className="relative overflow-hidden bg-charcoal text-white min-h-[42vh] flex items-end">
         <div
@@ -167,7 +182,7 @@ export default function SupplierPage() {
               {t("topProducts")}
             </h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
+          <div className="grid min-w-0 grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {top.map((entry) => (
               <ProductCard
                 key={entry.product.id}
@@ -212,15 +227,23 @@ export default function SupplierPage() {
 
             <div className="min-w-0 mt-6 lg:mt-0">
               <div className="flex flex-col sm:flex-row sm:items-stretch gap-3 mb-6">
-                <label className="relative block flex-1 min-w-0">
+                <label className="relative block min-w-0 flex-1">
                   <span className="sr-only">{t("catalog")}</span>
-                  <input
-                    type="search"
+                  <ProductSearchBox
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onValue={setSearchQuery}
+                    onTerm={(term) => {
+                      setSearchQuery(term);
+                      jumpToId("supplier-products");
+                    }}
+                    onProduct={(product) => {
+                      setSearchQuery(product.name);
+                      jumpToId("supplier-products");
+                    }}
+                    products={suggestPool}
                     placeholder={t("supplierSearchPlaceholder")}
-                    className="field-input"
-                    autoComplete="off"
+                    ariaLabel={t("catalog")}
+                    inputClassName="field-input w-full"
                   />
                 </label>
                 <label className="relative sm:w-[11rem] shrink-0">
@@ -288,7 +311,7 @@ export default function SupplierPage() {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {products.slice(0, catalogShown).map((entry) => (
                       <ProductCard
                         key={entry.product.id}
@@ -339,7 +362,7 @@ function SupplierCategoryMenu({ t, total, counts, selected, onSelect }) {
       <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-mute">
         {t("categories")}
       </p>
-      <ul className="mt-3 flex gap-2 overflow-x-auto lg:block lg:overflow-visible lg:space-y-1">
+      <ul className="mt-3 flex max-w-full min-w-0 gap-2 overflow-x-auto overscroll-x-contain lg:block lg:overflow-visible lg:space-y-1">
         {items.map((item) => {
           const active = selected === item.name;
           return (

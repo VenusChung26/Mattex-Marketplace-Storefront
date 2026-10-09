@@ -1,10 +1,16 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { ProductSearchBox } from "../../components/SearchSuggestions";
 import { compressImageFile } from "../../lib/compressImage";
+import { adminText } from "../../lib/adminCopy";
+import { OFFER_SECTION_HERO } from "../../lib/promo";
 import { useStore } from "../../hooks/useStore";
+import { useLanguage } from "../../i18n";
 import { listAdminProducts } from "../../lib/store";
 
 const EMPTY = {
   visible: true,
+  titleZh: "",
+  titleEn: "",
   sentenceZh: "",
   sentenceEn: "",
   banners: [],
@@ -42,65 +48,42 @@ async function filesToWebp(fileList) {
   return images;
 }
 
-function MarketplaceSentenceDemo({ form }) {
-  const [lang, setLang] = useState("zh");
-  const poster = (form.banners || []).find((banner) => (banner.products || []).length > 0) || form.banners?.[0];
-  const shared = String((lang === "zh" ? form.sentenceZh : form.sentenceEn) || "").trim();
-  const own = String((lang === "zh" ? poster?.sentenceZh : poster?.sentenceEn) || "").trim();
-  const sentence = own || shared;
-  const title = String((lang === "zh" ? poster?.nameZh : poster?.nameEn) || "").trim() || (lang === "zh" ? "中文名" : "English name");
-  const src = poster?.heroSrc || poster?.preview || poster?.src || "";
+function MarketplaceSentenceDemo({ form, previewLang, onPreviewLang }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
+  const sectionHeading = String((previewLang === "zh" ? form.titleZh : form.titleEn) || "").trim() || (previewLang === "zh" ? "限時優惠" : "Limited offer");
+  const description = String((previewLang === "zh" ? form.sentenceZh : form.sentenceEn) || "").trim();
+  const src = OFFER_SECTION_HERO;
 
   return (
-    <section className="mb-4 rounded-xl border border-dashed border-brand-300 bg-paper p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-800">Demo preview</p>
-          <p className="mt-1 max-w-2xl text-sm text-mute">
-            Display only. This is not the live marketplace page. Shoppers see these words after you Save.
-          </p>
-        </div>
-        <div className="flex rounded-lg border border-line bg-white p-0.5 text-sm font-semibold">
+    <section className="mb-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-mute">{pt("Demo preview")}</p>
+        <div className="inline-flex rounded-lg border border-line bg-white p-0.5 text-xs font-semibold">
           {[
-            ["zh", "中文"],
-            ["en", "English"],
+            ["zh", "中"],
+            ["en", "Eng"],
           ].map(([id, label]) => (
             <button
               key={id}
               type="button"
-              aria-pressed={lang === id}
-              className={`rounded-md px-3 py-1 ${lang === id ? "bg-brand-800 text-white" : "text-ink"}`}
-              onClick={() => setLang(id)}
+              aria-pressed={previewLang === id}
+              className={`rounded-md px-2.5 py-1 ${previewLang === id ? "bg-brand-800 text-white" : "text-ink"}`}
+              onClick={() => onPreviewLang(id)}
             >
               {label}
             </button>
           ))}
         </div>
       </div>
-
-      <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-mute">Homepage</p>
-      <div className="relative mt-2 h-36 overflow-hidden border border-line bg-brand-800">
+      <div className="relative mt-2 h-24 overflow-hidden border border-line bg-brand-800">
         {src ? <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover object-center" /> : null}
         <div className="absolute inset-0 bg-[linear-gradient(90deg,#143528_0%,#143528_40%,rgba(20,53,40,0)_68%)]" aria-hidden />
-        <div className="relative flex h-full w-[46%] flex-col justify-center px-4">
-          <p className="font-display text-lg font-semibold leading-tight text-white">{title}</p>
-          <p className={`mt-1 text-xs leading-relaxed ${sentence ? "text-white/85" : "text-white/50 italic"}`}>
-            {sentence || "The sentence you type above appears here."}
-          </p>
-        </div>
-      </div>
-
-      <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-mute">Offer page</p>
-      <div className="relative mt-2 overflow-hidden bg-brand-800 text-white">
-        {src ? (
-          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${src}")` }} aria-hidden />
-        ) : null}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,#143528_0%,#143528_46%,rgba(20,53,40,0.2)_82%)]" aria-hidden />
-        <div className="relative px-5 py-4">
-          <p className="font-display text-2xl font-semibold leading-tight">{title}</p>
-          <p className={`mt-1.5 max-w-2xl text-sm leading-relaxed ${sentence ? "text-white/75" : "text-white/50 italic"}`}>
-            {sentence || "The sentence you type above appears here."}
-          </p>
+        <div className="relative flex h-full w-[46%] flex-col justify-center overflow-hidden px-4">
+          <p className="truncate font-display text-lg font-semibold leading-tight text-white">{sectionHeading}</p>
+          {description ? (
+            <p className="mt-1 line-clamp-2 overflow-hidden text-xs leading-relaxed text-white/85">{description}</p>
+          ) : null}
         </div>
       </div>
     </section>
@@ -116,6 +99,8 @@ function RequiredMark() {
 }
 
 export default function BannersPanel({ note }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const { catalogEpoch } = useStore();
   const catalog = useMemo(() => listAdminProducts().filter((product) => !product.deleted), [catalogEpoch]);
   const [productQuery, setProductQuery] = useState({});
@@ -129,6 +114,7 @@ export default function BannersPanel({ note }) {
   const [overId, setOverId] = useState("");
   const [thumbOver, setThumbOver] = useState("");
   const [zoneOver, setZoneOver] = useState(false);
+  const [previewLang, setPreviewLang] = useState("zh");
   const replaceInputRef = useRef(null);
   const replaceIdRef = useRef("");
 
@@ -140,6 +126,8 @@ export default function BannersPanel({ note }) {
         if (cancel || !data) return;
         setForm({
           visible: data.visible !== false,
+          titleZh: data.titleZh || "",
+          titleEn: data.titleEn || "",
           sentenceZh: data.sentenceZh || "",
           sentenceEn: data.sentenceEn || "",
           banners: Array.isArray(data.banners) ? data.banners : [],
@@ -248,6 +236,8 @@ export default function BannersPanel({ note }) {
     try {
       const payload = {
         visible: form.visible !== false,
+        titleZh: form.titleZh,
+        titleEn: form.titleEn,
         sentenceZh: form.sentenceZh,
         sentenceEn: form.sentenceEn,
         banners: form.banners.map((banner) => ({
@@ -279,6 +269,8 @@ export default function BannersPanel({ note }) {
       }
       setForm({
         visible: result.promo.visible !== false,
+        titleZh: result.promo.titleZh || "",
+        titleEn: result.promo.titleEn || "",
         sentenceZh: result.promo.sentenceZh || "",
         sentenceEn: result.promo.sentenceEn || "",
         banners: result.promo.banners || [],
@@ -292,20 +284,17 @@ export default function BannersPanel({ note }) {
     }
   }
 
-  if (!loaded) return <p className="text-sm text-mute">Loading banners…</p>;
+  if (!loaded) return <p className="text-sm text-mute">{pt("Loading banners…")}</p>;
 
   return (
     <div>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="font-display text-2xl text-brand-900">Banners</h1>
-            {dirty ? <p className="text-sm font-semibold text-amber-800">Unsaved changes</p> : null}
-            {saved && !dirty ? <p className="text-sm font-semibold text-brand-800">Saved</p> : null}
+            <h1 className="font-display text-2xl text-brand-900">{pt("Banners")}</h1>
+            {dirty ? <p className="text-sm font-semibold text-amber-800">{pt("Unsaved changes")}</p> : null}
+            {saved && !dirty ? <p className="text-sm font-semibold text-brand-800">{pt("Saved")}</p> : null}
           </div>
-          <p className="text-sm text-mute">
-            Banners with at least one product rotate on the homepage, in this order. A banner with no products stays off the homepage. Not on the marketplace until you Save.
-          </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
           <label className="flex items-center gap-2 rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-ink">
@@ -317,7 +306,7 @@ export default function BannersPanel({ note }) {
                 setForm((current) => ({ ...current, visible: event.target.checked }));
               }}
             />
-            Show on marketplace
+            {pt("Show on marketplace")}
           </label>
           <button
             type="button"
@@ -325,35 +314,68 @@ export default function BannersPanel({ note }) {
             disabled={saving}
             onClick={save}
           >
-            {saving ? "Saving…" : "Save"}
+            {saving ? pt("Saving…") : pt("Save")}
           </button>
         </div>
       </div>
       {dirty ? (
         <div className="sticky top-0 z-30 -mx-6 mb-4 flex flex-wrap items-center justify-between gap-3 border-y border-amber-200 bg-amber-50 px-6 py-2.5 shadow-sm">
-          <p className="text-sm font-semibold text-amber-950">Unsaved changes. Not on the marketplace until you Save.</p>
+          <p className="text-sm font-semibold text-amber-950">{pt("Unsaved changes. Not on the marketplace until you Save.")}</p>
           <button
             type="button"
             className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             disabled={saving}
             onClick={save}
           >
-            {saving ? "Saving…" : "Save"}
+            {saving ? pt("Saving…") : pt("Save")}
           </button>
         </div>
       ) : null}
       {form.visible === false ? (
-        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">Hidden on marketplace</p>
+        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">{pt("Hidden on marketplace")}</p>
       ) : null}
 
       <section className="mb-4 grid gap-4 lg:grid-cols-2">
-        <p className="text-sm text-mute lg:col-span-2">Shared sentence. A banner uses this when its own sentence is empty.</p>
+        <p className="text-sm text-mute lg:col-span-2">{pt("Homepage limited-offer title and description. A blank title shows 限時優惠 / Limited offer. Banner names stay on the offer page.")}</p>
         <label className="block text-sm font-semibold text-ink">
-          Sentence（中文）<RequiredMark />
-          <textarea
-            value={form.sentenceZh}
+          {pt("Title（中文）")}
+          <input
+            value={form.titleZh}
+            onMouseDown={() => setPreviewLang("zh")}
+            onFocus={() => setPreviewLang("zh")}
             onChange={(event) => {
               markDirty();
+              setPreviewLang("zh");
+              setForm((current) => ({ ...current, titleZh: event.target.value }));
+            }}
+            placeholder="限時優惠"
+            className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm font-normal"
+          />
+        </label>
+        <label className="block text-sm font-semibold text-ink">
+          {pt("Title (English)")}
+          <input
+            value={form.titleEn}
+            onMouseDown={() => setPreviewLang("en")}
+            onFocus={() => setPreviewLang("en")}
+            onChange={(event) => {
+              markDirty();
+              setPreviewLang("en");
+              setForm((current) => ({ ...current, titleEn: event.target.value }));
+            }}
+            placeholder="Limited offer"
+            className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm font-normal"
+          />
+        </label>
+        <label className="block text-sm font-semibold text-ink">
+          {pt("Description（中文）")}
+          <textarea
+            value={form.sentenceZh}
+            onMouseDown={() => setPreviewLang("zh")}
+            onFocus={() => setPreviewLang("zh")}
+            onChange={(event) => {
+              markDirty();
+              setPreviewLang("zh");
               setForm((current) => ({ ...current, sentenceZh: event.target.value }));
             }}
             rows={2}
@@ -361,11 +383,14 @@ export default function BannersPanel({ note }) {
           />
         </label>
         <label className="block text-sm font-semibold text-ink">
-          Sentence (English)<RequiredMark />
+          {pt("Description (English)")}
           <textarea
             value={form.sentenceEn}
+            onMouseDown={() => setPreviewLang("en")}
+            onFocus={() => setPreviewLang("en")}
             onChange={(event) => {
               markDirty();
+              setPreviewLang("en");
               setForm((current) => ({ ...current, sentenceEn: event.target.value }));
             }}
             rows={2}
@@ -374,16 +399,20 @@ export default function BannersPanel({ note }) {
         </label>
       </section>
 
-      <MarketplaceSentenceDemo form={form} />
+      <MarketplaceSentenceDemo form={form} previewLang={previewLang} onPreviewLang={setPreviewLang} />
 
+      <section className="mb-2">
+        <h2 className="font-display text-lg text-brand-900">{pt("Banner list")}</h2>
+        <p className="mt-1 text-sm text-mute">{pt("Row 1 is the homepage banner. Drag a row to the top to change it. Not on the marketplace until you Save.")}</p>
+      </section>
       <div className="overflow-auto rounded-xl border border-line bg-white">
         <table className="w-full min-w-[40rem] text-left text-[12px]">
           <thead className="bg-brand-50 text-[10px] font-semibold uppercase tracking-wide text-mute">
             <tr>
               <th className="w-12 px-3 py-2"> </th>
-              <th className="w-28 px-3 py-2">Image<RequiredMark /></th>
-              <th className="px-3 py-2">Tab name (中文)<RequiredMark /></th>
-              <th className="px-3 py-2">Tab name (English)<RequiredMark /></th>
+              <th className="w-28 px-3 py-2">{pt("Image")}<RequiredMark /></th>
+              <th className="px-3 py-2">{pt("Tab name (中文)")}<RequiredMark /></th>
+              <th className="px-3 py-2">{pt("Tab name (English)")}<RequiredMark /></th>
               <th className="w-28 px-3 py-2"> </th>
             </tr>
           </thead>
@@ -391,15 +420,6 @@ export default function BannersPanel({ note }) {
             {form.banners.map((banner, index) => {
               const preview = banner.preview || banner.src;
               const products = banner.products || [];
-              const q = String(productQuery[banner.id] || "").trim().toLowerCase();
-              const matches = q
-                ? catalog
-                    .filter((product) => {
-                      const hay = `${product.name || ""} ${product.productNo || ""} ${product.id || ""}`.toLowerCase();
-                      return hay.includes(q);
-                    })
-                    .slice(0, 6)
-                : [];
               return (
                 <Fragment key={banner.id}>
                 <tr
@@ -468,12 +488,17 @@ export default function BannersPanel({ note }) {
                   <td className="px-3 py-3 align-middle">
                     <div className="flex items-center gap-2">
                       <span className="shrink-0 text-xs font-semibold text-mute">{index + 1}</span>
-                      {products.length > 0 ? (
-                        <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-800">Homepage</span>
+                      {index === 0 ? (
+                        <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-800">{pt("Homepage")}</span>
                       ) : null}
                       <input
                         value={banner.nameZh || ""}
-                        onChange={(event) => patchBanner(banner.id, { nameZh: event.target.value })}
+                        onMouseDown={() => setPreviewLang("zh")}
+            onFocus={() => setPreviewLang("zh")}
+                        onChange={(event) => {
+                          setPreviewLang("zh");
+                          patchBanner(banner.id, { nameZh: event.target.value });
+                        }}
                         placeholder="中文名"
                         className="min-w-0 flex-1 rounded-lg border border-line px-3 py-2 text-sm"
                       />
@@ -482,7 +507,12 @@ export default function BannersPanel({ note }) {
                   <td className="px-3 py-3 align-middle">
                     <input
                       value={banner.nameEn || ""}
-                      onChange={(event) => patchBanner(banner.id, { nameEn: event.target.value })}
+                      onMouseDown={() => setPreviewLang("en")}
+            onFocus={() => setPreviewLang("en")}
+                      onChange={(event) => {
+                        setPreviewLang("en");
+                        patchBanner(banner.id, { nameEn: event.target.value });
+                      }}
                       placeholder="English name"
                       className="w-full rounded-lg border border-line px-3 py-2 text-sm"
                     />
@@ -501,7 +531,7 @@ export default function BannersPanel({ note }) {
                           setPendingDelete("");
                         }}
                       >
-                        Confirm delete
+                        {pt("Confirm delete")}
                       </button>
                     ) : (
                       <button
@@ -509,29 +539,37 @@ export default function BannersPanel({ note }) {
                         className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700"
                         onClick={() => setPendingDelete(banner.id)}
                       >
-                        Delete
+                        {pt("Delete")}
                       </button>
                     )}
                   </td>
                 </tr>
                 <tr className="border-b border-line/80">
                   <td colSpan={5} className="px-3 pb-4">
-                    <p className="text-xs font-semibold text-ink">Products on this banner</p>
-                    <p className="mt-0.5 text-xs text-mute">No limit. Each product needs a promo price and an end date, and can belong to only one banner.</p>
-                    <ul className="mt-2 space-y-2">
+                    <p className="text-xs font-semibold text-ink">{pt("Products on this banner")}</p>
+                    <p className="mt-0.5 text-xs text-mute">{pt("No limit. Each product needs a promo price and an end date, and can belong to only one banner.")}</p>
+                    {products.length ? (
+                      <div className="mt-3 grid grid-cols-[minmax(0,1fr)_7rem_10.5rem_4.5rem] gap-2 text-[11px] font-semibold uppercase tracking-wide text-mute">
+                        <span>{pt("Product")}</span>
+                        <span>{pt("Promo price")}</span>
+                        <span>{pt("End date")}</span>
+                        <span className="sr-only">Remove</span>
+                      </div>
+                    ) : null}
+                    <ul className="mt-1 space-y-2">
                       {products.map((row) => {
                         const product = catalog.find((item) => item.id === row.productId);
                         return (
-                          <li key={row.productId} className="flex flex-wrap items-center gap-2">
-                            <span className="min-w-0 flex-1 truncate text-sm text-ink">{product?.name || row.productId}</span>
+                          <li key={row.productId} className="grid grid-cols-[minmax(0,1fr)_7rem_10.5rem_4.5rem] items-center gap-2">
+                            <span className="min-w-0 truncate text-sm text-ink">{product?.name || row.productId}</span>
                             <input
                               type="number"
                               min="0.01"
                               step="0.01"
                               value={row.price}
-                              placeholder="Price"
-                              aria-label="Promo price"
-                              className="w-28 rounded-lg border border-line px-2 py-1.5 text-sm"
+                              placeholder={pt("Price")}
+                              aria-label={pt("Promo price")}
+                              className="w-full rounded-lg border border-line px-2 py-1.5 text-sm"
                               onChange={(event) =>
                                 patchBanner(banner.id, {
                                   products: products.map((item) =>
@@ -543,8 +581,8 @@ export default function BannersPanel({ note }) {
                             <input
                               type="date"
                               value={row.endsOn || ""}
-                              aria-label="Offer end date"
-                              className="rounded-lg border border-line px-2 py-1.5 text-sm"
+                              aria-label={pt("End date")}
+                              className="w-full rounded-lg border border-line px-2 py-1.5 text-sm"
                               onChange={(event) =>
                                 patchBanner(banner.id, {
                                   products: products.map((item) =>
@@ -562,55 +600,25 @@ export default function BannersPanel({ note }) {
                                 })
                               }
                             >
-                              Remove
+                              {pt("Remove")}
                             </button>
                           </li>
                         );
                       })}
                     </ul>
-                    <input
+                    <ProductSearchBox
                       value={productQuery[banner.id] || ""}
-                      onChange={(event) => setProductQuery((current) => ({ ...current, [banner.id]: event.target.value }))}
-                      placeholder="Search product name or SKU"
-                      className="mt-2 w-full max-w-md rounded-lg border border-line px-3 py-2 text-sm"
+                      onValue={(next) => setProductQuery((current) => ({ ...current, [banner.id]: next }))}
+                      onTerm={(term) => setProductQuery((current) => ({ ...current, [banner.id]: term }))}
+                      onProduct={(product) => addOfferProduct(banner.id, product)}
+                      products={catalog}
+                      excludeIds={products.map((row) => row.productId)}
+                      placeholder={pt("Search product name, SKU, or category")}
+                      ariaLabel={pt("Search product name, SKU, or category")}
+                      keepOpenOnTerm
+                      className="mt-2 w-full"
+                      inputClassName="w-full rounded-lg border border-line px-3 py-2 text-sm"
                     />
-                    {matches.length ? (
-                      <ul className="mt-1 max-w-md rounded-lg border border-line bg-white">
-                        {matches.map((product) => (
-                          <li key={product.id}>
-                            <button
-                              type="button"
-                              className="w-full px-3 py-2 text-left text-sm hover:bg-brand-50"
-                              onClick={() => addOfferProduct(banner.id, product)}
-                            >
-                              {product.name}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                    <div className="mt-3 grid gap-3 lg:grid-cols-2">
-                      <label className="block text-sm font-semibold text-ink">
-                        Sentence（中文）
-                        <textarea
-                          value={banner.sentenceZh || ""}
-                          onChange={(event) => patchBanner(banner.id, { sentenceZh: event.target.value })}
-                          rows={2}
-                          placeholder="Leave blank to use the shared sentence"
-                          className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm font-normal"
-                        />
-                      </label>
-                      <label className="block text-sm font-semibold text-ink">
-                        Sentence (English)
-                        <textarea
-                          value={banner.sentenceEn || ""}
-                          onChange={(event) => patchBanner(banner.id, { sentenceEn: event.target.value })}
-                          rows={2}
-                          placeholder="Leave blank to use the shared sentence"
-                          className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm font-normal"
-                        />
-                      </label>
-                    </div>
                   </td>
                 </tr>
                 </Fragment>
@@ -638,15 +646,15 @@ export default function BannersPanel({ note }) {
           if (files.length) addFiles(files);
         }}
       >
-        <span className="pointer-events-none text-2xl font-light leading-none text-ink">{zoneOver ? "Drop to add" : "+"}</span>
-        <span className="pointer-events-none mt-2 text-sm font-semibold text-ink">{zoneOver ? "Release to add" : "Add banner"}</span>
-        <span className="pointer-events-none mt-1 text-xs">Drop a JPG, PNG, or WebP here, or click to choose files. Saved as WebP, longest side 2,400px.</span>
+        <span className="pointer-events-none text-2xl font-light leading-none text-ink">{zoneOver ? pt("Drop to add") : "+"}</span>
+        <span className="pointer-events-none mt-2 text-sm font-semibold text-ink">{zoneOver ? pt("Release to add") : pt("Add banner")}</span>
+        <span className="pointer-events-none mt-1 text-xs">{pt("Drop a JPG, PNG, or WebP here, or click to choose files. Saved as WebP, longest side 2,400px.")}</span>
         <input
           type="file"
           accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
           multiple
           className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
-          aria-label="Add banner"
+          aria-label={pt("Add banner")}
           onChange={(event) => {
             const files = Array.from(event.target.files || []);
             event.target.value = "";

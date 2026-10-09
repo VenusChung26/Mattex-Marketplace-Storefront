@@ -11,8 +11,9 @@ import SiteHeader from "../components/SiteHeader";
 import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
 import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
+import { jumpToId } from "../lib/jumpTo";
 import { siteOrigin, withLocale } from "../lib/locale";
-import { bannerHeroSrc, bannerName, bannerSentence, landingBanners, usePromo } from "../lib/promo";
+import { landingBanners, OFFER_SECTION_HERO, sectionTitle, sentenceOf, usePromo } from "../lib/promo";
 import { bannerProductOffers } from "../lib/offer";
 import { collapseCatalog, catalogGroupIndex, useCatalogGroups } from "../lib/catalogGroups";
 import { seoCopy } from "../lib/seoCopy";
@@ -24,17 +25,17 @@ import {
   getCategoryDefs,
   getEffectivePrice,
   getProduct,
+  getProductsByCategory,
   getGreenProducts,
   getSuppliers,
   getTopProducts,
   isHitProduct,
   requireBuyerAuth,
   addFromStorefront,
-  recommendProducts,
   searchProducts,
 } from "../lib/store";
-import SearchSuggestions from "../components/SearchSuggestions";
 import CartToast from "../components/CartToast";
+import { ProductSearchBox } from "../components/SearchSuggestions";
 
 const CATEGORY_PREVIEW_COUNT = 8;
 const SECTION_PREVIEW = 8;
@@ -67,7 +68,7 @@ function pickFillColumns(count, width, { minTile, maxTile, target }) {
 }
 
 function useContentWidth() {
-  const [viewport, setViewport] = useState(1440);
+  const [viewport, setViewport] = useState(() => (typeof window === "undefined" ? 390 : window.innerWidth));
   useEffect(() => {
     const read = () => setViewport(window.innerWidth);
     read();
@@ -119,27 +120,7 @@ export default function HomePage() {
   const groupEpoch = useCatalogGroups();
   const { promo, live } = usePromo();
   const slides = useMemo(() => landingBanners(promo), [promo]);
-  const [offerIndex, setOfferIndex] = useState(0);
-  const [offerPaused, setOfferPaused] = useState(false);
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const apply = () => setReduceMotion(media.matches);
-    apply();
-    media.addEventListener?.("change", apply);
-    return () => media.removeEventListener?.("change", apply);
-  }, []);
-  useEffect(() => {
-    setOfferIndex((current) => (slides.length ? Math.min(current, slides.length - 1) : 0));
-  }, [slides.length]);
-  useEffect(() => {
-    if (slides.length < 2 || offerPaused || reduceMotion) return undefined;
-    const timer = window.setInterval(() => {
-      setOfferIndex((current) => (current + 1) % slides.length);
-    }, 6000);
-    return () => window.clearInterval(timer);
-  }, [slides.length, offerPaused, reduceMotion, offerIndex]);
-  const offerBanner = slides[offerIndex] || null;
+  const offerBanner = slides[0] || null;
   const offerProducts = useMemo(() => {
     if (!offerBanner) return [];
     return bannerProductOffers(offerBanner)
@@ -154,8 +135,6 @@ export default function HomePage() {
   const [toast, setToast] = useState(null);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [suggestOpen, setSuggestOpen] = useState(false);
-  const [suggestIndex, setSuggestIndex] = useState(-1);
   const [navQuery, setNavQuery] = useState("");
   const [priceFilter, setPriceFilter] = useState("all");
   const [catalogView, setCatalogView] = useState(readCatalogView);
@@ -254,9 +233,12 @@ export default function HomePage() {
     : suppliers.slice(0, SUPPLIER_PREVIEW_COUNT);
   const hiddenSupplierCount = Math.max(suppliers.length - SUPPLIER_PREVIEW_COUNT, 0);
   const contentWidth = useContentWidth();
-  const categoryCols = pickFillColumns(visibleCategories.length, contentWidth, { minTile: 132, maxTile: 210, target: 8 });
-  const greenCols = fitColumns(greens.length, contentWidth, 260);
-  const topCols = fitColumns(top.length, contentWidth, 260);
+  const phone = contentWidth < 720;
+  const categoryCols = phone
+    ? 1
+    : pickFillColumns(visibleCategories.length, contentWidth, { minTile: 132, maxTile: 210, target: 8 });
+  const greenCols = phone ? 1 : fitColumns(greens.length, contentWidth, 260);
+  const topCols = phone ? 1 : fitColumns(top.length, contentWidth, 260);
 
   const products = useMemo(() => {
     let list = searchProducts(searchQuery, selectedCategories, { fields: searchFields });
@@ -273,17 +255,7 @@ export default function HomePage() {
   useEffect(() => {
     if (!jumpToResultsRef.current) return;
     jumpToResultsRef.current = false;
-    const run = () => {
-      const el = document.getElementById("catalog-results");
-      const nav = document.getElementById("siteNav");
-      const bar = document.getElementById("catalog-toolbar");
-      if (!el) return;
-      const navH = nav ? Math.round(nav.getBoundingClientRect().height) : navHeight;
-      const barH = bar ? Math.round(bar.getBoundingClientRect().height) : toolbarHeight;
-      const top = window.scrollY + el.getBoundingClientRect().top - navH - barH - 8;
-      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-    };
-    requestAnimationFrame(() => requestAnimationFrame(run));
+    jumpToId("catalog-results");
   }, [selectedCategories, navHeight, toolbarHeight]);
 
   const visibleCatalog = products.slice(0, catalogShown);
@@ -322,18 +294,7 @@ export default function HomePage() {
   function scrollToCatalog() {
     holdCatalogPinRef.current = true;
     setCatalogPinned(true);
-    const run = () => {
-      const bar = document.getElementById("catalog-toolbar");
-      const nav = document.getElementById("siteNav");
-      if (!bar) {
-        document.getElementById("products")?.scrollIntoView({ behavior: "smooth", block: "start" });
-        return;
-      }
-      const navH = nav ? Math.round(nav.getBoundingClientRect().height) : navHeight;
-      const top = window.scrollY + bar.getBoundingClientRect().top - navH;
-      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-    };
-    requestAnimationFrame(() => requestAnimationFrame(run));
+    jumpToId("catalog-toolbar");
   }
 
   function openFilteredCatalog(kind) {
@@ -383,7 +344,9 @@ export default function HomePage() {
     setSearchQuery(urlQ);
     setNavQuery(urlQ);
     setGreenOnly(/\bgreen\b/i.test(urlQ));
-    const timer = window.setTimeout(() => scrollToCatalog(), 80);
+    holdCatalogPinRef.current = true;
+    setCatalogPinned(true);
+    const timer = window.setTimeout(() => jumpToId("catalog-results"), 80);
     return () => window.clearTimeout(timer);
   }, [urlQ, urlCat, urlFilter, urlGreen, lang, navigate, params]);
 
@@ -417,36 +380,29 @@ export default function HomePage() {
     setCatalogView(next === "list" ? "list" : "card");
   }
 
-  const suggestions = useMemo(() => {
-    const query = searchQuery.trim();
-    if (!query) return [];
-    return recommendProducts(query, selectedCategories);
-  }, [searchQuery, selectedCategories, catalogEpoch]);
+  const suggestionsPool = useMemo(
+    () => getProductsByCategory(selectedCategories),
+    [selectedCategories, catalogEpoch]
+  );
 
   function scrollToResults() {
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const el = document.getElementById("catalog-results");
-      const nav = document.getElementById("siteNav");
-      const bar = document.getElementById("catalog-toolbar");
-      if (!el) return;
-      const navH = nav ? Math.round(nav.getBoundingClientRect().height) : navHeight;
-      const barH = bar ? Math.round(bar.getBoundingClientRect().height) : toolbarHeight;
-      const top = window.scrollY + el.getBoundingClientRect().top - navH - barH - 8;
-      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-    }));
+    holdCatalogPinRef.current = true;
+    setCatalogPinned(true);
+    jumpToId("catalog-results");
   }
 
   function onCatalogQueryChange(value) {
     setSearchQuery(value);
     setGreenOnly(/\bgreen\b/i.test(value));
-    setSuggestOpen(Boolean(String(value || "").trim()));
-    setSuggestIndex(-1);
   }
 
   function runCatalogSearch(value) {
     onCatalogQueryChange(value);
-    setSuggestOpen(false);
     scrollToResults();
+  }
+
+  function openProduct(product) {
+    runCatalogSearch(product.name);
   }
 
   function submitNavSearch(event, value) {
@@ -455,7 +411,6 @@ export default function HomePage() {
     setSearchQuery(next);
     setNavQuery(next);
     setGreenOnly(/\bgreen\b/i.test(next));
-    setSuggestOpen(false);
     scrollToResults();
   }
 
@@ -484,6 +439,7 @@ export default function HomePage() {
         }}
         onCatalogClick={scrollToCatalog}
         onDraftClick={onCartClick}
+        suggestProducts={suggestionsPool}
       />
 
       <div className="hero-shell flex flex-col">
@@ -524,53 +480,31 @@ export default function HomePage() {
         {live && offerBanner ? (
           <section className="max-w-7xl mx-auto px-4 pt-8 sm:pt-10">
             <div
-              className="relative overflow-hidden border border-line max-sm:min-h-[200px]"
-              onMouseEnter={() => setOfferPaused(true)}
-              onMouseLeave={() => setOfferPaused(false)}
+              className="relative overflow-hidden border border-line bg-brand-800 max-sm:min-h-[200px]"
             >
               <Link
                 to={`${withLocale(lang, "/promo")}?banner=${encodeURIComponent(offerBanner.id)}`}
-                aria-label={bannerName(offerBanner, lang)}
-                className="relative block overflow-hidden max-sm:min-h-[200px]"
+                aria-label={sectionTitle(promo, lang) || t("midAutumnTitle")}
+                className="absolute inset-0"
               >
-                <img src={bannerHeroSrc(slides[0])} alt="" className="block h-auto w-full opacity-0" />
-                {slides.map((banner, index) => (
-                  <img
-                    key={banner.id}
-                    src={bannerHeroSrc(banner)}
-                    alt=""
-                    className={`offer-banner-fade absolute inset-0 h-full w-full object-cover ${index === offerIndex ? "opacity-100" : "opacity-0"}`}
-                  />
-                ))}
+                <img src={OFFER_SECTION_HERO} alt="" className="absolute inset-0 h-full w-full object-cover" />
                 <div
                   className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,#143528_0%,#143528_58%,rgba(20,53,40,0)_84%)] sm:bg-[linear-gradient(90deg,#143528_0%,#143528_40%,rgba(20,53,40,0)_68%)]"
                   aria-hidden
                 />
               </Link>
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex w-[62%] flex-col justify-center px-4 py-4 sm:w-[46%] sm:px-10">
+              <div className="pointer-events-none relative z-10 flex w-[62%] flex-col justify-center px-4 py-6 sm:w-[46%] sm:px-10 sm:py-8">
                 <h2 className="font-display text-xl font-semibold leading-[1.12] tracking-tight text-white sm:text-3xl">
-                  {bannerName(offerBanner, lang)}
+                  {sectionTitle(promo, lang) || t("midAutumnTitle")}
                 </h2>
-                <p className="mt-2 max-w-md text-sm leading-relaxed text-white/85">{bannerSentence(offerBanner, promo, lang)}</p>
-                {slides.length > 1 ? (
-                  <div className="pointer-events-auto mt-4 flex gap-2">
-                    {slides.map((banner, index) => (
-                      <button
-                        key={banner.id}
-                        type="button"
-                        aria-label={`${index + 1} / ${slides.length}`}
-                        aria-current={index === offerIndex ? "true" : undefined}
-                        className={`h-1.5 w-6 ${index === offerIndex ? "bg-white" : "bg-white/45"}`}
-                        onClick={() => setOfferIndex(index)}
-                      />
-                    ))}
-                  </div>
+                {sentenceOf(promo, lang) ? (
+                  <p className="mt-2 max-w-md text-sm leading-relaxed text-white/85">{sentenceOf(promo, lang)}</p>
                 ) : null}
               </div>
             </div>
             {offerCards.length ? (
               <div className="mt-6">
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-4">
                   {offerCards.map((product) => (
                     <ProductCard key={product.id} product={product} onAdd={handleAdd} />
                   ))}
@@ -877,56 +811,31 @@ export default function HomePage() {
             style={{ top: navHeight }}
           >
             <div className="max-w-7xl mx-auto px-4 py-2">
-              <div className="flex flex-col lg:flex-row lg:items-center gap-2">
-                <div className="flex flex-1 min-w-0 gap-2">
-                  <div className="relative flex flex-1 min-w-0 bg-white">
-                    <input
+              <div className="flex min-w-0 flex-col gap-2">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <div className="relative flex min-w-[min(100%,18rem)] flex-1 bg-white">
+                    <ProductSearchBox
                       id="catalog-search"
-                      type="search"
                       value={searchQuery}
-                      onChange={(e) => onCatalogQueryChange(e.target.value)}
-                      onFocus={() => setSuggestOpen(Boolean(searchQuery.trim()))}
-                      onBlur={() => setSuggestOpen(false)}
-                      onKeyDown={(e) => {
-                        if (e.key === "ArrowDown") {
-                          e.preventDefault();
-                          setSuggestOpen(true);
-                          setSuggestIndex((index) => Math.min(index + 1, suggestions.length - 1));
-                        } else if (e.key === "ArrowUp") {
-                          e.preventDefault();
-                          setSuggestIndex((index) => Math.max(index - 1, 0));
-                        } else if (e.key === "Enter") {
-                          e.preventDefault();
-                          const picked = suggestIndex >= 0 ? suggestions[suggestIndex]?.name : searchQuery;
-                          runCatalogSearch(picked || searchQuery);
-                        } else if (e.key === "Escape") {
-                          setSuggestOpen(false);
-                        }
-                      }}
+                      onValue={onCatalogQueryChange}
+                      onTerm={runCatalogSearch}
+                      onSubmit={runCatalogSearch}
+                      onProduct={openProduct}
+                      products={suggestionsPool}
                       placeholder={t("searchPlaceholder")}
-                      className="field-input flex-1 !rounded-none !border-0 !bg-transparent !text-ink !py-2"
-                      autoComplete="off"
-                      aria-label={t("catalog")}
-                      aria-expanded={suggestOpen && suggestions.length > 0}
-                      role="combobox"
-                    />
-                    {suggestOpen ? (
-                      <SearchSuggestions
-                        query={searchQuery}
-                        suggestions={suggestions}
-                        activeIndex={suggestIndex}
-                        onPick={(product) => runCatalogSearch(product.name)}
-                      />
-                    ) : null}
-                    <span className="w-px self-stretch my-1.5 bg-line" aria-hidden />
-                    <SearchFieldsSelect
-                      selected={searchFields}
-                      onChange={(fields) => {
-                        setSearchFields(fields);
-                      }}
-                      compact
+                      ariaLabel={t("catalog")}
+                      className="min-w-0 flex-1"
+                      inputClassName="field-input w-full flex-1 !rounded-none !border-0 !bg-transparent !py-2 !text-ink"
                     />
                   </div>
+                  <SearchFieldsSelect
+                    selected={searchFields}
+                    onChange={(fields) => {
+                      setSearchFields(fields);
+                    }}
+                    compact
+                    className="w-max max-w-full shrink-0"
+                  />
                   <CatalogViewToggle
                     value={catalogView}
                     onChange={setCatalogViewMode}
@@ -934,7 +843,7 @@ export default function HomePage() {
                     compact
                   />
                 </div>
-                <div className="flex flex-wrap items-center gap-1.5 lg:shrink-0">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {[
                     ["all", t("priceFilterAll")],
                     ["unpriced", t("priceFilterUnpriced")],
@@ -983,8 +892,8 @@ export default function HomePage() {
           </div>
 
           <div className="max-w-7xl mx-auto px-4 py-8">
-            <div className="flex flex-col lg:flex-row gap-8">
-              <aside className="lg:w-56 xl:w-60 shrink-0">
+            <div className="flex min-w-0 flex-col gap-8 lg:flex-row">
+              <aside className="w-full min-w-0 max-w-full lg:w-56 lg:shrink-0 xl:w-60">
                 <CategorySideNav
                   activeSlug={
                     selectedCategories.length === 1
@@ -1010,21 +919,20 @@ export default function HomePage() {
                 />
               </aside>
               <div className="min-w-0 flex-1">
-            <div className="flex items-end justify-between gap-3 mb-4">
+            <div id="catalog-results" className="mb-4 flex items-end justify-between gap-3">
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <h3
-                  id="catalog-results"
-                  className="font-display text-2xl font-semibold text-brand-800"
-                >
+                <div>
                   {searchQuery.trim() ? (
-                    <p className="w-full text-sm font-semibold text-brand-700">{t("searchFor", { q: searchQuery.trim() })}</p>
+                    <p className="mb-1 text-sm font-semibold text-brand-700">{t("searchFor", { q: searchQuery.trim() })}</p>
                   ) : null}
-                  {catalogLoading && !products.length
-                    ? t("loadingCatalog")
-                    : products.length === 1
-                      ? t("productLabelOne")
-                      : t("productsLabel", { n: products.length })}
-                </h3>
+                  <h3 className="font-display text-2xl font-semibold text-brand-800">
+                    {catalogLoading && !products.length
+                      ? t("loadingCatalog")
+                      : products.length === 1
+                        ? t("productLabelOne")
+                        : t("productsLabel", { n: products.length })}
+                  </h3>
+                </div>
                 {hasFilters ? (
                   <button
                     type="button"
@@ -1041,7 +949,7 @@ export default function HomePage() {
             </div>
             {catalogLoading && !products.length ? (
               <div
-                className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"}
+                className={catalogView === "list" ? "min-w-0 space-y-2" : "grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"}
                 aria-busy="true"
                 aria-live="polite"
               >
@@ -1062,7 +970,7 @@ export default function HomePage() {
               </div>
             ) : (
               <>
-                <div className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"}>
+                <div className={catalogView === "list" ? "min-w-0 space-y-2" : "grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"}>
                   {visibleCatalog.map((entry) =>
                     catalogView === "list" ? (
                       <ProductListRow

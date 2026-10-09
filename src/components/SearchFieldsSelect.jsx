@@ -12,7 +12,7 @@ const FIELD_KEYS = {
   remarks: "searchFieldRemarks",
 };
 
-export default function SearchFieldsSelect({ selected, onChange, compact = false }) {
+export default function SearchFieldsSelect({ selected, onChange, compact = false, className = "" }) {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
@@ -58,14 +58,14 @@ export default function SearchFieldsSelect({ selected, onChange, compact = false
       : t("searchFieldsSelected", { n: selectedNames.length });
 
   return (
-    <div ref={rootRef} className="relative shrink-0 self-stretch">
+    <div ref={rootRef} className={`relative min-w-0 ${className}`}>
       <button
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={t("searchIn")}
         onClick={() => setOpen((v) => !v)}
-        className={`h-full min-w-[10.5rem] max-w-[14rem] px-3 text-left text-sm text-ink flex items-center justify-between gap-2 bg-white ${
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-2 border border-line bg-white px-3 text-left text-sm text-ink ${
           compact ? "py-2" : "py-3"
         }`}
       >
@@ -80,7 +80,7 @@ export default function SearchFieldsSelect({ selected, onChange, compact = false
         <div
           role="listbox"
           aria-multiselectable="true"
-          className="absolute right-0 z-40 mt-1 w-56 max-w-[calc(100vw-2rem)] bg-white text-ink border border-line shadow-lg"
+          className="absolute left-0 z-40 mt-1 w-56 max-w-[calc(100vw-2rem)] bg-white text-ink border border-line shadow-lg"
         >
           <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-line">
             <p className="text-xs font-semibold uppercase tracking-wide text-mute">{t("searchIn")}</p>

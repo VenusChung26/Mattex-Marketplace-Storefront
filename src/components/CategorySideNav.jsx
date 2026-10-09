@@ -64,11 +64,11 @@ export default function CategorySideNav({
   return (
     <nav
       aria-label={t("categories")}
-      className="flex max-h-60 flex-col overflow-hidden lg:sticky lg:max-h-[var(--cat-nav-max)]"
+      className="flex w-full min-w-0 max-w-full max-h-60 flex-col overflow-hidden lg:sticky lg:max-h-[var(--cat-nav-max)]"
       style={{ top: offsetTop, "--cat-nav-max": maxHeight }}
     >
       <p className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-mute mb-2">{t("categories")}</p>
-      <ul ref={listRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain border border-line bg-white divide-y divide-line">
+      <ul ref={listRef} className="min-h-0 w-full min-w-0 flex-1 overflow-y-auto overscroll-contain border border-line bg-white divide-y divide-line">
         <li className={`flex items-stretch ${allActive ? "bg-brand-50" : "hover:bg-paper"}`}>
           {allActive ? (
             <span aria-current="page" className={allProductsClass}>
@@ -104,23 +104,23 @@ export default function CategorySideNav({
               {filterMode && onSelectCategory ? (
                 active ? (
                   <span aria-current="page" className={nameClass}>
-                    <span className="block">{category.name}</span>
+                    <span className="block break-words">{category.name}</span>
                     <span className="block text-[11px] font-medium text-mute mt-0.5">{category.count}</span>
                   </span>
                 ) : (
                   <button type="button" onClick={() => onSelectCategory(category)} className={nameClass}>
-                    <span className="block">{category.name}</span>
+                    <span className="block break-words">{category.name}</span>
                     <span className="block text-[11px] font-medium text-mute mt-0.5">{category.count}</span>
                   </button>
                 )
               ) : active ? (
                 <span aria-current="page" className={nameClass}>
-                  <span className="block">{category.name}</span>
+                  <span className="block break-words">{category.name}</span>
                   <span className="block text-[11px] font-medium text-mute mt-0.5">{category.count}</span>
                 </span>
               ) : (
                 <Link to={path} className={nameClass}>
-                    <span className="block">{category.name}</span>
+                    <span className="block break-words">{category.name}</span>
                     <span className="block text-[11px] font-medium text-mute mt-0.5">{category.count}</span>
                   </Link>
               )}

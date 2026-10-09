@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "../i18n";
-import { bannerHeroSrc, bannerName } from "../lib/promo";
+import { bannerName, OFFER_SECTION_HERO } from "../lib/promo";
 
 const ZOOM_STEPS = [100, 125, 150];
 const NORMAL_PX = 560;
@@ -98,7 +98,7 @@ export default function PromoOfferLayout({
   const index = Math.max(0, banners.findIndex((banner) => banner.id === activeId));
   const active = banners[index] || null;
   const name = bannerName(active, lang);
-  const hero = bannerHeroSrc(active);
+  const hero = OFFER_SECTION_HERO;
 
   return (
     <div>

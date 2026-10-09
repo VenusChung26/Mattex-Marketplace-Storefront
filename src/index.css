@@ -1,4 +1,24 @@
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  overflow-x: clip;
+  max-width: 100%;
+}
+body,
+#root {
+  overflow-x: clip;
+  max-width: 100%;
+}
+#root > .min-h-screen,
+#root > .min-h-dvh {
+  width: 100%;
+  min-width: 0;
+  align-items: stretch;
+}
+#root > .min-h-screen > main,
+#root > .min-h-dvh > main {
+  width: 100%;
+  min-width: 0;
+}
 #root > .min-h-screen:not(.flex),
 #root > .min-h-dvh:not(.flex),
 #root > .min-h-screen.flex-col,
@@ -195,6 +215,8 @@ body {
 .product-tile {
   content-visibility: auto;
   contain-intrinsic-size: auto 28rem;
+  min-width: 0;
+  max-width: 100%;
   transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
   background: #fff;
   border: 1px solid rgba(214, 221, 216, 0.7);
@@ -228,6 +250,8 @@ body {
 .cat-tile {
   content-visibility: auto;
   contain-intrinsic-size: auto 12rem;
+  min-width: 0;
+  max-width: 100%;
   position: relative;
   isolation: isolate;
   overflow: hidden;

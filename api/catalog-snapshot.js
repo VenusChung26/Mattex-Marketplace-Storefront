@@ -281,6 +281,18 @@ function partOf(request) {
   return new URL(request.url).searchParams.get("part") || "";
 }
 
+function buyerVisibleProduct(product) {
+  return Boolean(product) && product.published !== false && !product.deleted && !product.held;
+}
+
+function catalogForCaller(snapshot, request) {
+  if (!snapshot || readSession(request, "staff")) return snapshot;
+  return {
+    ...snapshot,
+    products: (snapshot.products || []).filter(buyerVisibleProduct),
+  };
+}
+
 export async function GET(request) {
   const headers = { "cache-control": "no-store" };
   if (partOf(request) === "groups") {
@@ -295,10 +307,10 @@ export async function GET(request) {
     const snapshot = await handleCatalogGet();
     if (!snapshot) return Response.json({ ok: true, found: true, live: true }, { headers });
     const product = (snapshot.products || []).find((row) => String(row.id) === id) || null;
-    const live = Boolean(product) && product.published !== false && !product.deleted && !product.held;
+    const live = buyerVisibleProduct(product);
     return Response.json({ ok: true, found: Boolean(product), live }, { headers });
   }
-  const snapshot = await handleCatalogGet();
+  const snapshot = catalogForCaller(await handleCatalogGet(), request);
   if (!snapshot) return Response.json({ etag: SEED }, { status: 404, headers });
   return Response.json(snapshot, { headers });
 }

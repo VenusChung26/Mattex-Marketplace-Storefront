@@ -12,6 +12,7 @@ import CartToast from "../components/CartToast";
 import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
 import { catalogGroupIndex, collapseCatalog, useCatalogGroups } from "../lib/catalogGroups";
+import { jumpToId } from "../lib/jumpTo";
 import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { categoryOgPath } from "../lib/ogImage";
 import { seoCopy } from "../lib/seoCopy";
@@ -19,12 +20,12 @@ import {
   getCategoryByName,
   getCategoryBySlug,
   getEffectivePrice,
+  getProductsByCategory,
   isHitProduct,
-  recommendProducts,
   searchProducts,
   addFromStorefront,
 } from "../lib/store";
-import SearchSuggestions from "../components/SearchSuggestions";
+import { ProductSearchBox } from "../components/SearchSuggestions";
 
 const CATALOG_BATCH = 24;
 const CATALOG_VIEW_KEY = "subbie_catalog_view";
@@ -44,8 +45,6 @@ export default function CatalogPage() {
   const { slug } = useParams();
   const [params] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(() => params.get("q") || "");
-  const [suggestOpen, setSuggestOpen] = useState(false);
-  const [suggestIndex, setSuggestIndex] = useState(-1);
   const [searchFields, setSearchFields] = useState([]);
   const [priceFilter, setPriceFilter] = useState("all");
   const [greenOnly, setGreenOnly] = useState(false);
@@ -66,11 +65,10 @@ export default function CatalogPage() {
     }
   }, [catalogView]);
 
-  const suggestions = useMemo(() => {
-    const text = searchQuery.trim();
-    if (!text || !category) return [];
-    return recommendProducts(text, category.name);
-  }, [searchQuery, category, catalogEpoch]);
+  const suggestionsPool = useMemo(
+    () => (category ? getProductsByCategory(category.name) : []),
+    [category, catalogEpoch]
+  );
 
   const products = useMemo(() => {
     if (!category) return [];
@@ -136,11 +134,13 @@ export default function CatalogPage() {
         onSearchSubmit={(event, value) => {
           event?.preventDefault();
           setSearchQuery(value ?? "");
+          jumpToId("catalog-results");
         }}
+        suggestProducts={suggestionsPool}
       />
-      <main className="max-w-7xl mx-auto px-4 py-10 sm:py-12">
-        <div className="flex flex-col lg:flex-row gap-8">
-          <aside className="lg:w-56 xl:w-60 shrink-0">
+      <main className="mx-auto min-w-0 max-w-7xl px-4 py-10 sm:py-12">
+        <div className="flex min-w-0 flex-col gap-8 lg:flex-row">
+          <aside className="w-full min-w-0 max-w-full lg:w-56 lg:shrink-0 xl:w-60">
             <CategorySideNav activeSlug={category.id} offsetTop={88} />
           </aside>
           <div className="min-w-0 flex-1">
@@ -157,56 +157,33 @@ export default function CatalogPage() {
             </div>
 
             <div className="bg-white border border-line rounded-xl p-3 sm:p-3.5 mb-6">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex flex-1 min-w-0 border border-line bg-white">
-                  <input
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <div className="relative flex min-w-[min(100%,18rem)] flex-1 border border-line bg-white">
+                  <ProductSearchBox
                     id="catalog-search"
-                    type="search"
                     value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setSuggestOpen(Boolean(e.target.value.trim()));
-                      setSuggestIndex(-1);
+                    onValue={setSearchQuery}
+                    onTerm={(term) => {
+                      setSearchQuery(term);
+                      jumpToId("catalog-results");
                     }}
-                    onFocus={() => setSuggestOpen(Boolean(searchQuery.trim()))}
-                    onBlur={() => setSuggestOpen(false)}
-                    onKeyDown={(e) => {
-                      if (e.key === "ArrowDown") {
-                        e.preventDefault();
-                        setSuggestOpen(true);
-                        setSuggestIndex((index) => Math.min(index + 1, suggestions.length - 1));
-                      } else if (e.key === "ArrowUp") {
-                        e.preventDefault();
-                        setSuggestIndex((index) => Math.max(index - 1, 0));
-                      } else if (e.key === "Enter" && suggestIndex >= 0 && suggestions[suggestIndex]) {
-                        e.preventDefault();
-                        setSearchQuery(suggestions[suggestIndex].name);
-                        setSuggestOpen(false);
-                      } else if (e.key === "Escape") {
-                        setSuggestOpen(false);
-                      }
+                    onProduct={(product) => {
+                      setSearchQuery(product.name);
+                      jumpToId("catalog-results");
                     }}
+                    products={suggestionsPool}
                     placeholder={t("searchPlaceholder")}
-                    className="field-input flex-1 !rounded-none !border-0 !shadow-none"
-                    autoComplete="off"
-                    aria-label={t("catalog")}
-                    role="combobox"
-                    aria-expanded={suggestOpen && suggestions.length > 0}
+                    ariaLabel={t("catalog")}
+                    className="min-w-0 flex-1"
+                    inputClassName="field-input w-full flex-1 !rounded-none !border-0 !shadow-none"
                   />
-                  {suggestOpen ? (
-                    <SearchSuggestions
-                      query={searchQuery}
-                      suggestions={suggestions}
-                      activeIndex={suggestIndex}
-                      onPick={(product) => {
-                        setSearchQuery(product.name);
-                        setSuggestOpen(false);
-                      }}
-                    />
-                  ) : null}
-                  <span className="w-px self-stretch my-2 bg-line" aria-hidden />
-                  <SearchFieldsSelect selected={searchFields} onChange={setSearchFields} compact />
                 </div>
+                <SearchFieldsSelect
+                  selected={searchFields}
+                  onChange={setSearchFields}
+                  compact
+                  className="w-max max-w-full shrink-0"
+                />
                 <CatalogViewToggle
                   value={catalogView}
                   onChange={setCatalogViewMode}
@@ -282,7 +259,7 @@ export default function CatalogPage() {
             </div>
             {catalogLoading && !products.length ? (
               <div
-                className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"}
+                className={catalogView === "list" ? "min-w-0 space-y-2" : "grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"}
                 aria-busy="true"
                 aria-live="polite"
               >
@@ -290,7 +267,7 @@ export default function CatalogPage() {
               </div>
             ) : products.length ? (
               <>
-                <div className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"}>
+                <div className={catalogView === "list" ? "min-w-0 space-y-2" : "grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"}>
                   {products.slice(0, catalogShown).map((entry) =>
                     catalogView === "list" ? (
                       <ProductListRow

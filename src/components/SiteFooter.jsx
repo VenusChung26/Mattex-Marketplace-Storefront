@@ -30,6 +30,19 @@ export default function SiteFooter({ className = "" }) {
           </a>
           <p className="mt-3 text-sm font-semibold text-white">{t("brandName")}</p>
           <p className="mt-1.5 text-sm text-white/55 leading-relaxed max-w-[16rem]">{t("footerTagline")}</p>
+          <a
+            href="https://marketplace.mattex.com.hk/"
+            className="mt-4 inline-block rounded-md bg-white p-1.5"
+          >
+            <img src="/assets/marketplace-qr.svg" alt={t("marketplaceQr")} width="96" height="96" />
+          </a>
+          <a
+            href="/assets/marketplace-qr.png"
+            download="mattex-marketplace-qr.png"
+            className="mt-2 block text-xs font-semibold text-white/70 hover:text-white"
+          >
+            {t("marketplaceQrDownload")}
+          </a>
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/40 mb-3">{t("footerCatalog")}</p>

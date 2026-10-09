@@ -9,7 +9,7 @@ import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
 import { bannerProductOffers } from "../lib/offer";
 import { siteOrigin, withLocale } from "../lib/locale";
-import { bannerName, bannerSentence, promoBanners, usePromo } from "../lib/promo";
+import { bannerName, promoBanners, sectionTitle, sentenceOf, usePromo } from "../lib/promo";
 import { addFromStorefront, getProduct } from "../lib/store";
 
 export default function MidAutumnPage() {
@@ -47,8 +47,8 @@ export default function MidAutumnPage() {
       <Seo
         lang={lang}
         path={path}
-        title={`${bannerName(active, lang) || t("midAutumnTitle")} | Mattex Marketplace`}
-        description={bannerSentence(active, promo, lang) || t("midAutumnLead")}
+        title={`${sectionTitle(promo, lang) || t("midAutumnTitle")} | Mattex Marketplace`}
+        description={t("midAutumnLead")}
         jsonLd={[
           breadcrumbJsonLd(siteOrigin(), [
             { name: "Mattex Marketplace", path: withLocale(lang, "/") },
@@ -59,8 +59,8 @@ export default function MidAutumnPage() {
       <SiteHeader />
       {active ? (
         <PromoOfferLayout
-          title={bannerName(active, lang) || t("midAutumnTitle")}
-          sentence={bannerSentence(active, promo, lang)}
+          title={sectionTitle(promo, lang) || t("midAutumnTitle")}
+          sentence={sentenceOf(promo, lang)}
           banners={banners}
           activeId={active.id}
           onSelect={select}
@@ -79,7 +79,7 @@ export default function MidAutumnPage() {
                   {offerProducts.length === 1 ? t("productCountOne") : t("productsCount", { n: offerProducts.length })}
                 </p>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {offerProducts.map((product) => (
                   <ProductCard key={product.id} product={product} onAdd={handleAdd} />
                 ))}

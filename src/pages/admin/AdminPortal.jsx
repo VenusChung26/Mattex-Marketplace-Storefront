@@ -118,11 +118,14 @@ import {
 import { submitRfqToTms } from "../../lib/tmsSubmit";
 import { downloadProductExcelTemplate, excelFileToCsv } from "../../lib/excelImport";
 import { clearTmsSession } from "../../lib/tmsSession";
-import { transactedRefsForLine } from "../../lib/tmsTransacted";
+import { tmsTransactedHref, transactedRefsForLine } from "../../lib/tmsTransacted";
 import QuoteVersionSelect, { DRAFT_VALUE, RfqRequestVersionSelect } from "../../components/QuoteVersionSelect";
 import RfqActivityLog from "../../components/RfqActivityLog";
-import { SHOW_PRODUCT_IMPORT, SHOW_RFQ_QUOTES } from "../../lib/flags";
+import { SHOW_PRODUCT_IMPORT, SHOW_RFQ_QUOTES, SHOW_TMS_LINK } from "../../lib/flags";
 import BannersPanel from "./BannersPanel";
+import { useLanguage } from "../../i18n";
+import { adminText } from "../../lib/adminCopy";
+import PortalLangToggle from "../../components/PortalLangToggle";
 
 const NAV = [
   { id: "rfqs", label: "RFQ inbox" },
@@ -256,10 +259,11 @@ const PRODUCT_TABLE_HEADS = [
 ];
 
 function StatusBadge({ product }) {
+  const { lang } = useLanguage();
   const key = productStatusKey(product);
   return (
     <span className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${STATUS_CHIP[key]}`}>
-      {statusLabel(product)}
+      {adminText(lang, statusLabel(product))}
     </span>
   );
 }
@@ -369,10 +373,11 @@ const ACCOUNT_STATUS_CHIP = {
 };
 
 function AccountStatusChip({ account }) {
+  const { lang } = useLanguage();
   const key = account ? accountStatusKey(account) : "missing";
   return (
     <span className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${ACCOUNT_STATUS_CHIP[key]}`}>
-      {accountStatusLabel(account)}
+      {adminText(lang, accountStatusLabel(account))}
     </span>
   );
 }
@@ -407,6 +412,7 @@ function productSearchHay(p) {
     p.standard,
     p.primarySpec,
     statusLabel(p),
+    adminText("zh", statusLabel(p)),
     (p.purposes || []).join(" "),
   ];
 }
@@ -422,6 +428,7 @@ function accountSearchHay(u) {
     u.jobTitle,
     u.bootstrap ? "bootstrap" : "staff",
     accountStatusLabel(u),
+    adminText("zh", accountStatusLabel(u)),
   ];
 }
 
@@ -436,6 +443,7 @@ function rfqSearchHay(rfq) {
     rfqProjectName(rfq),
     rfq.channel,
     rfqInboxLabel(rfq),
+    adminText("zh", rfqInboxLabel(rfq)),
     ...lines.flatMap((line) => [line.name, line.productNo]),
   ];
 }
@@ -454,6 +462,8 @@ function findReportedProduct(products, report) {
 }
 
 export default function AdminPortal() {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const { staff, allRfqs, reports, adminAlerts } = useStore();
   const [params, setSearchParams] = useSearchParams();
   const focusRfqId = String(params.get("rfq") || params.get("id") || "").trim();
@@ -554,22 +564,22 @@ export default function AdminPortal() {
       const reason = result?.error;
       setFlash(
         reason === "staff"
-          ? "Sign in as sales staff to change this."
+          ? pt("Sign in as sales staff to change this.")
           : reason === "published"
-            ? "Unpublish this product before Delete forever."
+            ? pt("Unpublish this product before Delete forever.")
             : reason === "reason"
-              ? "Enter a rejection reason."
+              ? pt("Enter a rejection reason.")
               : reason === "in_use"
-                ? "Move products out of this category first."
+                ? pt("Move products out of this category first.")
                 : reason === "save" || reason === "quota"
                 ? "這次未送出，稍後再試"
                 : reason === "not_configured"
-                  ? "Email is not set up on this computer. The RFQ change was saved."
-                  : reason || "Unable to save"
+                  ? pt("Email is not set up on this computer. The RFQ change was saved.")
+                  : reason || pt("Unable to save")
       );
     } else {
       setFlashError(false);
-      setFlash(fallback || "Saved");
+      setFlash(fallback || pt("Saved"));
     }
   }
 
@@ -579,18 +589,17 @@ export default function AdminPortal() {
         <header className="flex items-center justify-between gap-4 px-6 py-4">
           <div className="flex min-w-0 items-center gap-2.5">
             <img src="/assets/mattex-logo.webp" alt="" className="h-8 w-auto shrink-0 brightness-0 invert" />
-            <span className="block text-[15px] sm:text-lg font-semibold tracking-tight leading-tight">
-              Mattex Marketplace Admin Portal
-            </span>
+            <span className="block text-[15px] sm:text-lg font-semibold tracking-tight leading-tight">{pt("Mattex Marketplace Admin Portal")}</span>
           </div>
-          <a href={marketplaceHomeHref("en")} className="shrink-0 text-xs text-white/60 hover:text-white">
-            Marketplace
-          </a>
+          <div className="flex shrink-0 items-center gap-3">
+            <PortalLangToggle />
+            <a href={marketplaceHomeHref(lang)} className="text-xs text-white/60 hover:text-white">{pt("Marketplace")}</a>
+          </div>
         </header>
         <main className="mx-auto max-w-md px-4 py-16">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-200">Staff only</p>
-          <h1 className="mt-2 font-display text-3xl">Mattex Sales portal</h1>
-          <p className="mt-2 text-sm text-white/60">Product ops, Excel, buyer accounts, RFQ review, TMS upload.</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-200">{pt("Staff only")}</p>
+          <h1 className="mt-2 font-display text-3xl">{pt("Mattex Sales portal")}</h1>
+          <p className="mt-2 text-sm text-white/60">{pt("Product ops, Excel, buyer accounts, RFQ review, TMS upload.")}</p>
           <form
             className="mt-8 space-y-4 rounded-2xl bg-white p-6 text-ink"
             onSubmit={async (e) => {
@@ -602,20 +611,19 @@ export default function AdminPortal() {
                 setLoginBusy(false);
                 setError(
                   result.error === "buyer"
-                    ? "This email is a buyer account."
+                    ? pt("This email is a buyer account.")
                     : result.error === "invite"
-                      ? "This account still needs to set a password from the invite email."
+                      ? pt("This account still needs to set a password from the invite email.")
                       : result.error === "not_configured"
-                        ? "Portal sign-in is not configured on this server."
-                        : "Sign-in failed."
+                        ? pt("Portal sign-in is not configured on this server.")
+                        : pt("Sign-in failed.")
                 );
                 return;
               }
               setLoginBusy(false);
             }}
           >
-            <label className="block text-sm font-medium">
-              Email<RequiredMark />
+            <label className="block text-sm font-medium">{pt("Email")}<RequiredMark />
               <input
                 type="email"
                 value={email}
@@ -625,24 +633,21 @@ export default function AdminPortal() {
                 autoComplete="username"
               />
             </label>
-            <label className="block text-sm font-medium">
-              Password<RequiredMark />
+            <label className="block text-sm font-medium">{pt("Password")}<RequiredMark />
               <PasswordInput
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
+                placeholder={pt("Password")}
                 className="mt-1 w-full rounded-lg border border-line px-3 py-2"
                 autoComplete="current-password"
               />
             </label>
-            {error ? <p className="text-sm text-red-700">{error}</p> : null}
+            {error ? <p className="text-sm text-red-700">{pt(error)}</p> : null}
             <button className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white disabled:opacity-60" disabled={loginBusy}>
-              {loginBusy ? "Signing in…" : "Enter portal"}
+              {loginBusy ? pt("Signing in…") : pt("Enter portal")}
             </button>
             <p className="text-center">
-              <Link to="/forgot-password" className="text-sm font-semibold text-brand-700 hover:underline">
-                Forgot password?
-              </Link>
+              <Link to="/forgot-password" className="text-sm font-semibold text-brand-700 hover:underline">{pt("Forgot password?")}</Link>
             </p>
           </form>
         </main>
@@ -708,7 +713,7 @@ export default function AdminPortal() {
   function openReportedProduct(report) {
     const match = findReportedProduct(products, report);
     if (!match) {
-      note({ ok: false, error: "Product not found in catalog" });
+      note({ ok: false, error: pt("Product not found in catalog") });
       return;
     }
     setFocusReport(report);
@@ -723,9 +728,7 @@ export default function AdminPortal() {
       <aside className="sticky top-0 flex h-dvh w-60 shrink-0 flex-col self-start bg-charcoal text-white">
         <div className="flex shrink-0 items-center gap-2.5 px-4 py-4">
           <img src="/assets/mattex-logo.webp" alt="" className="h-8 w-auto shrink-0 brightness-0 invert" />
-          <span className="min-w-0 text-[15px] font-semibold leading-tight tracking-tight">
-            Mattex Marketplace Admin Portal
-          </span>
+          <span className="min-w-0 text-[15px] font-semibold leading-tight tracking-tight">{pt("Mattex Marketplace Admin Portal")}</span>
         </div>
         <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3">
           {NAV.map((item) => {
@@ -751,7 +754,7 @@ export default function AdminPortal() {
                     }`}
                     aria-expanded={productsNavOpen}
                   >
-                    <span>{item.label}</span>
+                    <span>{pt(item.label)}</span>
                     <ChevronIcon open={productsNavOpen} />
                   </button>
                   {productsNavOpen ? (
@@ -773,11 +776,9 @@ export default function AdminPortal() {
                               : "text-white/65 hover:bg-white/10 hover:text-white"
                           }`}
                         >
-                          <span>{src.label}</span>
+                          <span>{pt(src.label)}</span>
                           {src.id === "chain" ? (
-                            <span className="mt-0.5 shrink-0 rounded bg-white/10 px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-white/55">
-                              Soon
-                            </span>
+                            <span className="mt-0.5 shrink-0 rounded bg-white/10 px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-white/55">{pt("Soon")}</span>
                           ) : null}
                         </button>
                       ))}
@@ -808,7 +809,7 @@ export default function AdminPortal() {
                     }`}
                     aria-expanded={accountsNavOpen}
                   >
-                    <span>{item.label}</span>
+                    <span>{pt(item.label)}</span>
                     <ChevronIcon open={accountsNavOpen} />
                   </button>
                   {accountsNavOpen ? (
@@ -830,7 +831,7 @@ export default function AdminPortal() {
                               : "text-white/65 hover:bg-white/10 hover:text-white"
                           }`}
                         >
-                          <span>{src.label}</span>
+                          <span>{pt(src.label)}</span>
                         </button>
                       ))}
                     </div>
@@ -855,14 +856,15 @@ export default function AdminPortal() {
                   page === item.id ? "bg-brand-600 text-white" : "text-white/80 hover:bg-white/10"
                 }`}
               >
-                <span>{item.label}</span>
+                <span>{pt(item.label)}</span>
                 {item.id === "rfqs" && pendingRfqs ? <span className="text-xs">{pendingRfqs}</span> : null}
               </button>
             );
           })}
         </nav>
         <div className="shrink-0 px-4 pb-6 pt-3 text-xs text-white/50">
-          <p>{staff.email}</p>
+          <PortalLangToggle />
+          <p className="mt-3">{staff.email}</p>
           <button
             type="button"
             className="mt-2 hover:text-white"
@@ -874,9 +876,7 @@ export default function AdminPortal() {
               setPwError("");
               setPwOk("");
             }}
-          >
-            Change password
-          </button>
+          >{pt("Change password")}</button>
           <button
             type="button"
             className="mt-2 block hover:text-white"
@@ -884,23 +884,19 @@ export default function AdminPortal() {
               clearTmsSession();
               logoutStaff();
             }}
-          >
-            Log out
-          </button>
-          <a href={marketplaceHomeHref("en")} className="mt-2 block hover:text-white">
-            Marketplace
-          </a>
+          >{pt("Log out")}</button>
+          <a href={marketplaceHomeHref(lang)} className="mt-2 block hover:text-white">{pt("Marketplace")}</a>
         </div>
       </aside>
       <div className="min-w-0 flex-1">
         <header className="border-b border-line bg-white px-6 py-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">Mattex operations</p>
-          <p className="text-sm text-mute">Same marketplace catalog — this portal only adds product / RFQ ops.</p>
-          {flash ? <p className={`mt-2 text-sm ${flashError ? "text-red-700" : "text-brand-700"}`}>{flash}</p> : null}
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">{pt("Mattex operations")}</p>
+          <p className="text-sm text-mute">{pt("Same marketplace catalog — this portal only adds product / RFQ ops.")}</p>
+          {flash ? <p className={`mt-2 text-sm ${flashError ? "text-red-700" : "text-brand-700"}`}>{pt(flash)}</p> : null}
           {jumpAlert ? (
             <div className="mt-3 flex flex-wrap items-start justify-between gap-3 rounded-xl border border-brand-300 bg-brand-50 px-4 py-3">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">New marketplace alert</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">{pt("New marketplace alert")}</p>
                 <p className="mt-1 text-sm font-semibold text-brand-900">{jumpAlert.title}</p>
                 {jumpAlert.body ? <p className="mt-0.5 text-sm text-ink">{jumpAlert.body}</p> : null}
               </div>
@@ -910,7 +906,7 @@ export default function AdminPortal() {
                   className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white"
                   onClick={() => openJumpAlert(jumpAlert)}
                 >
-                  {jumpAlert.kind === "rfq" || String(jumpAlert.href || "").includes("rfq=") ? "Go to RFQ" : "Jump"}
+                  {jumpAlert.kind === "rfq" || String(jumpAlert.href || "").includes("rfq=") ? pt("Go to RFQ") : pt("Jump")}
                 </button>
                 <button
                   type="button"
@@ -920,7 +916,7 @@ export default function AdminPortal() {
                     setJumpAlert(null);
                   }}
                 >
-                  Dismiss
+                  {pt("Dismiss")}
                 </button>
               </div>
             </div>
@@ -978,13 +974,11 @@ export default function AdminPortal() {
       </div>
       {passwordOpen ? (
         <AdminModal
-          title="Change password"
+          title={pt("Change password")}
           onClose={() => setPasswordOpen(false)}
           footer={
             <div className="flex justify-end gap-2">
-              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={() => setPasswordOpen(false)}>
-                Cancel
-              </button>
+              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={() => setPasswordOpen(false)}>{pt("Cancel")}</button>
               <button
                 type="button"
                 className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
@@ -994,17 +988,17 @@ export default function AdminPortal() {
                   const number = /\d/.test(pwNext);
                   if (!String(pwCurrent || "").trim()) {
                     setPwOk("");
-                    setPwError("Enter your current password.");
+                    setPwError(pt("Enter your current password."));
                     return;
                   }
                   if (!length || !letter || !number) {
                     setPwOk("");
-                    setPwError("Password needs 8+ characters, a letter, and a number.");
+                    setPwError(pt("Password needs 8+ characters, a letter, and a number."));
                     return;
                   }
                   if (!pwConfirm || pwNext !== pwConfirm) {
                     setPwOk("");
-                    setPwError("Passwords do not match.");
+                    setPwError(pt("Passwords do not match."));
                     return;
                   }
                   const result = await changeOwnStaffPassword({ currentPassword: pwCurrent, nextPassword: pwNext });
@@ -1012,15 +1006,15 @@ export default function AdminPortal() {
                     setPwOk("");
                     setPwError(
                       result.error === "current"
-                        ? "Current password is incorrect."
+                        ? pt("Current password is incorrect.")
                         : result.error === "same"
-                          ? "New password must be different."
-                          : "Password needs 8+ characters, a letter, and a number."
+                          ? pt("New password must be different.")
+                          : pt("Password needs 8+ characters, a letter, and a number.")
                     );
                     return;
                   }
                   setPwError("");
-                  setPwOk("Password updated.");
+                  setPwOk(pt("Password updated."));
                   setPwCurrent("");
                   setPwNext("");
                   setPwConfirm("");
@@ -1036,8 +1030,7 @@ export default function AdminPortal() {
               Current password<RequiredMark />
               <input type="password" className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm" value={pwCurrent} onChange={(e) => setPwCurrent(e.target.value)} autoComplete="current-password" />
             </label>
-            <label className="block text-sm font-medium">
-              New password<RequiredMark />
+            <label className="block text-sm font-medium">{pt("New password")}<RequiredMark />
               <input type="password" className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm" value={pwNext} onChange={(e) => setPwNext(e.target.value)} autoComplete="new-password" />
             </label>
             <label className="block text-sm font-medium">
@@ -1045,8 +1038,8 @@ export default function AdminPortal() {
               <input type="password" className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm" value={pwConfirm} onChange={(e) => setPwConfirm(e.target.value)} autoComplete="new-password" />
             </label>
             <PasswordChecklist password={pwNext} confirmPassword={pwConfirm} hasError={Boolean(pwError)} />
-            {pwError ? <p className="text-sm text-red-700">{pwError}</p> : null}
-            {pwOk ? <p className="text-sm text-brand-700">{pwOk}</p> : null}
+            {pwError ? <p className="text-sm text-red-700">{pt(pwError)}</p> : null}
+            {pwOk ? <p className="text-sm text-brand-700">{pt(pwOk)}</p> : null}
           </div>
         </AdminModal>
       ) : null}
@@ -1055,7 +1048,7 @@ export default function AdminPortal() {
           className={`fixed top-4 left-1/2 z-[80] w-[min(36rem,calc(100%-2rem))] -translate-x-1/2 rounded-xl px-5 py-4 text-base font-semibold text-white shadow-xl ${flashError ? "bg-red-700" : "bg-brand-800"}`}
           role="status"
         >
-          {flash}
+          {pt(flash)}
         </div>
       ) : null}
     </div>
@@ -1063,6 +1056,8 @@ export default function AdminPortal() {
 }
 
 function AdminModal({ title, onClose, children, wide, footer }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const closeReady = useRef(false);
   useEffect(() => {
     closeReady.current = false;
@@ -1102,7 +1097,7 @@ function AdminModal({ title, onClose, children, wide, footer }) {
             type="button"
             className="inline-flex h-8 w-8 shrink-0 items-center justify-center text-mute transition-colors hover:bg-paper hover:text-ink"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={pt("Close")}
           >
             ×
           </button>
@@ -1152,6 +1147,8 @@ function AdminSearchBar({ value, onChange, placeholder, label }) {
 }
 
 function FilterTabs({ tabs, counts, value, onChange, label }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   return (
     <div className="mb-4 flex flex-wrap gap-1 rounded-xl border border-line bg-white p-1" role="tablist" aria-label={label}>
       {tabs.map((tab) => {
@@ -1167,7 +1164,7 @@ function FilterTabs({ tabs, counts, value, onChange, label }) {
               active ? "bg-brand-600 text-white" : "text-mute hover:bg-brand-50 hover:text-ink"
             }`}
           >
-            {tab.label}
+            {pt(tab.label)}
             <span className={`tabular-nums text-[11px] ${active ? "text-white/80" : "text-mute"}`}>{counts[tab.id] ?? 0}</span>
           </button>
         );
@@ -1177,18 +1174,22 @@ function FilterTabs({ tabs, counts, value, onChange, label }) {
 }
 
 function StatusTabs({ products, statusTab, setStatusTab }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   return (
     <FilterTabs
       tabs={STATUS_TABS}
       counts={statusCounts(products)}
       value={statusTab}
       onChange={setStatusTab}
-      label="Product status"
+      label={pt("Product status")}
     />
   );
 }
 
 function CategoryPanel({ products, note, onOpenProduct }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const categories = listAdminCategories();
   const [activeId, setActiveId] = useState(categories[0]?.id || "");
   const [query, setQuery] = useState("");
@@ -1272,7 +1273,7 @@ function CategoryPanel({ products, note, onOpenProduct }) {
 
   function moveSelected() {
     if (!moveTo || !liveSelected.length) {
-      note({ ok: false, error: "Select products and a destination category." });
+      note({ ok: false, error: pt("Select products and a destination category.") });
       return;
     }
     const result = assignAdminProductsCategory(
@@ -1306,7 +1307,7 @@ function CategoryPanel({ products, note, onOpenProduct }) {
   function confirmAddProducts() {
     const ids = [...addSelected];
     if (!ids.length || !active) {
-      note({ ok: false, error: "Select products to add." });
+      note({ ok: false, error: pt("Select products to add.") });
       return;
     }
     const result = assignAdminProductsCategory(ids, active.name);
@@ -1320,17 +1321,17 @@ function CategoryPanel({ products, note, onOpenProduct }) {
     <div>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl text-brand-900">Product Category</h1>
-          <p className="text-sm text-mute">Add, rename, or delete empty categories. Hover Delete to see why a category cannot be removed.</p>
+          <h1 className="font-display text-2xl text-brand-900">{pt("Product Category")}</h1>
+          <p className="text-sm text-mute">{pt("Add, rename, or delete empty categories. Hover Delete to see why a category cannot be removed.")}</p>
         </div>
         <div className="flex min-w-[18rem] flex-col gap-1">
-          <span className="text-sm font-medium text-ink">Category name</span>
+          <span className="text-sm font-medium text-ink">{pt("Category name")}</span>
           <div className="flex gap-2">
           <input
             className="min-w-0 flex-1 rounded-lg border border-line bg-white px-3 py-2 text-sm"
             value={addName}
             onChange={(e) => setAddName(e.target.value)}
-            placeholder="New category name"
+            placeholder={pt("New category name")}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -1338,9 +1339,7 @@ function CategoryPanel({ products, note, onOpenProduct }) {
               }
             }}
           />
-          <button type="button" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white" onClick={addCategory}>
-            Add
-          </button>
+          <button type="button" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white" onClick={addCategory}>{pt("Add")}</button>
           </div>
         </div>
       </div>
@@ -1349,8 +1348,8 @@ function CategoryPanel({ products, note, onOpenProduct }) {
           <table className="w-full text-left text-[12px]">
             <thead className="sticky top-0 bg-brand-50 text-[10px] font-semibold uppercase tracking-wide text-mute">
               <tr>
-                <th className="px-3 py-2">Category</th>
-                <th className="px-3 py-2">Count</th>
+                <th className="px-3 py-2">{pt("Category")}</th>
+                <th className="px-3 py-2">{pt("Count")}</th>
                 <th className={`${STICKY_ACTION_TH} text-right`} />
               </tr>
             </thead>
@@ -1380,13 +1379,11 @@ function CategoryPanel({ products, note, onOpenProduct }) {
                             setEditingId(cat.id);
                             setEditName(cat.name);
                           }}
-                        >
-                          Edit
-                        </button>
+                        >{pt("Edit")}</button>
                         <HoverTip
                           text={
                             categories.length <= 1
-                              ? "Cannot delete the last category."
+                              ? pt("Cannot delete the last category.")
                               : cat.count > 0
                                 ? `Cannot delete: ${cat.count} product${cat.count === 1 ? "" : "s"} still in this category. Move them first.`
                                 : ""
@@ -1397,9 +1394,7 @@ function CategoryPanel({ products, note, onOpenProduct }) {
                             className="rounded border border-red-200 px-2 py-1 text-[10px] font-semibold text-red-700 disabled:opacity-40"
                             disabled={categories.length <= 1 || cat.count > 0}
                             onClick={() => removeCategory(cat)}
-                          >
-                            Delete
-                          </button>
+                          >{pt("Delete")}</button>
                         </HoverTip>
                       </div>
                     </td>
@@ -1429,7 +1424,7 @@ function CategoryPanel({ products, note, onOpenProduct }) {
                   Add products
                 </button>
               </div>
-              <AdminSearchBar value={query} onChange={setQuery} label="Search in category" placeholder="Search products in this category…" />
+              <AdminSearchBar value={query} onChange={setQuery} label="Search in category" placeholder={pt("Search products in this category…")} />
               {liveSelected.length ? (
                 <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2">
                   <p className="text-sm font-medium text-brand-900">{liveSelected.length} selected</p>
@@ -1458,7 +1453,7 @@ function CategoryPanel({ products, note, onOpenProduct }) {
                       <th className="px-3 py-2 w-10">
                         <input
                           type="checkbox"
-                          aria-label="Select all products in this category"
+                          aria-label={pt("Select all products in this category")}
                           checked={allSelectableSelected}
                           disabled={!selectable.length}
                           ref={(el) => {
@@ -1467,9 +1462,9 @@ function CategoryPanel({ products, note, onOpenProduct }) {
                           onChange={toggleAllVisible}
                         />
                       </th>
-                      <th className="px-3 py-2">SKU</th>
-                      <th className="px-3 py-2">Product</th>
-                      <th className="px-3 py-2">Status</th>
+                      <th className="px-3 py-2">{pt("SKU")}</th>
+                      <th className="px-3 py-2">{pt("Product")}</th>
+                      <th className="px-3 py-2">{pt("Status")}</th>
                       <th className={`${STICKY_ACTION_TH} w-12`} />
                     </tr>
                   </thead>
@@ -1507,7 +1502,7 @@ function CategoryPanel({ products, note, onOpenProduct }) {
                             <button
                               type="button"
                               className="inline-flex h-7 w-7 items-center justify-center rounded border border-line text-brand-800 hover:bg-brand-50"
-                              title="Open product"
+                              title={pt("Open product")}
                               aria-label={`Open ${productRowLabel(p)}`}
                               onClick={() => onOpenProduct?.(p)}
                             >
@@ -1521,7 +1516,7 @@ function CategoryPanel({ products, note, onOpenProduct }) {
                     ) : (
                       <tr>
                         <td colSpan={5} className="px-3 py-16 text-center text-sm text-mute">
-                          {needle ? "No products match this search." : "No products in this category."}
+                          {needle ? pt("No products match this search.") : pt("No products in this category.")}
                         </td>
                       </tr>
                     )}
@@ -1530,7 +1525,7 @@ function CategoryPanel({ products, note, onOpenProduct }) {
               </div>
             </>
           ) : (
-            <p className="text-sm text-mute">Add a category to get started.</p>
+            <p className="text-sm text-mute">{pt("Add a category to get started.")}</p>
           )}
         </div>
       </div>
@@ -1541,16 +1536,14 @@ function CategoryPanel({ products, note, onOpenProduct }) {
           wide
           footer={
             <div className="flex justify-end gap-2">
-              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={() => setAddOpen(false)}>
-                Cancel
-              </button>
+              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={() => setAddOpen(false)}>{pt("Cancel")}</button>
               <button type="button" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white" onClick={confirmAddProducts}>
                 Add {addSelected.size || ""}
               </button>
             </div>
           }
         >
-          <AdminSearchBar value={addQuery} onChange={setAddQuery} label="Search products" placeholder="Search name, SKU, category…" />
+          <AdminSearchBar value={addQuery} onChange={setAddQuery} label="Search products" placeholder={pt("Search name, SKU, category…")} />
           <div className="overflow-auto rounded-lg border border-line max-h-80">
             <table className="w-full text-left text-[12px]">
               <thead className="bg-brand-50 text-[10px] font-semibold uppercase tracking-wide text-mute">
@@ -1558,7 +1551,7 @@ function CategoryPanel({ products, note, onOpenProduct }) {
                   <th className="px-3 py-2 w-10">
                     <input
                       type="checkbox"
-                      aria-label="Select all products to add"
+                      aria-label={pt("Select all products to add")}
                       checked={allAddSelected}
                       disabled={!addVisible.length}
                       ref={(el) => {
@@ -1567,9 +1560,9 @@ function CategoryPanel({ products, note, onOpenProduct }) {
                       onChange={toggleAllAddVisible}
                     />
                   </th>
-                  <th className="px-3 py-2">SKU</th>
-                  <th className="px-3 py-2">Name</th>
-                  <th className="px-3 py-2">Category</th>
+                  <th className="px-3 py-2">{pt("SKU")}</th>
+                  <th className="px-3 py-2">{pt("Name")}</th>
+                  <th className="px-3 py-2">{pt("Category")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1597,29 +1590,26 @@ function CategoryPanel({ products, note, onOpenProduct }) {
               </tbody>
             </table>
           </div>
-          {addCandidates.length > 80 ? <p className="mt-2 text-xs text-mute">Showing first 80 matches. Search to narrow.</p> : null}
+          {addCandidates.length > 80 ? <p className="mt-2 text-xs text-mute">{pt("Showing first 80 matches. Search to narrow.")}</p> : null}
         </AdminModal>
       ) : null}
       {editingCategory ? (
         <AdminModal
-          title="Edit category"
+          title={pt("Edit category")}
           onClose={closeRename}
           footer={
             <div className="flex justify-end gap-2">
-              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={closeRename}>
-                Cancel
-              </button>
+              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={closeRename}>{pt("Cancel")}</button>
               <button type="button" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white" onClick={saveRename}>
-                Save name
+                {pt("Save name")}
               </button>
             </div>
           }
         >
           <p className="text-sm text-mute">
-            {editingCategory.count} product{editingCategory.count === 1 ? "" : "s"} stay in this category. Marketplace catalog uses the same name.
+            {editingCategory.count} {pt(editingCategory.count === 1 ? "product stays in this category. Marketplace catalog uses the same name." : "products stay in this category. Marketplace catalog uses the same name.")}
           </p>
-          <label className="mt-3 block text-sm font-medium text-ink">
-            Category name<RequiredMark />
+          <label className="mt-3 block text-sm font-medium text-ink">{pt("Category name")}<RequiredMark />
             <textarea
               className="mt-1 w-full resize-y rounded-lg border border-line px-3 py-2 text-sm leading-snug"
               rows={3}
@@ -1638,14 +1628,12 @@ function CategoryPanel({ products, note, onOpenProduct }) {
       ) : null}
       {preview ? (
         <AdminModal
-          title={preview.name || "Product"}
+          title={preview.name || pt("Product")}
           onClose={() => setPreview(null)}
           wide
           footer={
             <div className="flex justify-end gap-2">
-              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={() => setPreview(null)}>
-                Close
-              </button>
+              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={() => setPreview(null)}>{pt("Close")}</button>
               <button
                 type="button"
                 className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
@@ -1654,9 +1642,7 @@ function CategoryPanel({ products, note, onOpenProduct }) {
                   setPreview(null);
                   onOpenProduct?.(target);
                 }}
-              >
-                Edit
-              </button>
+              >{pt("Edit")}</button>
             </div>
           }
         >
@@ -1667,50 +1653,48 @@ function CategoryPanel({ products, note, onOpenProduct }) {
                   <img key={`${src.slice(-16)}-${index}`} src={src} alt="" className="h-20 w-20 rounded-md border border-line object-cover bg-white" />
                 ))
               ) : (
-                <span className="flex h-20 w-20 items-center justify-center rounded-md border border-dashed border-line bg-paper text-[10px] font-semibold uppercase tracking-wide text-mute">
-                  No image
-                </span>
+                <span className="flex h-20 w-20 items-center justify-center rounded-md border border-dashed border-line bg-paper text-[10px] font-semibold uppercase tracking-wide text-mute">{pt("No image")}</span>
               )}
             </div>
             <dl className="grid gap-2 sm:grid-cols-2 text-sm">
               <div className="sm:col-span-2">
-                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">Name</dt>
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">{pt("Name")}</dt>
                 <dd className="mt-0.5 font-medium text-ink">{cellText(preview.name)}</dd>
               </div>
               <div>
-                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">SKU</dt>
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">{pt("SKU")}</dt>
                 <dd className="mt-0.5 font-mono text-[12px]">{cellText(productSkuId(preview))}</dd>
               </div>
               <div>
-                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">Category</dt>
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">{pt("Category")}</dt>
                 <dd className="mt-0.5">{cellText(preview.category)}</dd>
               </div>
               <div>
-                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">Status</dt>
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">{pt("Status")}</dt>
                 <dd className="mt-0.5">
                   <StatusBadge product={preview} />
                 </dd>
               </div>
               <div>
-                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">Tags</dt>
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">{pt("Tags")}</dt>
                 <dd className="mt-0.5">
                   <ProductTagChips product={preview} />
                 </dd>
               </div>
               <div>
-                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">MOQ</dt>
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">{pt("MOQ")}</dt>
                 <dd className="mt-0.5">{cellText(preview.moq)}</dd>
               </div>
               <div>
-                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">Unit</dt>
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">{pt("Unit")}</dt>
                 <dd className="mt-0.5">{cellText(preview.unit || preview.salesUnit)}</dd>
               </div>
               <div>
-                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">Lead</dt>
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">{pt("Lead")}</dt>
                 <dd className="mt-0.5">{productLeadLabel(preview)}</dd>
               </div>
               <div className="sm:col-span-2">
-                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">Remark</dt>
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-mute">{pt("Remark")}</dt>
                 <dd className="mt-0.5 whitespace-pre-wrap">{cellText(preview.remark)}</dd>
               </div>
             </dl>
@@ -1722,13 +1706,15 @@ function CategoryPanel({ products, note, onOpenProduct }) {
 }
 
 function ChainProductsPanel() {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const [statusTab, setStatusTab] = useState("all");
   return (
     <div>
       <div className="mb-4">
-        <h1 className="font-display text-2xl text-brand-900">Mattex Chain Products</h1>
+        <h1 className="font-display text-2xl text-brand-900">{pt("Mattex Chain Products")}</h1>
         <p className="text-sm text-mute">
-          Chain SKUs will appear here and can be sent to Marketplace later. This list is not connected yet.
+          {pt("Chain SKUs will appear here and can be sent to Marketplace later. This list is not connected yet.")}
         </p>
       </div>
       <StatusTabs products={[]} statusTab={statusTab} setStatusTab={setStatusTab} />
@@ -1737,8 +1723,8 @@ function ChainProductsPanel() {
           <thead className="sticky top-0 bg-brand-50 text-[10px] font-semibold uppercase tracking-wide text-mute">
             <tr>
               {PRODUCT_TABLE_HEADS.map((h) => (
-                <th key={h.key} className="px-3 py-2" title={h.label}>
-                  {h.label}
+                <th key={h.key} className="px-3 py-2" title={pt(h.label)}>
+                  {pt(h.label)}
                 </th>
               ))}
             </tr>
@@ -1746,7 +1732,7 @@ function ChainProductsPanel() {
           <tbody>
             <tr>
               <td colSpan={PRODUCT_TABLE_HEADS.length} className="px-3 py-16 text-center text-sm text-mute">
-                No Mattex Chain products yet. When this catalog is connected, selected SKUs can be published to Marketplace from here.
+                {pt("No Mattex Chain products yet. When this catalog is connected, selected SKUs can be published to Marketplace from here.")}
               </td>
             </tr>
           </tbody>
@@ -1757,6 +1743,8 @@ function ChainProductsPanel() {
 }
 
 function ProductCategoryField({ value, onChange, note }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [error, setError] = useState("");
@@ -1774,12 +1762,12 @@ function ProductCategoryField({ value, onChange, note }) {
     }
     if (result.error === "exists") setError("That category already exists.");
     else if (result.error === "name") setError("Enter a category name.");
-    else setError(result.error || "Unable to add category.");
+    else setError(result.error || pt("Unable to add category."));
   }
 
   return (
     <div className="text-sm font-medium text-ink">
-      <span>Category<RequiredMark /></span>
+      <span>{pt("Category")}<RequiredMark /></span>
       <select
         className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 font-normal"
         value={value}
@@ -1804,8 +1792,8 @@ function ProductCategoryField({ value, onChange, note }) {
                 setName(e.target.value);
                 setError("");
               }}
-              placeholder="New category name"
-              aria-label="New category name"
+              placeholder={pt("New category name")}
+              aria-label={pt("New category name")}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -1822,9 +1810,7 @@ function ProductCategoryField({ value, onChange, note }) {
               type="button"
               className="rounded-lg bg-brand-600 px-2 py-1.5 text-xs font-semibold text-white"
               onClick={addCategory}
-            >
-              Add
-            </button>
+            >{pt("Add")}</button>
             <button
               type="button"
               className="rounded-lg border border-line bg-white px-2 py-1.5 text-xs font-semibold text-ink"
@@ -1833,11 +1819,9 @@ function ProductCategoryField({ value, onChange, note }) {
                 setName("");
                 setError("");
               }}
-            >
-              Cancel
-            </button>
+            >{pt("Cancel")}</button>
           </div>
-          {error ? <p className="text-xs font-normal text-red-700">{error}</p> : null}
+          {error ? <p className="text-xs font-normal text-red-700">{pt(error)}</p> : null}
         </div>
       ) : (
         <button
@@ -1853,6 +1837,8 @@ function ProductCategoryField({ value, onChange, note }) {
 }
 
 function SalesUnitField({ value, onChange }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const [open, setOpen] = useState(false);
   const needle = String(value || "").trim().toLowerCase();
   const matches = listSalesUnits().filter((unit) => !needle || unit.toLowerCase().includes(needle));
@@ -1869,7 +1855,7 @@ function SalesUnitField({ value, onChange }) {
           onChange(e.target.value);
           setOpen(true);
         }}
-        placeholder="e.g. m², pcs, sheet"
+        placeholder={pt("e.g. m², pcs, sheet")}
       />
       {open && matches.length ? (
         <ul className="absolute z-20 mt-1 max-h-40 w-full overflow-auto rounded-lg border border-line bg-white py-1 shadow-lg">
@@ -1895,6 +1881,8 @@ function SalesUnitField({ value, onChange }) {
 }
 
 function ProductsPanel({ products, product, editing, setEditing, note, reports = [], focusReport, onClearFocus, openProductId, onOpenedProduct }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   useCatalogGroups();
   const jumped = openProductId ? products.find((row) => row.id === openProductId) : null;
   const [form, setForm] = useState(() => (jumped || (focusReport && product) ? toForm(jumped || product) : null));
@@ -1969,7 +1957,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
   async function onImageFiles(fileList) {
     const picked = Array.from(fileList || []).filter((file) => String(file.type || "").startsWith("image/"));
     if (!picked.length) {
-      setFormError("Please choose an image file.");
+      setFormError(pt("Please choose an image file."));
       return;
     }
     const current = productImageList({ image: (form || toForm(product)).image, images: (form || toForm(product)).images });
@@ -1986,11 +1974,11 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
       try {
         dataUrl = await compressImageFile(file);
       } catch {
-        error = "Each image must be under 800 KB after compress (max 1,600px).";
+        error = pt("Each image must be under 800 KB after compress (max 1,600px).");
         break;
       }
       if (!String(dataUrl).startsWith("data:image/webp")) {
-        error = "Photo must be WebP.";
+        error = pt("Photo must be WebP.");
         break;
       }
       try {
@@ -2058,7 +2046,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
 
   function editSelected() {
     if (selectedProducts.length !== 1) {
-      note({ ok: false, error: "Select one product to edit." });
+      note({ ok: false, error: pt("Select one product to edit.") });
       return;
     }
     openEdit(selectedProducts[0]);
@@ -2074,33 +2062,33 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
         note({
           ok: false,
           error: awaiting || !selectedProducts.length
-            ? "No Unpublish products to go live."
-            : "Select Unpublish products to Publish.",
+            ? pt("No Unpublish products to go live.")
+            : pt("Select Unpublish products to Publish."),
         });
         return;
       }
     } else if (type === "unpublish") {
       items = selectedProducts.filter((p) => productStatusKey(p) === "published");
       if (!items.length) {
-        note({ ok: false, error: "Select Published products to Unpublish." });
+        note({ ok: false, error: pt("Select Published products to Unpublish.") });
         return;
       }
     } else if (type === "delete") {
       items = selectedProducts.filter((p) => !p.deleted);
       if (!items.length) {
-        note({ ok: false, error: "Select products to remove (soft delete)." });
+        note({ ok: false, error: pt("Select products to remove (soft delete).") });
         return;
       }
     } else if (type === "forever") {
       items = selectedProducts.filter((p) => canDeleteProductForever(p));
       if (!items.length) {
-        note({ ok: false, error: "Select Unpublish or Removed products to Delete forever. Unpublish live SKUs first." });
+        note({ ok: false, error: pt("Select Unpublish or Removed products to Delete forever. Unpublish live SKUs first.") });
         return;
       }
     } else if (type === "restore") {
       items = selectedProducts.filter((p) => p.deleted);
       if (!items.length) {
-        note({ ok: false, error: "Select Removed products to Restore." });
+        note({ ok: false, error: pt("Select Removed products to Restore.") });
         return;
       }
     }
@@ -2109,7 +2097,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
 
   async function requestPublish(target) {
     if (!target || target.deleted) {
-      note({ ok: false, error: "Restore this product before Publish." });
+      note({ ok: false, error: pt("Restore this product before Publish.") });
       return;
     }
     const hard = publishHardBlockers(target);
@@ -2163,14 +2151,14 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
         ok: false,
         error:
           type === "publish"
-            ? "Nothing published. Need official SKU, name, unit, category, and a unique SKU."
+            ? pt("Nothing published. Need official SKU, name, unit, category, and a unique SKU.")
             : type === "unpublish"
-              ? "Unable to Unpublish selected products."
+              ? pt("Unable to Unpublish selected products.")
               : type === "restore"
-                ? "Unable to restore selected products."
+                ? pt("Unable to restore selected products.")
                 : type === "forever"
-                  ? "Unable to Delete forever. Unpublish live SKUs first."
-                  : "Unable to update selected products.",
+                  ? pt("Unable to Delete forever. Unpublish live SKUs first.")
+                  : pt("Unable to update selected products."),
       });
       return;
     }
@@ -2178,11 +2166,11 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
   }
 
   const bulkTitles = {
-    publish: "Confirm publish (go live)",
-    unpublish: "Confirm Unpublish (take offline)",
-    delete: "Remove from catalog",
-    forever: "Delete forever",
-    restore: "Confirm Restore",
+    publish: pt("Confirm publish (go live)"),
+    unpublish: pt("Confirm Unpublish (take offline)"),
+    delete: pt("Remove from catalog"),
+    forever: pt("Delete forever"),
+    restore: pt("Confirm Restore"),
   };
 
   const publishableCount = bulkConfirm?.type === "publish"
@@ -2193,7 +2181,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
     if (draft.priceMode === "amount") {
       const amount = Number(String(draft.price ?? "").replace(/,/g, ""));
       if (!Number.isFinite(amount) || amount <= 0) {
-        setFormError("Enter a price, or choose Price Upon Request.");
+        setFormError(pt("Enter a price, or choose Price Upon Request."));
         return;
       }
     }
@@ -2229,7 +2217,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
     <div>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl text-brand-900">Mattex Products</h1>
+          <h1 className="font-display text-2xl text-brand-900">{pt("Mattex Products")}</h1>
           <p className="text-sm text-mute">
             Published is live. Unpublish is not live — incomplete fields only warn when you Publish. Removed is a soft delete: hidden until Restore. Delete forever removes it from the catalog.
           </p>
@@ -2240,9 +2228,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
               type="button"
               className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-semibold text-ink hover:bg-brand-50"
               onClick={() => setModal("import")}
-            >
-              Import Excel
-            </button>
+            >{pt("Import Excel")}</button>
           ) : null}
           <button
             type="button"
@@ -2255,16 +2241,14 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
             type="button"
             className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
             onClick={openCreate}
-          >
-            Add Product
-          </button>
+          >{pt("Add Product")}</button>
         </div>
       </div>
       <AdminSearchBar
         value={query}
         onChange={setQuery}
-        label="Search products"
-        placeholder="Search name, SKU, category, purpose…"
+        label={pt("Search products")}
+        placeholder={pt("Search name, SKU, category, purpose…")}
       />
       <StatusTabs products={searchedProducts} statusTab={statusTab} setStatusTab={setStatusTab} />
       {selectedProducts.length ? (
@@ -2277,17 +2261,15 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
               disabled={selectedProducts.length !== 1}
               title={selectedProducts.length === 1 ? "Edit selected product" : "Select one product to edit"}
               onClick={editSelected}
-            >
-              Edit
-            </button>
+            >{pt("Edit")}</button>
             <button
               type="button"
               className="rounded-lg border border-brand-600 bg-white px-3 py-1.5 text-xs font-semibold text-brand-800 disabled:opacity-50"
               disabled={selectedProducts.length < 2}
-              title="Select at least two products"
+              title={pt("Select at least two products")}
               onClick={async () => {
                 const result = await saveCatalogGroups(groupSelectedProducts(selectedProducts));
-                if (!result.ok) note?.({ ok: false, error: result.error || "Unable to save the group" });
+                if (!result.ok) note?.({ ok: false, error: result.error || pt("Unable to save the group") });
               }}
             >
               Group as one product
@@ -2298,7 +2280,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
               disabled={!selectedProducts.some((row) => groupOf(row.id))}
               onClick={async () => {
                 const result = await saveCatalogGroups(releaseSelectedProducts(selectedProducts.map((row) => row.id)));
-                if (!result.ok) note?.({ ok: false, error: result.error || "Unable to update the group" });
+                if (!result.ok) note?.({ ok: false, error: result.error || pt("Unable to update the group") });
               }}
             >
               Remove from group
@@ -2307,16 +2289,12 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
               type="button"
               className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700"
               onClick={() => openBulkConfirm("delete")}
-            >
-              Remove
-            </button>
+            >{pt("Remove")}</button>
             <button
               type="button"
               className="rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-semibold text-red-800"
               onClick={() => openBulkConfirm("forever")}
-            >
-              Delete forever
-            </button>
+            >{pt("Delete forever")}</button>
             <button
               type="button"
               className="rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink"
@@ -2351,7 +2329,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
               <th className="px-3 py-2 w-10">
                 <input
                   type="checkbox"
-                  aria-label="Select all visible products"
+                  aria-label={pt("Select all visible products")}
                   checked={allVisibleSelected}
                   ref={(el) => {
                     if (el) el.indeterminate = someVisibleSelected && !allVisibleSelected;
@@ -2360,8 +2338,8 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                 />
               </th>
               {PRODUCT_TABLE_HEADS.map((h) => (
-                <th key={h.key} className="px-3 py-2" title={h.label}>
-                  {h.label}
+                <th key={h.key} className="px-3 py-2" title={pt(h.label)}>
+                  {pt(h.label)}
                 </th>
               ))}
             </tr>
@@ -2394,8 +2372,20 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                             <StatusBadge product={p} />
                           </div>
                           <p className="mt-1 text-xs font-semibold text-ink">
-                            {Number(p.price) > 0 && !p.priceUponRequest ? `$${Number(p.price).toFixed(2)}` : "Price Upon Request"}
+                            {Number(p.price) > 0 && !p.priceUponRequest ? `$${Number(p.price).toFixed(2)}` : pt("Price Upon Request")}
                           </p>
+                          {SHOW_TMS_LINK ? (
+                            <a
+                              href={tmsTransactedHref({ productCode: p.productNo, description: p.name })}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-brand-700 hover:underline"
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              <TmsLinkIcon />
+                              Open in TMS
+                            </a>
+                          ) : null}
                         </div>
                       </div>
                     </td>
@@ -2426,7 +2416,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
             ) : (
               <tr>
                 <td colSpan={PRODUCT_TABLE_HEADS.length + 1} className="px-3 py-16 text-center text-sm text-mute">
-                  {needle ? "No products match this search." : "No products in this status."}
+                  {needle ? pt("No products match this search.") : pt("No products in this status.")}
                 </td>
               </tr>
             )}
@@ -2448,12 +2438,10 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                   disabled={acting}
                   onClick={() => runAction(async () => {
                     const result = restoreAdminProduct(product.id);
-                    note(result, "Restored as Unpublish");
+                    note(result, pt("Restored as Unpublish"));
                     if (result?.ok) closeModal();
                   })}
-                >
-                  Restore
-                </button>
+                >{pt("Restore")}</button>
               ) : null}
               {product && !product.deleted ? (
                 <button
@@ -2462,12 +2450,10 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                   disabled={acting}
                   onClick={() => runAction(async () => {
                     const result = softDeleteAdminProduct(product.id);
-                    note(result, "Removed from catalog");
+                    note(result, pt("Removed from catalog"));
                     if (result?.ok) closeModal();
                   })}
-                >
-                  Remove
-                </button>
+                >{pt("Remove")}</button>
               ) : null}
               {product ? (
                 <HoverTip text={canDeleteProductForever(product) ? "" : "Unpublish this product before Delete forever."}>
@@ -2479,9 +2465,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                       if (!canDeleteProductForever(product)) return;
                       setBulkConfirm({ type: "forever", items: [product] });
                     }}
-                  >
-                    Delete forever
-                  </button>
+                  >{pt("Delete forever")}</button>
                 </HoverTip>
               ) : null}
               {product && !product.deleted && product.published ? (
@@ -2495,12 +2479,10 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                       result,
                       result?.ok
                         ? "Unpublish — not live"
-                        : "Unable to Unpublish"
+                        : pt("Unable to Unpublish")
                     );
                   })}
-                >
-                  Unpublish
-                </button>
+                >{pt("Unpublish")}</button>
               ) : null}
               {product && !product.deleted && !product.published ? (
                 <button
@@ -2508,13 +2490,9 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                   className="rounded-lg border border-brand-600 px-4 py-2 text-sm font-semibold text-brand-700 disabled:opacity-40"
                   disabled={acting}
                   onClick={() => runAction(() => requestPublish(product))}
-                >
-                  Publish
-                </button>
+                >{pt("Publish")}</button>
               ) : null}
-              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={closeModal}>
-                Cancel
-              </button>
+              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={closeModal}>{pt("Cancel")}</button>
               {product?.deleted ? null : (
                 <button type="button" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40" disabled={acting} onClick={() => runAction(saveProduct)}>
                   {modal === "edit" ? "Save" : "Add Product"}
@@ -2525,7 +2503,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
         >
           {productReports.length ? (
             <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-800">Buyer report</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-800">{pt("Buyer report")}</p>
               {productReports.map((r) => (
                 <div key={r.id} className="mt-2">
                   <p className="font-medium text-ink">
@@ -2544,11 +2522,11 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
               rows={2}
               value={draft.name}
               onChange={(e) => field("name", e.target.value)}
-              placeholder="e.g. Gypsum Block — 500×500×80mm"
+              placeholder={pt("e.g. Gypsum Block — 500×500×80mm")}
             />
           </label>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <p className="mr-auto text-sm font-medium text-ink">Tags</p>
+            <p className="mr-auto text-sm font-medium text-ink">{pt("Tags")}</p>
             <div className="flex flex-wrap justify-end gap-2">
               {[
                 { key: "green", label: "Green" },
@@ -2567,13 +2545,13 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                     checked={Boolean(draft[tag.key])}
                     onChange={(e) => field(tag.key, e.target.checked)}
                   />
-                  {tag.label}
+                  {pt(tag.label)}
                 </label>
               ))}
             </div>
           </div>
           <div className="mt-3">
-            <p className="text-sm font-medium text-ink">Product images</p>
+            <p className="text-sm font-medium text-ink">{pt("Product images")}</p>
             <div
               className={`mt-1 rounded-lg border border-dashed p-2.5 ${
                 imageOver ? "border-brand-600 bg-brand-50" : "border-line bg-paper/60"
@@ -2613,14 +2591,14 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                     type="button"
                     onClick={() => imageInputRef.current?.click()}
                     className="relative h-14 w-14 shrink-0 overflow-hidden border border-line bg-white text-2xl font-light text-mute"
-                    aria-label="Add photo"
+                    aria-label={pt("Add photo")}
                   >
                     +
                   </button>
                 ) : null}
               </div>
               <p className="mt-1.5 text-xs text-mute">
-                {imageOver ? "Drop to upload" : "JPG / PNG / WebP · up to 5 photos · longest side 1,600px · max 800 KB each after compress."}
+                {imageOver ? pt("Drop to upload") : pt("JPG / PNG / WebP · up to 5 photos · longest side 1,600px · max 800 KB each after compress.")}
               </p>
               <input
                 ref={imageInputRef}
@@ -2637,25 +2615,22 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <ProductCategoryField value={draft.category} onChange={(value) => field("category", value)} note={note} />
-            <label className="text-sm font-medium text-ink">
-              Provisional SKU ID<RequiredMark />
+            <label className="text-sm font-medium text-ink">{pt("Provisional SKU ID")}<RequiredMark />
               <input
                 className="mt-1 w-full rounded-lg border border-line px-3 py-2 font-normal placeholder:text-mute"
                 value={draft.productNo}
                 onChange={(e) => field("productNo", e.target.value)}
-                placeholder="e.g. MKT-GB-0001"
+                placeholder={pt("e.g. MKT-GB-0001")}
               />
             </label>
             <SalesUnitField value={draft.salesUnit} onChange={(value) => field("salesUnit", value)} />
-            <label className="text-sm font-medium text-ink">
-              Price
-              <select
+            <label className="text-sm font-medium text-ink">{pt("Price")}<select
                 className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 font-normal"
                 value={draft.priceMode || "request"}
                 onChange={(e) => field("priceMode", e.target.value)}
               >
-                <option value="request">Price Upon Request</option>
-                <option value="amount">Set price</option>
+                <option value="request">{pt("Price Upon Request")}</option>
+                <option value="amount">{pt("Set price")}</option>
               </select>
             </label>
             {draft.priceMode === "amount" ? (
@@ -2668,26 +2643,22 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                   className="mt-1 w-full rounded-lg border border-line px-3 py-2 font-normal placeholder:text-mute"
                   value={draft.price}
                   onChange={(e) => field("price", e.target.value)}
-                  placeholder="e.g. 125"
+                  placeholder={pt("e.g. 125")}
                 />
               </label>
             ) : null}
-            <label className="text-sm font-medium text-ink">
-              MOQ
-              <input
+            <label className="text-sm font-medium text-ink">{pt("MOQ")}<input
                 className="mt-1 w-full rounded-lg border border-line px-3 py-2 font-normal placeholder:text-mute"
                 value={draft.moq}
                 onChange={(e) => field("moq", e.target.value)}
-                placeholder="e.g. 100"
+                placeholder={pt("e.g. 100")}
               />
             </label>
-            <label className="text-sm font-medium text-ink">
-              Lead time
-              <input
+            <label className="text-sm font-medium text-ink">{pt("Lead time")}<input
                 className="mt-1 w-full rounded-lg border border-line px-3 py-2 font-normal placeholder:text-mute"
                 value={draft.leadTime}
                 onChange={(e) => field("leadTime", e.target.value)}
-                placeholder="e.g. 14 days"
+                placeholder={pt("e.g. 14 days")}
               />
             </label>
             <label className="text-sm font-medium text-ink">
@@ -2696,16 +2667,14 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                 className="mt-1 w-full rounded-lg border border-line px-3 py-2 font-normal placeholder:text-mute"
                 value={draft.certifications}
                 onChange={(e) => field("certifications", e.target.value)}
-                placeholder="e.g. ISO 9001, HKGBC Green"
+                placeholder={pt("e.g. ISO 9001, HKGBC Green")}
               />
             </label>
-            <label className="text-sm font-medium text-ink sm:col-span-2 lg:col-span-3">
-              Size / Description
-              <input
+            <label className="text-sm font-medium text-ink sm:col-span-2 lg:col-span-3">{pt("Size / Description")}<input
                 className="mt-1 w-full rounded-lg border border-line px-3 py-2 font-normal placeholder:text-mute"
                 value={draft.sizeDesc}
                 onChange={(e) => field("sizeDesc", e.target.value)}
-                placeholder="e.g. 500 × 500 × 80mm"
+                placeholder={pt("e.g. 500 × 500 × 80mm")}
               />
             </label>
             <label className="text-sm font-medium text-ink sm:col-span-2 lg:col-span-3">
@@ -2715,7 +2684,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                 rows={3}
                 value={draft.primarySpec}
                 onChange={(e) => field("primarySpec", e.target.value)}
-                placeholder="e.g. Density 1100 & 1200kg/m³, compressive strength…"
+                placeholder={pt("e.g. Density 1100 & 1200kg/m³, compressive strength…")}
               />
             </label>
             <label className="text-sm font-medium text-ink sm:col-span-2 lg:col-span-3">
@@ -2736,14 +2705,12 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                 </div>
               ) : null}
             </label>
-            <label className="text-sm font-medium text-ink sm:col-span-2 lg:col-span-3">
-              Remark
-              <textarea
+            <label className="text-sm font-medium text-ink sm:col-span-2 lg:col-span-3">{pt("Remark")}<textarea
                 className="mt-1 w-full resize-y rounded-lg border border-line px-3 py-2 font-normal leading-snug placeholder:text-mute"
                 rows={4}
                 value={draft.remark}
                 onChange={(e) => field("remark", e.target.value)}
-                placeholder="e.g. Also known as…"
+                placeholder={pt("e.g. Also known as…")}
               />
             </label>
           </div>
@@ -2752,7 +2719,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
       ) : null}
 
       {SHOW_PRODUCT_IMPORT && modal === "import" ? (
-        <AdminModal title="Import Excel" onClose={closeModal} wide>
+        <AdminModal title={pt("Import Excel")} onClose={closeModal} wide>
           <ExcelPanel note={note} />
         </AdminModal>
       ) : null}
@@ -2764,9 +2731,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
           wide
           footer={
             <div className="flex flex-wrap justify-end gap-2">
-              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={() => setBulkConfirm(null)}>
-                Cancel
-              </button>
+              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={() => setBulkConfirm(null)}>{pt("Cancel")}</button>
               <button
                 type="button"
                 className={`rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 ${bulkConfirm.type === "delete" || bulkConfirm.type === "forever" ? "bg-red-700" : "bg-brand-600"}`}
@@ -2790,20 +2755,20 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
             {bulkConfirm.type === "publish"
               ? "Official SKU, name, unit and category are required. Duplicate SKUs are skipped. Missing MOQ or lead time is a warning — confirm to go live anyway."
               : bulkConfirm.type === "restore"
-                ? "Restore takes the SKU out of Removed. It becomes Unpublish and does not go live."
+                ? pt("Restore takes the SKU out of Removed. It becomes Unpublish and does not go live.")
                 : bulkConfirm.type === "forever"
                   ? "This cannot be undone. The SKU leaves the catalog. Old RFQs keep the name and SKU from when they were sent."
                   : bulkConfirm.type === "delete"
-                    ? "Removed SKUs leave the marketplace (soft delete) until Restore."
-                    : "Confirm these products before the change is applied."}
+                    ? pt("Removed SKUs leave the marketplace (soft delete) until Restore.")
+                    : pt("Confirm these products before the change is applied.")}
           </p>
           <div className="mt-3 overflow-auto rounded-lg border border-line max-h-80">
             <table className="w-full text-left text-[12px]">
               <thead className="bg-brand-50 text-[10px] font-semibold uppercase tracking-wide text-mute">
                 <tr>
-                  <th className="px-3 py-2">Provisional SKU ID</th>
-                  <th className="px-3 py-2">Name</th>
-                  <th className="px-3 py-2">Status</th>
+                  <th className="px-3 py-2">{pt("Provisional SKU ID")}</th>
+                  <th className="px-3 py-2">{pt("Name")}</th>
+                  <th className="px-3 py-2">{pt("Status")}</th>
                   {bulkConfirm.type === "publish" ? <th className="px-3 py-2">Publish check</th> : null}
                 </tr>
               </thead>
@@ -2825,7 +2790,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
                           ) : warn.length ? (
                             <span className="text-amber-800">Will publish · missing {blockerText(warn)}</span>
                           ) : (
-                            <span className="text-emerald-800">Ready</span>
+                            <span className="text-emerald-800">{pt("Ready")}</span>
                           )}
                         </td>
                       ) : null}
@@ -2907,6 +2872,8 @@ function fromForm(draft) {
 }
 
 function ExcelPanel({ note }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [fileError, setFileError] = useState("");
@@ -2921,7 +2888,7 @@ function ExcelPanel({ note }) {
       setCsvResult(result.results || []);
       note(result, "Excel import finished.");
     } catch (error) {
-      const message = error?.message || "Unable to read Excel file.";
+      const message = error?.message || pt("Unable to read Excel file.");
       setFileError(message);
       note({ ok: false, error: message });
     } finally {
@@ -2957,7 +2924,7 @@ function ExcelPanel({ note }) {
           </label>
         </div>
         <p className="mt-3 rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink">
-          {file ? file.name : "No Excel file selected."}
+          {file ? file.name : pt("No Excel file selected.")}
         </p>
         {fileError ? <p className="mt-2 text-sm text-red-700">{fileError}</p> : null}
         <div className="mt-3 flex justify-end">
@@ -2967,12 +2934,12 @@ function ExcelPanel({ note }) {
             disabled={!file || busy}
             onClick={importFile}
           >
-            {busy ? "Importing…" : "Import"}
+            {busy ? pt("Importing…") : "Import"}
           </button>
         </div>
       </section>
       <section>
-        <h3 className="text-sm font-semibold text-brand-800">Row results</h3>
+        <h3 className="text-sm font-semibold text-brand-800">{pt("Row results")}</h3>
         {csvResult.length ? (
           <ul className="mt-3 space-y-2 text-sm">
             {csvResult.map((row) => (
@@ -2982,7 +2949,7 @@ function ExcelPanel({ note }) {
             ))}
           </ul>
         ) : (
-          <p className="mt-3 text-sm text-mute">No import yet.</p>
+          <p className="mt-3 text-sm text-mute">{pt("No import yet.")}</p>
         )}
       </section>
     </div>
@@ -3035,7 +3002,9 @@ function TmsLinkIcon() {
 }
 
 function ProductPreviewModal({ line, product, onClose }) {
-  const name = product?.name || line?.name || "Product";
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
+  const name = product?.name || line?.name || pt("Product");
   const sku = product?.productNo || line?.productNo || "—";
   const specs = product?.specs || [];
   return (
@@ -3045,7 +3014,7 @@ function ProductPreviewModal({ line, product, onClose }) {
           {lineImageSrc(line, product) ? (
             <PreviewThumb src={lineImageSrc(line, product)} name={name} className="h-32 w-32 rounded-lg" />
           ) : (
-            <div className="flex h-32 w-32 items-center justify-center rounded-lg border border-dashed border-line text-xs text-mute">No image</div>
+            <div className="flex h-32 w-32 items-center justify-center rounded-lg border border-dashed border-line text-xs text-mute">{pt("No image")}</div>
           )}
           {Array.isArray(line?.images) && line.images.filter(Boolean).length ? (
             <div className="mt-2 flex flex-wrap gap-2">
@@ -3063,7 +3032,7 @@ function ProductPreviewModal({ line, product, onClose }) {
           {product?.category ? <p className="mt-1 text-xs text-mute">{product.category}</p> : null}
           {line?.description || product?.description ? <p className="mt-3 whitespace-pre-wrap text-sm text-ink">{line?.description || product.description}</p> : null}
           {lineAttachmentList(line).length ? (
-            <AttachmentLinks files={lineAttachmentList(line)} className="mt-3 text-xs text-brand-800" label="Attachment" />
+            <AttachmentLinks files={lineAttachmentList(line)} className="mt-3 text-xs text-brand-800" label={pt("Attachment")} />
           ) : null}
           {product?.moq ? <p className="mt-2 text-xs text-mute">MOQ {product.moq} {product.unit || ""}</p> : null}
           {specs.length ? (
@@ -3080,6 +3049,8 @@ function ProductPreviewModal({ line, product, onClose }) {
 }
 
 function RfqLineRow({ rfq, line, showPricing, compact, note, readOnly = false }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const product = productForLine(line);
   const refs = transactedRefsForLine(line, product);
   const status = inboxStatus(rfq);
@@ -3112,12 +3083,12 @@ function RfqLineRow({ rfq, line, showPricing, compact, note, readOnly = false })
       setQty(String(next));
       return;
     }
-    note?.(setRfqLineQty(rfq.id, line.productId, next), "Qty saved");
+    note?.(setRfqLineQty(rfq.id, line.productId, next), pt("Qty saved"));
   }
 
   function saveRemark() {
     if (String(remark) === String(line.remark || "")) return;
-    note?.(setRfqLineRemark(rfq.id, line.productId, remark), "Remark saved");
+    note?.(setRfqLineRemark(rfq.id, line.productId, remark), pt("Remark saved"));
   }
 
   return (
@@ -3128,7 +3099,7 @@ function RfqLineRow({ rfq, line, showPricing, compact, note, readOnly = false })
         </button>
         <div className="min-w-0 flex-1 overflow-hidden">
           <button type="button" className="text-left text-sm font-medium text-ink hover:underline" onClick={() => setPreview(true)}>
-            {product?.name || line.name || line.productNo || "Product"}
+            {product?.name || line.name || line.productNo || pt("Product")}
           </button>
           <p className="text-[11px] text-mute">
             {line.productNo || product?.productNo || "—"}
@@ -3137,7 +3108,7 @@ function RfqLineRow({ rfq, line, showPricing, compact, note, readOnly = false })
           </p>
           {canNoOffer ? null : (
             <p className="mt-1 text-[11px] text-ink">
-              <span className="font-semibold uppercase tracking-wide text-mute">Qty</span> {line.qty || 1}
+              <span className="font-semibold uppercase tracking-wide text-mute">{pt("Qty")}</span> {line.qty || 1}
               {line.remark ? <span className="ml-2 text-mute">{line.remark}</span> : null}
             </p>
           )}
@@ -3145,14 +3116,14 @@ function RfqLineRow({ rfq, line, showPricing, compact, note, readOnly = false })
             <p className="mt-1 whitespace-pre-wrap text-[11px] text-ink">{line.description}</p>
           ) : null}
           {line.custom && lineAttachmentList(line).length ? (
-            <AttachmentLinks files={lineAttachmentList(line)} className="mt-1 text-[11px] text-brand-800" label="Attachment" />
+            <AttachmentLinks files={lineAttachmentList(line)} className="mt-1 text-[11px] text-brand-800" label={pt("Attachment")} />
           ) : null}
         </div>
         {canNoOffer || showPricing ? (
         <div className="flex w-[7.5rem] shrink-0 flex-col items-stretch gap-1.5">
           {canEditPrice ? (
             <label>
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-ink">Price<RequiredMark /></span>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-ink">{pt("Price")}<RequiredMark /></span>
               <input
                 type="number"
                 min="0"
@@ -3174,9 +3145,9 @@ function RfqLineRow({ rfq, line, showPricing, compact, note, readOnly = false })
             <button
               type="button"
               className="rounded-lg border border-red-200 bg-white px-2 py-1 text-[10px] font-semibold text-red-700 hover:bg-red-50"
-              onClick={() => note?.(setRfqLineNoOffer(rfq.id, line.productId, !line.noOffer), line.noOffer ? "Offer restored" : "Item marked no offer")}
+              onClick={() => note?.(setRfqLineNoOffer(rfq.id, line.productId, !line.noOffer), line.noOffer ? pt("Offer restored") : pt("Item marked no offer"))}
             >
-              {line.noOffer ? "Undo no offer" : "No offer"}
+              {line.noOffer ? pt("Undo no offer") : pt("No offer")}
             </button>
           ) : null}
         </div>
@@ -3185,7 +3156,7 @@ function RfqLineRow({ rfq, line, showPricing, compact, note, readOnly = false })
       {canNoOffer ? (
         <div className="mt-2 grid min-w-0 grid-cols-[6.5rem_minmax(0,1fr)] gap-2">
           <label className="block min-w-0">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-mute">Qty</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-mute">{pt("Qty")}</span>
             <input
               type="number"
               min="1"
@@ -3197,11 +3168,11 @@ function RfqLineRow({ rfq, line, showPricing, compact, note, readOnly = false })
             />
           </label>
           <label className="block min-w-0 overflow-hidden">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-mute">Remark</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-mute">{pt("Remark")}</span>
             <textarea
               rows={1}
               value={remark}
-              placeholder="e.g. confirm size / lead"
+              placeholder={pt("e.g. confirm size / lead")}
               onChange={(e) => setRemark(e.target.value)}
               onBlur={saveRemark}
               className="mt-0.5 box-border block min-h-[1.75rem] w-full max-w-full resize-y rounded-lg border border-line bg-white px-2 py-1 text-xs leading-snug placeholder:text-mute"
@@ -3209,25 +3180,29 @@ function RfqLineRow({ rfq, line, showPricing, compact, note, readOnly = false })
           </label>
         </div>
       ) : null}
-      {showPricing && !readOnly && refs.options.length ? (
+      {((showPricing && !readOnly) || (SHOW_TMS_LINK && (status === "accepted" || status === "quoted"))) && refs.options.length ? (
         <div className="mt-2 flex flex-wrap gap-1.5 pl-14">
           {refs.options.map((opt) => (
             <span key={`${opt.productCode}-${opt.price}`} className="inline-flex items-center gap-1 rounded-full border border-line bg-white pl-2 pr-1 py-0.5 text-[10px]">
-              <button
-                type="button"
-                className="font-semibold text-brand-800 hover:underline"
-                onClick={() => {
-                  setPrice(String(opt.price));
-                  savePrice(opt.price);
-                }}
-              >
-                ${opt.price}
-              </button>
+              {showPricing && !readOnly ? (
+                <button
+                  type="button"
+                  className="font-semibold text-brand-800 hover:underline"
+                  onClick={() => {
+                    setPrice(String(opt.price));
+                    savePrice(opt.price);
+                  }}
+                >
+                  ${opt.price}
+                </button>
+              ) : (
+                <span className="font-semibold text-ink">${opt.price}</span>
+              )}
               <a
                 href={opt.href}
                 target="_blank"
                 rel="noreferrer"
-                title={`TMS filter: ${opt.query || opt.label} · ${opt.productCode} · ${opt.label}`}
+                title={`TMS filter: ${opt.query || opt.label} · ${opt.productCode} · ${pt(opt.label)}`}
                 className="inline-flex h-5 w-5 items-center justify-center rounded-full text-brand-700 hover:bg-brand-50"
               >
                 <TmsLinkIcon />
@@ -3243,6 +3218,8 @@ function RfqLineRow({ rfq, line, showPricing, compact, note, readOnly = false })
 }
 
 function MemberAssignSearch({ rfqId, note, compact }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const members = listAssignableBuyers();
   const boxRef = useRef(null);
   const [query, setQuery] = useState("");
@@ -3273,10 +3250,10 @@ function MemberAssignSearch({ rfqId, note, compact }) {
     const result = assignRfqToBuyer(rfqId, pending.email);
     setPending(null);
     if (!result?.ok && result?.error === "locked") {
-      note?.({ ok: false, error: "This RFQ already belongs to a marketplace account and cannot be reassigned." });
+      note?.({ ok: false, error: pt("This RFQ already belongs to a marketplace account and cannot be reassigned.") });
       return;
     }
-    note?.(result, "RFQ assigned to member");
+    note?.(result, pt("RFQ assigned to member"));
   }
 
   return (
@@ -3288,7 +3265,7 @@ function MemberAssignSearch({ rfqId, note, compact }) {
           type="search"
           autoComplete="off"
           value={query}
-          placeholder="Search name, email, company…"
+          placeholder={pt("Search name, email, company…")}
           className="w-full rounded-lg border border-line bg-white px-2 py-1.5 text-xs text-ink"
           onFocus={() => setOpen(true)}
           onChange={(e) => {
@@ -3340,7 +3317,7 @@ function MemberAssignSearch({ rfqId, note, compact }) {
                 </li>
               ))
             ) : (
-              <li className="px-2 py-2 text-xs text-mute">No matching members</li>
+              <li className="px-2 py-2 text-xs text-mute">{pt("No matching members")}</li>
             )}
           </ul>
         ) : null}
@@ -3348,13 +3325,11 @@ function MemberAssignSearch({ rfqId, note, compact }) {
     </label>
       {pending ? (
         <AdminModal
-          title="Confirm assign buyer"
+          title={pt("Confirm assign buyer")}
           onClose={() => setPending(null)}
           footer={
             <div className="flex justify-end gap-2">
-              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={() => setPending(null)}>
-                Cancel
-              </button>
+              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={() => setPending(null)}>{pt("Cancel")}</button>
               <button type="button" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white" onClick={confirmAssign}>
                 Confirm assign
               </button>
@@ -3365,7 +3340,7 @@ function MemberAssignSearch({ rfqId, note, compact }) {
             Assign this guest RFQ to <span className="font-semibold">{pending.name || pending.email}</span>
             {pending.companyName ? ` · ${pending.companyName}` : ""} ({pending.email})?
           </p>
-          <p className="mt-2 text-sm text-mute">After confirm, the buyer cannot be changed. The RFQ moves to that member’s My RFQs.</p>
+          <p className="mt-2 text-sm text-mute">{pt("After confirm, the buyer cannot be changed. The RFQ moves to that member’s My RFQs.")}</p>
         </AdminModal>
       ) : null}
     </>
@@ -3505,16 +3480,20 @@ function BuyerNameLink({ name, email, onOpen, className = "" }) {
 }
 
 function RfqStatusChip({ rfq }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   return (
     <span className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${rfqInboxChipClass(rfq)}`}>
-      {rfqInboxLabel(rfq)}
+      {pt(rfqInboxLabel(rfq))}
     </span>
   );
 }
 
 function ViewToggle({ value, onChange }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   return (
-    <div className="inline-flex rounded-lg border border-line bg-white p-1" role="group" aria-label="RFQ view">
+    <div className="inline-flex rounded-lg border border-line bg-white p-1" role="group" aria-label={pt("RFQ view")}>
       {[
         { id: "card", label: "Cards" },
         { id: "list", label: "List" },
@@ -3529,7 +3508,7 @@ function ViewToggle({ value, onChange }) {
               active ? "bg-brand-600 text-white" : "text-mute hover:bg-brand-50 hover:text-ink"
             }`}
           >
-            {item.label}
+            {pt(item.label)}
           </button>
         );
       })}
@@ -3595,6 +3574,8 @@ function RfqActions({
   prominent = false,
   note,
 }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const status = inboxStatus(rfq);
   const kind = rfqActionKind(rfq, open);
   const wrap = prominent ? "flex flex-wrap items-center gap-3" : "flex flex-wrap justify-end gap-2";
@@ -3664,23 +3645,23 @@ function RfqActions({
     waReady.ok
       ? ""
       : waReady.reason === "phone"
-        ? "Add a parseable phone in Follow-up first"
+        ? pt("Add a parseable phone in Follow-up first")
         : waReady.reason === "prices"
-          ? "Enter a price for every offer line first"
-          : "Acknowledge the RFQ first";
+          ? pt("Enter a price for every offer line first")
+          : pt("Acknowledge the RFQ first");
   return (
     <div className={wrap}>
       {open ? (
         <>
           <button type="button" className={primary} disabled={accepting} onClick={() => onAccept(rfq)}>
-            Acknowledge
+            {pt("Acknowledge")}
           </button>
           <button
             type="button"
             className={quietReject}
             onClick={() => onReject(rfq)}
           >
-            Reject (No Offer)
+            {pt("Reject (No Offer)")}
           </button>
         </>
       ) : null}
@@ -3693,13 +3674,13 @@ function RfqActions({
             onClick={() => onSubmitBuyer?.(rfq)}
             title={
               guestBuyer
-                ? "Guest has no marketplace account. Assign a member, or WhatsApp the quote."
+                ? pt("Guest has no marketplace account. Assign a member, or WhatsApp the quote.")
                 : priced
                   ? ""
-                  : "Enter a price for every offer line first"
+                  : pt("Enter a price for every offer line first")
             }
           >
-            {quoting ? "Submitting…" : status === "quoted" && !guestBuyer ? "Update quote to buyer" : "Submit To Buyer"}
+            {quoting ? pt("Submitting…") : status === "quoted" && !guestBuyer ? pt("Update quote to buyer") : pt("Submit To Buyer")}
           </button>
           {guestBuyer && onSendWhatsapp ? (
             <>
@@ -3710,17 +3691,15 @@ function RfqActions({
                 onClick={() => onSendWhatsapp?.(rfq)}
                 title={waTitle}
               >
-                {waBusy ? "Opening…" : waSent ? "Update quote on WhatsApp" : "Send quote on WhatsApp"}
+                {waBusy ? pt("Opening…") : waSent ? pt("Update quote on WhatsApp") : pt("Send quote on WhatsApp")}
               </button>
               <button
                 type="button"
                 className={secondary}
                 disabled={!waOpened || waBusy}
                 onClick={() => onMarkWhatsappSent?.(rfq)}
-                title={waOpened ? "Mark this quote as sent on WhatsApp (does not submit to My RFQs)" : "Open WhatsApp first, then mark sent"}
-              >
-                Quote sent on WhatsApp
-              </button>
+                title={waOpened ? pt("Mark this quote as sent on WhatsApp (does not submit to My RFQs)") : pt("Open WhatsApp first, then mark sent")}
+              >{pt("Quote sent on WhatsApp")}</button>
             </>
           ) : null}
           {rfq.tmsDocumentNo ? (
@@ -3730,22 +3709,35 @@ function RfqActions({
               rel="noreferrer"
               className={dark}
             >
-              Open {rfq.tmsDocumentNo}
+              {pt("Open")} {rfq.tmsDocumentNo}
             </a>
           ) : (
             <button type="button" className={warn} disabled={accepting} onClick={() => onCreateTms?.(rfq)}>
-              {accepting ? "Creating iRFQ…" : "Create TMS iRFQ"}
+              {accepting ? pt("Creating iRFQ…") : pt("Create TMS iRFQ")}
             </button>
           )}
           <button type="button" className={quietReject} onClick={() => onReject(rfq)}>
-            Reject (No Offer)
+            {pt("Reject (No Offer)")}
           </button>
         </>
       ) : null}
       {(status === "accepted" || status === "quoted") && !quoteTools ? (
-        <button type="button" className={quietReject} onClick={() => onReject(rfq)}>
-          Reject (No Offer)
-        </button>
+        <>
+          {SHOW_TMS_LINK ? (
+            rfq.tmsDocumentNo ? (
+              <a href={tmsIrfqDetailsHref(rfq)} target="_blank" rel="noreferrer" className={dark}>
+                {pt("Open")} {rfq.tmsDocumentNo}
+              </a>
+            ) : (
+              <button type="button" className={warn} disabled={accepting} onClick={() => onCreateTms?.(rfq)}>
+                {accepting ? pt("Creating iRFQ…") : pt("Create TMS iRFQ")}
+              </button>
+            )
+          ) : null}
+          <button type="button" className={quietReject} onClick={() => onReject(rfq)}>
+            {pt("Reject (No Offer)")}
+          </button>
+        </>
       ) : null}
     </div>
   );
@@ -3776,6 +3768,8 @@ function RfqDetail({
   onAcceptReverse,
   onDeclineReverse,
 }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [viewMode, setViewMode] = useState(DRAFT_VALUE);
   const [requestViewMode, setRequestViewMode] = useState("");
@@ -3812,7 +3806,7 @@ function RfqDetail({
   function loadPreviewIntoDraft() {
     if (viewingDraft) return;
     if (quoteDraftIsDirty(rfq)) {
-      const ok = window.confirm("Load this version into draft? Unsaved worksheet prices will be overwritten.");
+      const ok = window.confirm(pt("Load this version into draft? Unsaved worksheet prices will be overwritten."));
       if (!ok) return;
     }
     const result = loadQuoteVersionIntoDraft(rfq.id, viewMode);
@@ -3820,36 +3814,36 @@ function RfqDetail({
       setViewMode(DRAFT_VALUE);
       note?.(result, `Loaded v${viewMode} into draft. Send or update to freeze a new version.`);
     } else {
-      note?.(result, "Could not load this version into draft.");
+      note?.(result, pt("Could not load this version into draft."));
     }
   }
   const actionCopy =
     actionKind === "reverse"
-      ? "Buyer asked to reverse this RFQ so they can revise it."
+      ? pt("Buyer asked to reverse this RFQ so they can revise it.")
       : actionKind === "cancel"
-      ? "Buyer asked to cancel this RFQ."
+      ? pt("Buyer asked to cancel this RFQ.")
                     : actionKind === "decide"
         ? SHOW_RFQ_QUOTES
-          ? "Acknowledge to price this RFQ, or Reject (No Offer)."
-          : "Acknowledge this RFQ to start handling it, or Reject (No Offer)."
+          ? pt("Acknowledge to price this RFQ, or Reject (No Offer).")
+          : pt("Acknowledge this RFQ to start handling it, or Reject (No Offer).")
         : actionKind === "price"
           ? !SHOW_RFQ_QUOTES
-            ? "RFQ accepted. Buyer sees In review. Follow up by phone if needed."
+            ? pt("RFQ accepted. Buyer sees In review. Follow up by phone if needed.")
             : guestBuyer
             ? "Guest has no marketplace account — cannot send this quote to My RFQs. Send quote on WhatsApp, assign a registered member, or Create TMS iRFQ."
             : status === "quoted"
-            ? "Quote is with the buyer. You can update prices or Create TMS iRFQ."
-            : "Enter a unit price for each line, then Submit To Buyer or Create TMS iRFQ."
+            ? pt("Quote is with the buyer. You can update prices or Create TMS iRFQ.")
+            : pt("Enter a unit price for each line, then Submit To Buyer or Create TMS iRFQ.")
           : actionKind === "open"
             ? !SHOW_RFQ_QUOTES
-              ? "RFQ accepted. Buyer sees In review. Follow up by phone if needed."
+              ? pt("RFQ accepted. Buyer sees In review. Follow up by phone if needed.")
               : rfq.tmsDocumentNo
               ? `iRFQ is ready in TMS${status === "quoted" && !guestBuyer ? " · quote sent to buyer" : waSent ? " · quote sent on WhatsApp" : guestBuyer ? " · guest quote stays off marketplace" : ""}.`
               : guestBuyer
                 ? waSent
                   ? "Quote sent on WhatsApp. Assign a member to also submit into My RFQs, or update the WhatsApp quote."
-                  : "Guest has no marketplace account. Send quote on WhatsApp, or assign a member."
-                : "Quote sent to buyer."
+                  : pt("Guest has no marketplace account. Send quote on WhatsApp, or assign a member.")
+                : pt("Quote sent to buyer.")
             : "";
 
   async function downloadPdf() {
@@ -3859,7 +3853,7 @@ function RfqDetail({
       downloadBlob(pdf.blob, pdf.filename);
       note({ ok: true }, `Downloaded ${pdf.filename}`);
     } catch (error) {
-      note({ ok: false, error: error?.message || "Unable to build PDF" });
+      note({ ok: false, error: error?.message || pt("Unable to build PDF") });
     } finally {
       setPdfBusy(false);
     }
@@ -3922,7 +3916,7 @@ function RfqDetail({
         <section className="rounded-xl border border-line bg-white p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-mute">
-              {showPricing ? (viewingDraft ? "Price lines · Draft" : "Price lines · read-only preview") : "Buyer products"}
+              {showPricing ? (viewingDraft ? pt("Price lines · Draft") : pt("Price lines · read-only preview")) : pt("Buyer products")}
             </h2>
             <div className="flex flex-wrap items-end gap-3">
               <RfqRequestVersionSelect
@@ -3963,13 +3957,13 @@ function RfqDetail({
             </div>
           </div>
           {historicalRequest ? (
-            <p className="mt-2 text-xs text-mute">Viewing a previous RFQ request. Switch to Current to see the latest submission.</p>
+            <p className="mt-2 text-xs text-mute">{pt("Viewing a previous RFQ request. Switch to Current to see the latest submission.")}</p>
           ) : SHOW_RFQ_QUOTES && !viewingDraft ? (
             <p className="mt-2 text-xs text-mute">
               Viewing a frozen send. Line prices are read-only. Submit / WhatsApp still use Draft. Load into draft, then send, to freeze a new version.
             </p>
           ) : SHOW_RFQ_QUOTES && versions.length ? (
-            <p className="mt-2 text-xs text-mute">Worksheet edits stay draft until Submit To Buyer or Quote sent on WhatsApp.</p>
+            <p className="mt-2 text-xs text-mute">{pt("Worksheet edits stay draft until Submit To Buyer or Quote sent on WhatsApp.")}</p>
           ) : null}
           <ul className="mt-3 space-y-2">
             {(previewLines || []).map((line, index) => (
@@ -3992,13 +3986,11 @@ function RfqDetail({
             </p>
           ) : null}
           {rfq.cancelStatus === "requested" ? (
-            <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">Buyer asked to cancel. Accept to close, or keep the RFQ.</p>
+            <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">{pt("Buyer asked to cancel. Accept to close, or keep the RFQ.")}</p>
           ) : null}
-          {status === "cancelled" ? <p className="mt-3 rounded-lg bg-paper px-3 py-2 text-xs text-mute">Cancelled</p> : null}
+          {status === "cancelled" ? <p className="mt-3 rounded-lg bg-paper px-3 py-2 text-xs text-mute">{pt("Cancelled")}</p> : null}
           {SHOW_RFQ_QUOTES && status === "quoted" && !guestBuyer ? (
-            <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
-              Quote submitted to buyer
-            </p>
+            <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-900">{pt("Quote submitted to buyer")}</p>
           ) : null}
           {SHOW_RFQ_QUOTES && guestBuyer && waSent ? (
             <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
@@ -4008,22 +4000,22 @@ function RfqDetail({
           {status === "accepted" ? (
             <p className={`mt-3 rounded-lg px-3 py-2 text-xs ${SHOW_RFQ_QUOTES && rfq.tmsDocumentNo ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900"}`}>
               {!SHOW_RFQ_QUOTES
-                ? "Accepted. Buyer sees In review. Follow up by phone if needed."
+                ? pt("Accepted. Buyer sees In review. Follow up by phone if needed.")
                 : rfq.tmsDocumentNo
                 ? `iRFQ created · ${rfq.tmsDocumentNo}`
                 : rfq.lastTmsError
                   ? `TMS failed: ${rfq.lastTmsError}`
                   : guestBuyer
                     ? waSent
-                      ? "Accepted. Quote sent on WhatsApp — assign a member or update the WhatsApp quote."
+                      ? pt("Accepted. Quote sent on WhatsApp — assign a member or update the WhatsApp quote.")
                       : "Accepted. Guest cannot receive a marketplace quote — send on WhatsApp, assign a member, or Create TMS iRFQ."
-                    : "Accepted. Enter prices, then Submit To Buyer or Create TMS iRFQ."}
+                    : pt("Accepted. Enter prices, then Submit To Buyer or Create TMS iRFQ.")}
             </p>
           ) : null}
         </section>
         <aside className="space-y-3">
           <section className="rounded-xl border border-line bg-white p-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-mute">Buyer</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-mute">{pt("Buyer")}</h2>
             <div className="mt-2">
               <RfqBuyerMeta rfq={rfq} note={note} onOpenBuyer={onOpenBuyer} />
             </div>
@@ -4038,20 +4030,20 @@ function RfqDetail({
                 <p className="mt-2 text-[11px] font-semibold uppercase tracking-wide text-brand-700">{accountStatusLabel(account)}</p>
               </>
             ) : (
-              <p className="mt-2 text-xs text-mute">No marketplace account for this email.</p>
+              <p className="mt-2 text-xs text-mute">{pt("No marketplace account for this email.")}</p>
             )}
           </section>
           <section className="rounded-xl border border-line bg-white p-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-mute">Follow-up</h2>
-            <p className="mt-1 text-xs text-mute">{followUpHint(account, rfq, guestBuyer)}</p>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-mute">{pt("Follow-up")}</h2>
+            <p className="mt-1 text-xs text-mute">{pt(followUpHint(account, rfq, guestBuyer))}</p>
             <div className="mt-3">
               <RfqFollowUpContact rfq={rfq} account={account} note={note} />
             </div>
           </section>
-          <RfqActivityLog rfq={rfq} lang="en" audience="staff" title="Activity" />
+          <RfqActivityLog rfq={rfq} lang="en" audience="staff" title={pt("Activity")} />
           <section className="rounded-xl border border-line bg-white p-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-mute">PDF</h2>
-            <p className="mt-1 text-xs text-mute">Download a copy of this RFQ.</p>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-mute">{pt("PDF")}</h2>
+            <p className="mt-1 text-xs text-mute">{pt("Download a copy of this RFQ.")}</p>
             <div className="mt-3">
               <button
                 type="button"
@@ -4059,7 +4051,7 @@ function RfqDetail({
                 disabled={pdfBusy}
                 onClick={downloadPdf}
               >
-                {pdfBusy ? "Building…" : "Download PDF"}
+                {pdfBusy ? pt("Building…") : pt("Download PDF")}
               </button>
             </div>
           </section>
@@ -4070,6 +4062,8 @@ function RfqDetail({
 }
 
 function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetail, onOpenBuyer }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const rfqs = SHOW_RFQ_QUOTES ? rawRfqs : rawRfqs.filter(isDev1InboxRfq);
   const [view, setView] = useState("list");
   const [statusTab, setStatusTab] = useState("action");
@@ -4153,26 +4147,26 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
 
   function mailNote(mail, okMessage, failMessage) {
     if (mail?.ok === false && mail.error === "email") {
-      note({ ok: true }, okMessage.replace(/Buyer email sent\.?/, "No buyer email (guest or invalid address)."));
+      note({ ok: true }, okMessage.replace(/Buyer email sent\.?/, pt("No buyer email (guest or invalid address).")));
       return;
     }
     if (mail?.ok === false && mail.error === "not_configured") {
-      note({ ok: true }, okMessage.replace(/Buyer email sent\.?/, "Buyer email was not sent. Email is not set up on this computer."));
+      note({ ok: true }, okMessage.replace(/Buyer email sent\.?/, pt("Buyer email was not sent. Email is not set up on this computer.")));
       return;
     }
     if (mail?.ok === false) {
-      note({ ok: false, error: failMessage || "Buyer email could not be sent." });
+      note({ ok: false, error: failMessage || pt("Buyer email could not be sent.") });
       return;
     }
     note(
       { ok: true },
-      mail?.skipped ? okMessage.replace("Buyer email sent.", "Localhost does not send the buyer email.") : okMessage
+      mail?.skipped ? okMessage.replace(pt("Buyer email sent."), pt("Localhost does not send the buyer email.")) : okMessage
     );
   }
 
   function openReject(rfq) {
     setRejecting(rfq);
-    setRejectReason("No offer");
+    setRejectReason(pt("No offer"));
     setRejectError("");
   }
 
@@ -4183,62 +4177,62 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
   }
 
   async function confirmReject() {
-    const why = rejectReason.trim() || "No offer";
+    const why = rejectReason.trim() || pt("No offer");
     const result = decideRfq(rejecting.id, { decision: "no_offer", reason: why });
     if (!result?.ok) {
-      setRejectError(result?.error || "Unable to reject.");
-      note(result, "RFQ marked No Offer Rejected");
+      setRejectError(result?.error || pt("Unable to reject."));
+      note(result, pt("RFQ marked No Offer Rejected"));
       return;
     }
     const next = result.rfq || { ...rejecting, reviewStatus: "no_offer", reason: why };
     closeReject();
     followRfq(next);
     const mail = await deliverRfqNoOfferEmail(next);
-    mailNote(mail, "RFQ moved to No Offer Rejected. Buyer email sent.", "RFQ rejected. Buyer email could not be sent.");
+    mailNote(mail, pt("RFQ moved to No Offer Rejected. Buyer email sent."), pt("RFQ rejected. Buyer email could not be sent."));
   }
 
   async function acceptCancel(rfq) {
     const result = decideRfqCancel(rfq.id, { accept: true });
     if (!result?.ok) {
-      note(result, "Cancel accepted");
+      note(result, pt("Cancel accepted"));
       return;
     }
     followRfq(result.rfq || { ...rfq, cancelStatus: "accepted", reviewStatus: "cancelled" });
     const mail = await deliverRfqCancelAcceptedEmail(result.rfq || rfq);
-    mailNote(mail, "Cancel accepted. Buyer email sent.", "Cancel accepted. Buyer email could not be sent.");
+    mailNote(mail, pt("Cancel accepted. Buyer email sent."), pt("Cancel accepted. Buyer email could not be sent."));
   }
 
   async function declineCancel(rfq) {
     const result = decideRfqCancel(rfq.id, { accept: false });
     if (!result?.ok) {
-      note(result, "RFQ kept");
+      note(result, pt("RFQ kept"));
       return;
     }
     followRfq(result.rfq || { ...rfq, cancelStatus: "declined" });
     const mail = await deliverRfqCancelDeclinedEmail(result.rfq || rfq);
-    mailNote(mail, "RFQ kept in In review. Buyer email sent.", "RFQ kept. Buyer email could not be sent.");
+    mailNote(mail, pt("RFQ kept in In review. Buyer email sent."), pt("RFQ kept. Buyer email could not be sent."));
   }
 
   async function acceptReverse(rfq) {
     const result = decideRfqReverse(rfq.id, { accept: true });
     if (!result?.ok) {
-      note(result, "Reverse accepted");
+      note(result, pt("Reverse accepted"));
       return;
     }
     followRfq(result.rfq || { ...rfq, reviewStatus: "revising", reverseStatus: "" });
     const mail = await deliverRfqReverseAcceptedEmail(result.rfq || rfq);
-    mailNote(mail, "Reverse accepted. Buyer can revise. Email sent.", "Reverse accepted. Buyer email could not be sent.");
+    mailNote(mail, pt("Reverse accepted. Buyer can revise. Email sent."), pt("Reverse accepted. Buyer email could not be sent."));
   }
 
   async function declineReverse(rfq) {
     const result = decideRfqReverse(rfq.id, { accept: false });
     if (!result?.ok) {
-      note(result, "RFQ kept");
+      note(result, pt("RFQ kept"));
       return;
     }
     followRfq(result.rfq || { ...rfq, reverseStatus: "declined" });
     const mail = await deliverRfqReverseDeclinedEmail(result.rfq || rfq);
-    mailNote(mail, "RFQ kept in In review. Buyer email sent.", "RFQ kept. Buyer email could not be sent.");
+    mailNote(mail, pt("RFQ kept in In review. Buyer email sent."), pt("RFQ kept. Buyer email could not be sent."));
   }
 
   async function createIrfq(rfq) {
@@ -4278,12 +4272,12 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
         handoff,
         tms?.documentNo
           ? tms.handlerAssigned
-            ? `iRFQ created · ${tms.documentNo} · you are the handler`
-            : `iRFQ created · ${tms.documentNo} · handler left blank`
-          : "iRFQ created"
+            ? `iRFQ created · ${tms.documentNo} · handler ${tms.handlerEmail}`
+            : `iRFQ created · ${tms.documentNo} · no TMS user for this sales email`
+          : pt("iRFQ created")
       );
     } catch (error) {
-      const message = error?.message || "TMS create failed";
+      const message = error?.message || pt("TMS create failed");
       uploadRfqToTms(rfq.id, { fail: message, whatsappPdfName: pdfName });
       setAcceptingId("");
       note({ ok: false, error: message }, `iRFQ was not created: ${message}`);
@@ -4298,8 +4292,8 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
       note(
         result,
         SHOW_RFQ_QUOTES
-          ? "RFQ accepted — enter prices, then Submit To Buyer or Create TMS iRFQ"
-          : "RFQ accepted — buyer sees In review. Follow up by phone if needed."
+          ? pt("RFQ accepted — enter prices, then Submit To Buyer or Create TMS iRFQ")
+          : pt("RFQ accepted — buyer sees In review. Follow up by phone if needed.")
       );
       return;
     }
@@ -4309,9 +4303,9 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
     mailNote(
       mail,
       SHOW_RFQ_QUOTES
-        ? "RFQ accepted. Buyer email sent. Enter prices, then Submit To Buyer or Create TMS iRFQ."
-        : "RFQ moved to In review. Buyer email sent.",
-      "RFQ accepted. Buyer email could not be sent."
+        ? pt("RFQ accepted. Buyer email sent. Enter prices, then Submit To Buyer or Create TMS iRFQ.")
+        : pt("RFQ moved to In review. Buyer email sent."),
+      pt("RFQ accepted. Buyer email could not be sent.")
     );
   }
 
@@ -4324,18 +4318,18 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
     const result = quoteRfqToBuyer(rfq.id);
     setQuotingId("");
     if (result?.error === "prices") {
-      note(result, "Enter a price for every line before submitting to the buyer.");
+      note(result, pt("Enter a price for every line before submitting to the buyer."));
       return;
     }
     if (result?.error === "not_accepted") {
-      note(result, "Accept the RFQ first.");
+      note(result, pt("Accept the RFQ first."));
       return;
     }
     if (result?.error === "guest") {
-      note(result, "Guest has no marketplace account. Assign a member or WhatsApp the quote.");
+      note(result, pt("Guest has no marketplace account. Assign a member or WhatsApp the quote."));
       return;
     }
-    note(result, "Quote submitted to buyer");
+    note(result, pt("Quote submitted to buyer"));
   }
 
   function sendWhatsappQuote(rfq) {
@@ -4344,10 +4338,10 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
       note(
         { ok: false, error: ready.reason },
         ready.reason === "phone"
-          ? "Add a parseable phone in Follow-up first."
+          ? pt("Add a parseable phone in Follow-up first.")
           : ready.reason === "prices"
-            ? "Enter a price for every offer line first."
-            : "Accept the RFQ first."
+            ? pt("Enter a price for every offer line first.")
+            : pt("Accept the RFQ first.")
       );
       return;
     }
@@ -4378,20 +4372,18 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
 
   function markWhatsappSent(rfq) {
     if (waOpenedId !== rfq.id) {
-      note({ ok: false, error: "not_opened" }, "Open WhatsApp first, then mark sent.");
+      note({ ok: false, error: "not_opened" }, pt("Open WhatsApp first, then mark sent."));
       return;
     }
     const result = markGuestQuoteWhatsappSent(rfq.id);
     if (result?.ok) setWaOpenedId("");
-    note(result, "Quote marked sent on WhatsApp (not submitted to My RFQs)");
+    note(result, pt("Quote marked sent on WhatsApp (not submitted to My RFQs)"));
   }
 
   const empty = (
     <p className="text-sm text-mute">
       No RFQs yet. On{" "}
-      <a href={marketplaceHomeHref("en")} className="font-semibold text-brand-700 hover:underline">
-        Marketplace
-      </a>
+      <a href={marketplaceHomeHref(lang)} className="font-semibold text-brand-700 hover:underline">{pt("Marketplace")}</a>
       , log in as a buyer and Request for Quote from Cart, or send a guest WhatsApp quote — both land here.
     </p>
   );
@@ -4426,7 +4418,7 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
               {rejecting.buyerName ? `${rejecting.buyerName} · ` : ""}
               {rejecting.buyerEmail}
             </p>
-            <p className="mt-3 text-sm font-medium">Buyer RFQ status will become No Offer Rejected.</p>
+            <p className="mt-3 text-sm font-medium">{pt("Buyer RFQ status will become No Offer Rejected.")}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {REJECT_PRESETS.map((preset) => (
                 <button
@@ -4440,7 +4432,7 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
                     setRejectError("");
                   }}
                 >
-                  {preset}
+                  {pt(preset)}
                 </button>
               ))}
             </div>
@@ -4448,7 +4440,7 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
               Reason<RequiredMark />
               <textarea
                 className="mt-1 w-full min-h-[88px] rounded-lg border border-line px-3 py-2 text-sm"
-                placeholder="Select a reason above or write your own"
+                placeholder={pt("Select a reason above or write your own")}
                 value={rejectReason}
                 onChange={(e) => {
                   setRejectReason(e.target.value);
@@ -4458,11 +4450,9 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
             </label>
             {rejectError ? <p className="mt-2 text-sm text-red-700">{rejectError}</p> : null}
             <div className="mt-4 flex flex-wrap justify-end gap-2">
-              <button type="button" className="rounded-lg border border-line px-4 py-2 text-sm" onClick={closeReject}>
-                Cancel
-              </button>
+              <button type="button" className="rounded-lg border border-line px-4 py-2 text-sm" onClick={closeReject}>{pt("Cancel")}</button>
               <button type="button" className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white" onClick={confirmReject}>
-                Confirm no offer
+                {pt("Confirm no offer")}
               </button>
             </div>
           </AdminModal>
@@ -4475,9 +4465,9 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
     <div>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl text-brand-900">RFQ inbox</h1>
+          <h1 className="font-display text-2xl text-brand-900">{pt("RFQ inbox")}</h1>
           <p className="text-sm text-mute">
-            Accept the RFQ to start handling it. Buyer sees Submitted, then In review. Quotes and purchase orders stay hidden.
+            {pt("Accept the RFQ to start handling it. Buyer sees Submitted, then In review. Quotes and purchase orders stay hidden.")}
           </p>
         </div>
         <ViewToggle value={view} onChange={setView} />
@@ -4485,10 +4475,10 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
       <AdminSearchBar
         value={query}
         onChange={setQuery}
-        label="Search RFQs"
-        placeholder="Search RFQ no., buyer, product, TMS…"
+        label={pt("Search RFQs")}
+        placeholder={pt("Search RFQ no., buyer, product, TMS…")}
       />
-      <FilterTabs tabs={statusTabs} counts={rfqStatusCounts(searchedRfqs)} value={activeStatusTab} onChange={setStatusTab} label="RFQ status" />
+      <FilterTabs tabs={statusTabs} counts={rfqStatusCounts(searchedRfqs)} value={activeStatusTab} onChange={setStatusTab} label={pt("RFQ status")} />
       {focusId ? (
         <p
           className={`mb-4 rounded-xl border px-3 py-2 text-sm ${
@@ -4496,7 +4486,7 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
           }`}
         >
           {focused
-            ? `Opened from Marketplace · ${focusId}. Buyer can still open the same RFQ under My RFQs.`
+            ? `${pt("Opened from Marketplace ·")} ${focusId}. ${pt("Buyer can still open the same RFQ under My RFQs.")}`
             : rfqPulling
               ? `Loading ${focusId} from Marketplace…`
               : `${focusId} is not in this inbox yet. Refresh, or wait a moment for Marketplace to sync.`}
@@ -4508,7 +4498,7 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
       ) : !visibleRfqs.length ? (
         <p className="rounded-xl border border-dashed border-line bg-white px-4 py-16 text-center text-sm text-mute">
           {needle
-            ? "No RFQs match this search."
+            ? pt("No RFQs match this search.")
             : activeStatusTab === "action"
               ? (
                 <>
@@ -4518,14 +4508,14 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
                   </button>
                 </>
               )
-              : "No RFQs in this status."}
+              : pt("No RFQs in this status.")}
         </p>
       ) : view === "list" ? (
         <div className="overflow-auto rounded-xl border border-line bg-white max-h-[calc(100vh-16rem)]">
           <table className="min-w-[64rem] w-full text-left text-[12px]">
             <thead className="pointer-events-none sticky top-0 z-10 bg-brand-50 text-[10px] font-semibold uppercase tracking-wide text-mute">
               <tr>
-                {["RFQ", "Buyer", "Channel", "Products", "Status", "Activity", "Action"].map((h) => (
+                {[pt("RFQ"), pt("Buyer"), pt("Channel"), pt("Products"), pt("Status"), pt("Activity"), pt("Action")].map((h) => (
                   <th key={h} className={h === "Action" ? STICKY_ACTION_TH : "px-3 py-2"}>
                     {h}
                   </th>
@@ -4644,16 +4634,16 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
                   </p>
                 ) : null}
                 {r.cancelStatus === "requested" ? (
-                  <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">Buyer asked to cancel. Accept to close, or keep the RFQ.</p>
+                  <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">{pt("Buyer asked to cancel. Accept to close, or keep the RFQ.")}</p>
                 ) : null}
                 {status === "cancelled" ? (
-                  <p className="mt-3 rounded-lg bg-paper px-3 py-2 text-xs text-mute">Cancelled</p>
+                  <p className="mt-3 rounded-lg bg-paper px-3 py-2 text-xs text-mute">{pt("Cancelled")}</p>
                 ) : null}
                 {SHOW_RFQ_QUOTES && status === "quoted" ? (
                   <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
                     {rfqBuyerKind(r) === "guest"
-                      ? "Priced. Guest cannot receive this in marketplace My RFQs."
-                      : "Quote submitted to buyer"}
+                      ? pt("Priced. Guest cannot receive this in marketplace My RFQs.")
+                      : pt("Quote submitted to buyer")}
                   </p>
                 ) : null}
                 {status === "accepted" ? (
@@ -4663,14 +4653,14 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
                     }`}
                   >
                     {!SHOW_RFQ_QUOTES
-                      ? "Accepted. Buyer sees In review. Follow up by phone if needed."
+                      ? pt("Accepted. Buyer sees In review. Follow up by phone if needed.")
                       : r.tmsDocumentNo
                       ? `iRFQ created · ${r.tmsDocumentNo}`
                       : r.lastTmsError
                         ? `TMS failed: ${r.lastTmsError}`
                         : rfqBuyerKind(r) === "guest"
                           ? "Accepted. Guest cannot receive a marketplace quote — assign a member or WhatsApp, or Create TMS iRFQ."
-                          : "Accepted. Enter prices, then Submit To Buyer or Create TMS iRFQ."}
+                          : pt("Accepted. Enter prices, then Submit To Buyer or Create TMS iRFQ.")}
                   </p>
                 ) : null}
                 <div className="mt-3">
@@ -4701,7 +4691,7 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
             {rejecting.buyerName ? `${rejecting.buyerName} · ` : ""}
             {rejecting.buyerEmail}
           </p>
-          <p className="mt-3 text-sm font-medium">Buyer RFQ status will become No Offer Rejected.</p>
+          <p className="mt-3 text-sm font-medium">{pt("Buyer RFQ status will become No Offer Rejected.")}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {REJECT_PRESETS.map((preset) => (
               <button
@@ -4715,7 +4705,7 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
                   setRejectError("");
                 }}
               >
-                {preset}
+                {pt(preset)}
               </button>
             ))}
           </div>
@@ -4723,7 +4713,7 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
             Reason<RequiredMark />
             <textarea
               className="mt-1 w-full min-h-[88px] rounded-lg border border-line px-3 py-2 text-sm"
-              placeholder="Select a reason above or write your own"
+              placeholder={pt("Select a reason above or write your own")}
               value={rejectReason}
               onChange={(e) => {
                 setRejectReason(e.target.value);
@@ -4733,11 +4723,9 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
           </label>
           {rejectError ? <p className="mt-2 text-sm text-red-700">{rejectError}</p> : null}
           <div className="mt-4 flex flex-wrap justify-end gap-2">
-            <button type="button" className="rounded-lg border border-line px-4 py-2 text-sm" onClick={closeReject}>
-              Cancel
-            </button>
+            <button type="button" className="rounded-lg border border-line px-4 py-2 text-sm" onClick={closeReject}>{pt("Cancel")}</button>
             <button type="button" className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white" onClick={confirmReject}>
-              Confirm no offer
+              {pt("Confirm no offer")}
             </button>
           </div>
         </AdminModal>
@@ -4747,10 +4735,12 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
 }
 
 function ReportPanel({ reports, note, onOpenProduct }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   return (
     <div>
       <div className="mb-4">
-        <h1 className="font-display text-2xl text-brand-900">Product reports</h1>
+        <h1 className="font-display text-2xl text-brand-900">{pt("Product reports")}</h1>
         <p className="text-sm text-mute">Open a report to jump to that SKU. Ignore closes it. Fix + Unpublish takes it offline if data is complete. Then Publish to go live.</p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
@@ -4774,7 +4764,7 @@ function ReportPanel({ reports, note, onOpenProduct }) {
               <button
                 type="button"
                 className="rounded-lg border border-line px-2 py-1 text-xs"
-                onClick={() => note(dismissProductReport(r.id), "Ignored")}
+                onClick={() => note(dismissProductReport(r.id), pt("Ignored"))}
               >
                 Ignore
               </button>
@@ -4783,7 +4773,7 @@ function ReportPanel({ reports, note, onOpenProduct }) {
                 className="rounded-lg border border-amber-300 px-2 py-1 text-xs"
                 onClick={() => {
                   const result = fixProductReport(r.id, { unpublish: true });
-                  note(result, "Fixed + Unpublish — hidden from marketplace");
+                  note(result, pt("Fixed + Unpublish — hidden from marketplace"));
                   if (result?.ok) onOpenProduct?.(r);
                 }}
               >
@@ -4794,7 +4784,7 @@ function ReportPanel({ reports, note, onOpenProduct }) {
                 className="rounded-lg bg-brand-600 px-2 py-1 text-xs font-semibold text-white"
                 onClick={() => {
                   const result = fixProductReport(r.id, { unpublish: true });
-                  note(result, "Fixed — click Publish when ready");
+                  note(result, pt("Fixed — click Publish when ready"));
                   if (result?.ok) onOpenProduct?.(r);
                 }}
               >
@@ -4803,7 +4793,7 @@ function ReportPanel({ reports, note, onOpenProduct }) {
             </div>
           ) : null}
         </article>
-      )) : <p className="text-sm text-mute md:col-span-2">No reports. Buyers file them on the original product detail page.</p>}
+      )) : <p className="text-sm text-mute md:col-span-2">{pt("No reports. Buyers file them on the original product detail page.")}</p>}
       </div>
     </div>
   );
@@ -4895,6 +4885,8 @@ function followUpPlainPhones(sources, extra = "") {
 }
 
 function BuyerPhoneLink({ phone, className = "text-brand-800 hover:underline" }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const value = String(phone || "").trim();
   if (!value) return "—";
   const wa = buyerWhatsappHref(value);
@@ -4905,7 +4897,7 @@ function BuyerPhoneLink({ phone, className = "text-brand-800 hover:underline" })
       href={href}
       target={wa ? "_blank" : undefined}
       rel={wa ? "noreferrer" : undefined}
-      title={wa ? "Open WhatsApp chat" : `Call ${value}`}
+      title={wa ? pt("Open WhatsApp chat") : `Call ${value}`}
     >
       {value}
     </a>
@@ -4913,6 +4905,8 @@ function BuyerPhoneLink({ phone, className = "text-brand-800 hover:underline" })
 }
 
 function RfqFollowUpContact({ rfq, account, note }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const member = rfqBuyerKind(rfq) === "member";
   const stored = String(rfq.buyerPhone || (member ? account?.phone : "") || "").trim();
   const [phone, setPhone] = useState(stored);
@@ -4936,7 +4930,7 @@ function RfqFollowUpContact({ rfq, account, note }) {
         label: "Phone",
         phone,
         href: phoneCallHref(phone),
-        title: "Call",
+        title: pt("Call"),
       }))
     : [];
   const rows = appRows.length || plainRows.length
@@ -4951,7 +4945,7 @@ function RfqFollowUpContact({ rfq, account, note }) {
       if (next) setEditing(false);
       return;
     }
-    note?.(setRfqBuyerPhone(rfq.id, next), next ? "Contact number saved" : "Contact number cleared");
+    note?.(setRfqBuyerPhone(rfq.id, next), next ? pt("Contact number saved") : pt("Contact number cleared"));
     setEditing(!next);
   }
 
@@ -4960,7 +4954,7 @@ function RfqFollowUpContact({ rfq, account, note }) {
       <div className="space-y-3">
         {rows.map((row, index) => (
           <div key={row.key}>
-            <p className="text-[11px] font-medium text-mute">{row.label}</p>
+            <p className="text-[11px] font-medium text-mute">{pt(row.label)}</p>
             <div className="mt-1 flex items-center justify-between gap-2">
               {row.href ? (
                 <a
@@ -4974,9 +4968,7 @@ function RfqFollowUpContact({ rfq, account, note }) {
                 <span className="text-sm text-ink">{formatBuyerPhoneDisplay(row.phone)}</span>
               )}
               {index === 0 ? (
-                <button type="button" className="text-xs font-semibold text-brand-800 hover:underline" onClick={() => setEditing(true)}>
-                  Edit
-                </button>
+                <button type="button" className="text-xs font-semibold text-brand-800 hover:underline" onClick={() => setEditing(true)}>{pt("Edit")}</button>
               ) : null}
             </div>
           </div>
@@ -4992,7 +4984,7 @@ function RfqFollowUpContact({ rfq, account, note }) {
         <input
           type="tel"
           value={phone}
-          placeholder="Add a number…"
+          placeholder={pt("Add a number…")}
           className="mt-1 w-full rounded-lg border border-line bg-white px-2 py-1.5 text-sm text-ink"
           onChange={(e) => setPhone(e.target.value)}
           onBlur={save}
@@ -5009,6 +5001,8 @@ function RfqFollowUpContact({ rfq, account, note }) {
 }
 
 function BuyerInfoModal({ email, note, onClose, onOpenRfq, onReject, onForever }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const buyer = listBuyers().find((b) => sameEmail(b.email, email));
   const rfqs = getAllRfqs().filter((r) => sameEmail(r.buyerEmail, email));
   const hintName = buyer?.name || rfqs[0]?.buyerName || "";
@@ -5021,48 +5015,38 @@ function BuyerInfoModal({ email, note, onClose, onOpenRfq, onReject, onForever }
 
   return (
     <AdminModal
-      title={buyer?.companyName || hintName || email || "Buyer"}
+      title={buyer?.companyName || hintName || email || pt("Buyer")}
       onClose={onClose}
       footer={
         <div className="flex flex-wrap justify-end gap-2">
-          <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={onClose}>
-            Close
-          </button>
+          <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={onClose}>{pt("Close")}</button>
           {canReject ? (
             <button
               type="button"
               className="rounded-lg border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-800"
               onClick={() => onReject?.(buyer.email)}
-            >
-              Reject
-            </button>
+            >{pt("Reject")}</button>
           ) : null}
           {canDisable ? (
             <button
               type="button"
               className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-700"
-              onClick={() => note(setBuyerEnabled(buyer.email, false), "Buyer disabled")}
-            >
-              Disable
-            </button>
+              onClick={() => note(setBuyerEnabled(buyer.email, false), pt("Buyer disabled"))}
+            >{pt("Disable")}</button>
           ) : null}
           {canEnable ? (
             <button
               type="button"
               className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
-              onClick={() => note(setBuyerEnabled(buyer.email, true), "Buyer enabled")}
-            >
-              Enable
-            </button>
+              onClick={() => note(setBuyerEnabled(buyer.email, true), pt("Buyer enabled"))}
+            >{pt("Enable")}</button>
           ) : null}
           {canForever ? (
             <button
               type="button"
               className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white"
               onClick={() => onForever?.(buyer)}
-            >
-              Delete forever
-            </button>
+            >{pt("Delete forever")}</button>
           ) : null}
         </div>
       }
@@ -5073,10 +5057,10 @@ function BuyerInfoModal({ email, note, onClose, onOpenRfq, onReject, onForever }
           {buyer?.jobTitle ? <p className="mt-0.5 text-sm text-mute">{buyer.jobTitle}</p> : null}
           {signedUp ? <p className="mt-1 text-xs text-mute">Signed up {signedUp}</p> : null}
           {buyer && buyer.approvalStatus !== "rejected" && buyer.enabled !== false ? (
-            <p className="mt-2 text-xs text-mute">Can log in now. Disable to pause, or Reject to refuse the account.</p>
+            <p className="mt-2 text-xs text-mute">{pt("Can log in now. Disable to pause, or Reject to refuse the account.")}</p>
           ) : null}
           {canForever ? (
-            <p className="mt-2 text-xs text-mute">Delete forever removes the login. RFQs stay with this name and email frozen.</p>
+            <p className="mt-2 text-xs text-mute">{pt("Delete forever removes the login. RFQs stay with this name and email frozen.")}</p>
           ) : null}
         </div>
         <AccountStatusChip account={buyer} />
@@ -5090,22 +5074,22 @@ function BuyerInfoModal({ email, note, onClose, onOpenRfq, onReject, onForever }
 
       <div className="mt-4 grid gap-3">
         <section className="rounded-xl border border-line bg-paper/60 p-4">
-          <h3 className="text-[10px] font-semibold uppercase tracking-wide text-mute">Contact</h3>
+          <h3 className="text-[10px] font-semibold uppercase tracking-wide text-mute">{pt("Contact")}</h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <BuyerInfoField label="Email">
+            <BuyerInfoField label={pt("Email")}>
               {displayEmail ? (
                 <a className="text-brand-800 hover:underline" href={`mailto:${displayEmail}`}>
                   {displayEmail}
                 </a>
               ) : null}
             </BuyerInfoField>
-            <BuyerInfoField label={phoneSlotLabel("Mobile", "1", buyer?.whatsappOn, buyer?.wechatOn)}>
+            <BuyerInfoField label={phoneSlotLabel(pt("Mobile"), "1", buyer?.whatsappOn, buyer?.wechatOn)}>
               <BuyerPhoneLink phone={buyer?.phone} />
             </BuyerInfoField>
-            <BuyerInfoField label={phoneSlotLabel("Other phone", "2", buyer?.whatsappOn, buyer?.wechatOn)}>
+            <BuyerInfoField label={phoneSlotLabel(pt("Other phone"), "2", buyer?.whatsappOn, buyer?.wechatOn)}>
               {buyer?.otherPhone ? <BuyerPhoneLink phone={buyer.otherPhone} /> : null}
             </BuyerInfoField>
-            <BuyerInfoField label="Roles">
+            <BuyerInfoField label={pt("Roles")}>
               {Array.isArray(buyer?.roles) && buyer.roles.length
                 ? buyer.roles.map((role) => (role === "contractor" ? "Contractor" : "Buyer")).join(" · ")
                 : ""}
@@ -5113,13 +5097,13 @@ function BuyerInfoModal({ email, note, onClose, onOpenRfq, onReject, onForever }
           </div>
         </section>
         <section className="rounded-xl border border-line bg-paper/60 p-4">
-          <h3 className="text-[10px] font-semibold uppercase tracking-wide text-mute">Company</h3>
+          <h3 className="text-[10px] font-semibold uppercase tracking-wide text-mute">{pt("Company")}</h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <BuyerInfoField label="Company">{buyer?.companyName}</BuyerInfoField>
-            <BuyerInfoField label="Company phone">{buyer?.companyPhone}</BuyerInfoField>
-            <BuyerInfoField label="Company reg.">{buyer?.companyReg}</BuyerInfoField>
-            <BuyerInfoField label="Project">{buyer?.project}</BuyerInfoField>
-            <BuyerInfoField label="Address" wide>
+            <BuyerInfoField label={pt("Company")}>{buyer?.companyName}</BuyerInfoField>
+            <BuyerInfoField label={pt("Company phone")}>{buyer?.companyPhone}</BuyerInfoField>
+            <BuyerInfoField label={pt("Company reg.")}>{buyer?.companyReg}</BuyerInfoField>
+            <BuyerInfoField label={pt("Project")}>{buyer?.project}</BuyerInfoField>
+            <BuyerInfoField label={pt("Address")} wide>
               {buyer?.companyAddress}
             </BuyerInfoField>
           </div>
@@ -5146,6 +5130,8 @@ function BuyerInfoModal({ email, note, onClose, onOpenRfq, onReject, onForever }
 }
 
 function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const staff = getStaffList();
   const buyers = listBuyers();
   const [statusTab, setStatusTab] = useState(() => {
@@ -5191,27 +5177,27 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
 
   function staffNote(result, fallback) {
     if (!result?.ok && result?.error === "last") {
-      note({ ok: false, error: "Keep at least one active sales account." });
+      note({ ok: false, error: pt("Keep at least one active sales account.") });
       return;
     }
     if (!result?.ok && result?.error === "active") {
-      note({ ok: false, error: "Disable this account first." });
+      note({ ok: false, error: pt("Disable this account first.") });
       return;
     }
     if (!result?.ok && result?.error === "self") {
-      note({ ok: false, error: "Another sales account must Delete forever." });
+      note({ ok: false, error: pt("Another sales account must Delete forever.") });
       return;
     }
     if (!result?.ok && result?.error === "taken") {
-      note({ ok: false, error: "That email is already in use." });
+      note({ ok: false, error: pt("That email is already in use.") });
       return;
     }
     if (!result?.ok && result?.error === "email") {
-      note({ ok: false, error: "Enter a valid email." });
+      note({ ok: false, error: pt("Enter a valid email.") });
       return;
     }
     if (!result?.ok && result?.error === "name") {
-      note({ ok: false, error: "Enter a name." });
+      note({ ok: false, error: pt("Enter a name.") });
       return;
     }
     note(result, fallback);
@@ -5255,12 +5241,12 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
       if (!result?.ok) {
         setFormError(
           result?.error === "taken"
-            ? "That email is already in use."
+            ? pt("That email is already in use.")
             : result?.error === "email"
-              ? "Enter a valid email."
+              ? pt("Enter a valid email.")
               : result?.error === "name"
-                ? "Enter a name."
-                : "Unable to invite staff."
+                ? pt("Enter a name.")
+                : pt("Unable to invite staff.")
         );
         staffNote(result);
         return;
@@ -5276,7 +5262,7 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
       staffNote(result);
       return;
     }
-    staffNote(result, "Saved");
+    staffNote(result, pt("Saved"));
     closeModal();
   }
 
@@ -5284,7 +5270,7 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
     <div>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl text-brand-900">{isSales ? "Sales" : "Buyer"}</h1>
+          <h1 className="font-display text-2xl text-brand-900">{isSales ? pt("Sales") : pt("Buyer")}</h1>
           <p className="text-sm text-mute">
             {isSales
               ? "Invite portal logins by email. They set a password from the invite link. Disable hides sign-in. Delete forever is only on disabled accounts, with a confirm, and cannot remove the last active sales login."
@@ -5296,29 +5282,27 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
             type="button"
             className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white"
             onClick={openInvite}
-          >
-            Invite staff
-          </button>
+          >{pt("Invite staff")}</button>
         ) : null}
       </div>
       <AdminSearchBar
         value={query}
         onChange={setQuery}
-        label={isSales ? "Search sales" : "Search buyers"}
-        placeholder={isSales ? "Search name or email…" : "Search company, name or email…"}
+        label={isSales ? pt("Search sales") : pt("Search buyers")}
+        placeholder={isSales ? pt("Search name or email…") : pt("Search company, name or email…")}
       />
       <FilterTabs
         tabs={isSales ? ACCOUNT_STATUS_TABS : BUYER_STATUS_TABS}
         counts={accountCounts(searched)}
         value={statusTab}
         onChange={setStatusTab}
-        label={isSales ? "Sales status" : "Buyer status"}
+        label={isSales ? pt("Sales status") : pt("Buyer status")}
       />
       <div className="overflow-auto rounded-xl border border-line bg-white max-h-[calc(100vh-16rem)]">
         <table className="min-w-[48rem] w-full text-left text-[12px]">
           <thead className="sticky top-0 bg-brand-50 text-[10px] font-semibold uppercase tracking-wide text-mute">
             <tr>
-              {(isSales ? ["Name", "Email", "Type", "Status", "Action"] : ["Company", "Name", "Email", "Signed up", "Status", "Action"]).map((h) => (
+              {(isSales ? [pt("Name"), pt("Email"), pt("Type"), pt("Status"), pt("Action")] : [pt("Company"), pt("Name"), pt("Email"), "Signed up", pt("Status"), pt("Action")]).map((h) => (
                 <th key={h} className={h === "Action" ? STICKY_ACTION_TH : "px-3 py-2"}>
                   {h}
                 </th>
@@ -5340,7 +5324,7 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
                     <>
                       <td className="px-3 py-2 font-medium">{u.name}</td>
                       <td className="px-3 py-2 text-mute">{u.email}</td>
-                      <td className="px-3 py-2">{u.bootstrap ? "Bootstrap" : u.invitePending ? "Invited" : "Staff"}</td>
+                      <td className="px-3 py-2">{u.bootstrap ? pt("Bootstrap") : u.invitePending ? pt("Invited") : pt("Staff")}</td>
                     </>
                   ) : (
                     <>
@@ -5365,9 +5349,7 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
                           type="button"
                           className="text-xs font-semibold text-brand-800 hover:underline"
                           onClick={() => openEdit(u)}
-                        >
-                          Edit
-                        </button>
+                        >{pt("Edit")}</button>
                       ) : null}
                       {isSales && u.invitePending ? (
                         <button
@@ -5391,9 +5373,7 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
                             setFormError("");
                             setModal({ type: "reject", email: u.email });
                           }}
-                        >
-                          Reject
-                        </button>
+                        >{pt("Reject")}</button>
                       ) : null}
                       {!isSales && (u.approvalStatus === "pending" || u.approvalStatus === "rejected") ? null : u.enabled !== false ? (
                         <button
@@ -5401,12 +5381,10 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
                           className="text-xs font-semibold text-red-700 hover:underline"
                           onClick={() =>
                             isSales
-                              ? staffNote(disableStaff(u.email), "Disabled")
-                              : note(setBuyerEnabled(u.email, false), "Buyer disabled")
+                              ? staffNote(disableStaff(u.email), pt("Disabled"))
+                              : note(setBuyerEnabled(u.email, false), pt("Buyer disabled"))
                           }
-                        >
-                          Disable
-                        </button>
+                        >{pt("Disable")}</button>
                       ) : (
                         <button
                           type="button"
@@ -5414,20 +5392,16 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
                           onClick={() =>
                             isSales
                               ? staffNote(enableStaff(u.email), "Enabled")
-                              : note(setBuyerEnabled(u.email, true), "Buyer enabled")
+                              : note(setBuyerEnabled(u.email, true), pt("Buyer enabled"))
                           }
-                        >
-                          Enable
-                        </button>
+                        >{pt("Enable")}</button>
                       )}
                       {(isSales ? canDeleteStaffForever(u) : canDeleteBuyerForever(u)) ? (
                         <button
                           type="button"
                           className="text-xs font-semibold text-red-800 hover:underline"
                           onClick={() => setModal({ type: "forever", account: u })}
-                        >
-                          Delete forever
-                        </button>
+                        >{pt("Delete forever")}</button>
                       ) : null}
                     </div>
                   </td>
@@ -5437,12 +5411,12 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
               <tr>
                 <td colSpan={isSales ? 5 : 6} className="px-3 py-16 text-center text-sm text-mute">
                   {needle
-                    ? "No accounts match this search."
+                    ? pt("No accounts match this search.")
                     : rows.length
-                      ? "No accounts in this status."
+                      ? pt("No accounts in this status.")
                       : isSales
-                        ? "No sales accounts yet."
-                        : "No registered buyers yet."}
+                        ? pt("No sales accounts yet.")
+                        : pt("No registered buyers yet.")}
                 </td>
               </tr>
             )}
@@ -5466,13 +5440,11 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
       ) : null}
       {!isSales && modal?.type === "reject" ? (
         <AdminModal
-          title="Reject buyer"
+          title={pt("Reject buyer")}
           onClose={closeModal}
           footer={
             <div className="flex justify-end gap-2">
-              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={closeModal}>
-                Cancel
-              </button>
+              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={closeModal}>{pt("Cancel")}</button>
               <button
                 type="button"
                 className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white"
@@ -5483,16 +5455,14 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
                     note(result);
                     return;
                   }
-                  note(result, "Rejection email sent");
+                  note(result, pt("Rejection email sent"));
                   closeModal();
                 }}
-              >
-                Reject
-              </button>
+              >{pt("Reject")}</button>
             </div>
           }
         >
-          <p className="text-sm text-mute">They cannot log in. This cannot be reversed with Enable. A rejection email will open.</p>
+          <p className="text-sm text-mute">{pt("They cannot log in. This cannot be reversed with Enable. A rejection email will open.")}</p>
           <label className="mt-3 block text-sm font-medium">
             Reason<RequiredMark />
             <textarea
@@ -5503,7 +5473,7 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
                 setRejectReason(e.target.value);
                 setFormError("");
               }}
-              placeholder="Why this account is refused"
+              placeholder={pt("Why this account is refused")}
             />
           </label>
           {formError ? <p className="mt-2 text-sm text-red-700">{formError}</p> : null}
@@ -5511,57 +5481,50 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
       ) : null}
       {modal?.type === "forever" ? (
         <AdminModal
-          title="Delete forever"
+          title={pt("Delete forever")}
           onClose={closeModal}
           footer={
             <div className="flex justify-end gap-2">
-              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={closeModal}>
-                Cancel
-              </button>
+              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={closeModal}>{pt("Cancel")}</button>
               <button
                 type="button"
                 className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white"
                 onClick={() => {
                   const account = modal.account;
                   const result = isSales ? hardDeleteStaff(account.email) : hardDeleteBuyer(account.email);
-                  if (isSales) staffNote(result, "Deleted forever");
+                  if (isSales) staffNote(result, pt("Deleted forever"));
                   else {
                     if (!result?.ok && result?.error === "active") {
-                      note({ ok: false, error: "Disable or Reject this buyer first." });
+                      note({ ok: false, error: pt("Disable or Reject this buyer first.") });
                       return;
                     }
-                    note(result, "Deleted forever");
+                    note(result, pt("Deleted forever"));
                   }
                   if (result?.ok) closeModal();
                 }}
-              >
-                Delete forever
-              </button>
+              >{pt("Delete forever")}</button>
             </div>
           }
         >
-          <p className="text-sm text-ink">
-            Delete <span className="font-semibold">{modal.account?.name || modal.account?.companyName || modal.account?.email}</span> ({modal.account?.email}) forever?
+          <p className="text-sm text-ink">{pt("Delete")}<span className="font-semibold">{modal.account?.name || modal.account?.companyName || modal.account?.email}</span> ({modal.account?.email}) forever?
           </p>
           <p className="mt-2 text-sm text-mute">
             {isSales
               ? "They cannot log in. RFQs they were reviewing already returned to the shared queue when disabled. Activity still shows who handled each RFQ."
               : "They cannot log in. RFQs and POs stay with this name and email frozen. The same email can register again as a new account and will not inherit old RFQs."}
           </p>
-          <p className="mt-2 text-sm font-medium text-red-800">This cannot be undone.</p>
+          <p className="mt-2 text-sm font-medium text-red-800">{pt("This cannot be undone.")}</p>
         </AdminModal>
       ) : null}
       {isSales && (modal?.type === "invite" || modal?.type === "edit") ? (
         <AdminModal
-          title={editing ? `Edit ${editing.name || editing.email}` : "Invite staff"}
+          title={editing ? `Edit ${editing.name || editing.email}` : pt("Invite staff")}
           onClose={closeModal}
           footer={
             <div className="flex justify-end gap-2">
-              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={closeModal}>
-                Cancel
-              </button>
+              <button type="button" className="rounded-lg border border-line bg-white px-4 py-2 text-sm" onClick={closeModal}>{pt("Cancel")}</button>
               <button type="button" className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40" disabled={acting} onClick={() => runAction(saveStaff)}>
-                {editing ? "Save" : "Send invite"}
+                {editing ? "Save" : pt("Send invite")}
               </button>
             </div>
           }
@@ -5569,12 +5532,11 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
           <p className="text-sm text-mute">
             {editing
               ? editing.invitePending
-                ? "Update the display name. They still set a password from the invite email."
-                : "Update the display name. Email cannot be changed."
-              : "We'll open an email so they can set their own password. No temporary password is created."}
+                ? pt("Update the display name. They still set a password from the invite email.")
+                : pt("Update the display name. Email cannot be changed.")
+              : pt("We'll open an email so they can set their own password. No temporary password is created.")}
           </p>
-          <label className="mt-4 block text-sm font-medium text-ink">
-            Name<RequiredMark />
+          <label className="mt-4 block text-sm font-medium text-ink">{pt("Name")}<RequiredMark />
             <input
               className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm"
               value={formName}
@@ -5585,8 +5547,7 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
               placeholder="Alex Chan"
             />
           </label>
-          <label className="mt-3 block text-sm font-medium text-ink">
-            Email<RequiredMark />
+          <label className="mt-3 block text-sm font-medium text-ink">{pt("Email")}<RequiredMark />
             <input
               type="email"
               className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm disabled:bg-paper disabled:text-mute"

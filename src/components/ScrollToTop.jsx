@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { jumpToId } from "../lib/jumpTo";
 import { stripLocale } from "../lib/locale";
 
 function isCategoryPage(pathname) {
@@ -12,30 +13,19 @@ export default function ScrollToTop() {
   useEffect(() => {
     if (hash) {
       const id = hash.replace(/^#/, "");
-      const scrollToHash = () => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "start" });
-          return true;
-        }
-        return false;
-      };
-      if (scrollToHash()) return undefined;
-      const t1 = window.setTimeout(scrollToHash, 50);
-      const t2 = window.setTimeout(scrollToHash, 200);
-      return () => {
-        window.clearTimeout(t1);
-        window.clearTimeout(t2);
-      };
+      jumpToId(id);
+      const retry = window.setTimeout(() => jumpToId(id), 200);
+      return () => window.clearTimeout(retry);
     }
 
     if (isCategoryPage(pathname)) {
-      const heading = document.getElementById("catalog-top") || document.getElementById("catalog-results");
-      if (heading) {
-        const nav = document.getElementById("siteNav");
-        const navH = nav ? Math.round(nav.getBoundingClientRect().height) : 88;
-        const top = window.scrollY + heading.getBoundingClientRect().top - navH - 8;
-        window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
+      const id = document.getElementById("catalog-top")
+        ? "catalog-top"
+        : document.getElementById("catalog-results")
+          ? "catalog-results"
+          : "";
+      if (id) {
+        jumpToId(id);
         return undefined;
       }
     }

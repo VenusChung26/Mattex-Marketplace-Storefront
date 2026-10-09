@@ -591,8 +591,8 @@ export function ConfirmRfqView(props) {
             const moq = Math.max(1, Number(l.moq) || 1);
             const belowMoq = !l.custom && Number(l.qty) < moq;
             return (
-              <li key={l.productId} className="px-4 sm:px-5 py-3 flex flex-wrap justify-between gap-3 text-sm">
-                <span className="min-w-0 flex-1 flex items-center gap-3">
+              <li key={l.productId} className="flex flex-col gap-2 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-5">
+                <span className="flex min-w-0 items-center gap-3">
                   <LineThumb line={l} />
                   <span className="min-w-0">
                     <span className="font-semibold text-ink">{l.name}</span>
@@ -613,8 +613,8 @@ export function ConfirmRfqView(props) {
                     ) : null}
                   </span>
                 </span>
-                <span className="shrink-0 flex flex-col items-end gap-1.5 w-[13rem] max-w-full">
-                  <span className="font-semibold text-right w-full">
+                <span className="flex min-w-0 items-center justify-between gap-3 sm:w-[13rem] sm:shrink-0 sm:flex-col sm:items-end">
+                  <span className="font-semibold sm:w-full sm:text-right">
                     <LineMoney line={l} t={t} compact />
                   </span>
                   <QtyStepper
@@ -622,7 +622,7 @@ export function ConfirmRfqView(props) {
                     min={moq}
                     unit={l.unit || ""}
                     onChange={(qty) => setLineQty(l.productId, qty)}
-                    size="row"
+                    size="bar"
                     t={t}
                   />
                   <button
@@ -1142,90 +1142,111 @@ function LinesList({
               .filter(Boolean)
               .join(" · ");
             const unpriced = l.unitPrice == null && !l.custom;
+            function lineDetails() {
+              return (
+                <>
+                  {meta ? <p className="mt-0.5 text-[11px] leading-snug text-mute">{meta}</p> : null}
+                  {l.custom && l.description ? (
+                    <p className="mt-0.5 whitespace-pre-wrap break-words text-[11px] text-mute">
+                      <span className="font-medium text-ink/80">{t("customProductDesc")}: </span>
+                      {l.description}
+                    </p>
+                  ) : null}
+                  {unpriced ? (
+                    <p className="mt-1 inline-flex bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+                      {t("noListedPrice")}
+                    </p>
+                  ) : null}
+                  <AttachmentLinks files={l.attachments} />
+                </>
+              );
+            }
             return (
               <div
                 key={l.productId}
-                className={`px-3 py-3 flex gap-2 sm:gap-2.5 items-center ${
+                className={`px-3 py-3 ${
                   checked ? "bg-white" : "bg-paper/50"
                 } ${dragging?.productId === id ? "opacity-45" : ""} ${discontinued ? "opacity-80" : ""}`}
               >
-                <label className={`shrink-0 ${discontinued ? "cursor-not-allowed" : "cursor-pointer"}`}>
-                  <input
-                    type="checkbox"
-                    checked={checked && !discontinued}
-                    disabled={discontinued}
-                    onChange={() => toggleId(id)}
-                    className="h-4 w-4 accent-brand-600"
-                  />
-                </label>
-                {!isEditing ? (
-                  <MoveControl
-                    line={l}
-                    unpriced={unpriced}
-                    canDrag={Boolean(onDragLineStart)}
-                    onDragLineStart={onDragLineStart}
-                    onMoveLine={onMoveLine}
-                    dropIntent={dropIntent}
-                    t={t}
-                  />
-                ) : null}
                 {isEditing && l.custom ? (
-                  <div className="flex-1 min-w-0">
-                    <CustomProductForm
-                      mode="edit"
-                      compact
-                      initial={{
-                        name: l.name,
-                        description: l.description || "",
-                        qty: l.qty,
-                        image: l.image || "",
-                        images: Array.isArray(l.images) ? l.images : [],
-                        category: l.category || "",
-                        attachments: l.attachments || [],
-                      }}
-                      onSubmit={(payload) => onUpdateCustom(l.productId, payload)}
-                      onCancel={() => setEditingId(null)}
-                    />
+                  <div className="flex min-w-0 items-start gap-2">
+                    <label className="shrink-0 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleId(id)}
+                        className="h-4 w-4 accent-brand-600"
+                      />
+                    </label>
+                    <div className="min-w-0 flex-1">
+                      <CustomProductForm
+                        mode="edit"
+                        compact
+                        initial={{
+                          name: l.name,
+                          description: l.description || "",
+                          qty: l.qty,
+                          image: l.image || "",
+                          images: Array.isArray(l.images) ? l.images : [],
+                          category: l.category || "",
+                          attachments: l.attachments || [],
+                        }}
+                        onSubmit={(payload) => onUpdateCustom(l.productId, payload)}
+                        onCancel={() => setEditingId(null)}
+                      />
+                    </div>
                   </div>
                 ) : (
-                  <>
-                    <LineThumb line={l} className="h-14 w-14 sm:h-16 sm:w-20" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <p className="w-full font-semibold text-ink text-sm leading-snug line-clamp-2">{l.name}</p>
-                        {l.green ? <GreenProductTag t={t} /> : null}
-                        {showIntent ? <IntentBadge intent={l.intent} t={t} /> : null}
-                        {l.custom ? (
-                          <span className="text-[10px] font-bold uppercase tracking-wide text-brand-700 bg-brand-50 px-1.5 py-0.5 shrink-0">
-                            {l.tailorMade ? t("tailorMadeBadge") : t("customItem")}
-                          </span>
-                        ) : null}
-                        {discontinued ? (
-                          <span className="text-[10px] font-bold uppercase tracking-wide text-[#8a2b2b] bg-[#f8e8e8] px-1.5 py-0.5 shrink-0">
-                            {t("discontinuedUnavailable")}
-                          </span>
-                        ) : null}
+                  <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-2.5">
+                    <div className="flex min-w-0 items-start gap-2 sm:contents">
+                      <label className={`mt-1 shrink-0 sm:mt-0 ${discontinued ? "cursor-not-allowed" : "cursor-pointer"}`}>
+                        <input
+                          type="checkbox"
+                          checked={checked && !discontinued}
+                          disabled={discontinued}
+                          onChange={() => toggleId(id)}
+                          className="h-4 w-4 accent-brand-600"
+                        />
+                      </label>
+                      <MoveControl
+                        line={l}
+                        unpriced={unpriced}
+                        canDrag={Boolean(onDragLineStart)}
+                        onDragLineStart={onDragLineStart}
+                        onMoveLine={onMoveLine}
+                        dropIntent={dropIntent}
+                        t={t}
+                      />
+                      <LineThumb line={l} className="h-14 w-14 shrink-0 sm:h-16 sm:w-20" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <p className="w-full text-sm font-semibold leading-snug text-ink">{l.name}</p>
+                          {l.green ? <GreenProductTag t={t} /> : null}
+                          {showIntent ? <IntentBadge intent={l.intent} t={t} /> : null}
+                          {l.custom ? (
+                            <span className="shrink-0 bg-brand-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-700">
+                              {l.tailorMade ? t("tailorMadeBadge") : t("customItem")}
+                            </span>
+                          ) : null}
+                          {discontinued ? (
+                            <span className="shrink-0 bg-[#f8e8e8] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#8a2b2b]">
+                              {t("discontinuedUnavailable")}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-sm font-semibold sm:hidden">
+                          <LineMoney line={l} t={t} compact />
+                        </p>
+                        <div className="hidden sm:block">{lineDetails()}</div>
                       </div>
-                      {meta ? <p className="mt-0.5 text-[11px] leading-snug text-mute line-clamp-2">{meta}</p> : null}
-                      {l.custom && l.description ? (
-                        <p className="mt-0.5 text-[11px] text-mute whitespace-pre-wrap break-words line-clamp-3">
-                          <span className="font-medium text-ink/80">{t("customProductDesc")}: </span>
-                          {l.description}
-                        </p>
-                      ) : null}
-                      {unpriced ? (
-                        <p className="mt-1 inline-flex text-[10px] font-semibold uppercase tracking-wide text-amber-800 bg-amber-50 px-1.5 py-0.5">
-                          {t("noListedPrice")}
-                        </p>
-                      ) : null}
-                      <AttachmentLinks files={l.attachments} />
                     </div>
-                    <div className="shrink-0 flex flex-col items-end gap-1.5 w-[13rem] max-w-[46%]">
-                      <p className="text-sm font-semibold text-right w-full">
+                    <div className="min-w-0 sm:hidden">{lineDetails()}</div>
+                    <div className="flex min-w-0 items-center justify-between gap-3 sm:w-[13rem] sm:shrink-0 sm:flex-col sm:items-end">
+                      <p className="hidden w-full text-right text-sm font-semibold sm:block">
                         <LineMoney line={l} t={t} compact />
                       </p>
                       <div
-                        className="w-full"
+                        className="w-fit max-w-full"
                         onPointerDown={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
                       >
@@ -1234,11 +1255,11 @@ function LinesList({
                           min={Math.max(1, Number(l.moq) || 1)}
                           unit={l.unit || ""}
                           onChange={(qty) => setLineQty(l.productId, qty)}
-                          size="row"
+                          size="bar"
                           t={t}
                         />
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex shrink-0 items-center gap-2">
                         {l.custom ? (
                           <button
                             type="button"
@@ -1260,7 +1281,7 @@ function LinesList({
                         </button>
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             );

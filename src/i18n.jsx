@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { localeFromPath, withLocale } from "./lib/locale";
 
 const LANG_KEY = "subbie_lang";
+const ADMIN_LANG_KEY = "subbie_admin_lang";
+const adminSurface = import.meta.env?.VITE_SURFACE === "admin";
 
 const messages = {
   en: {
@@ -54,24 +56,61 @@ const messages = {
     promoNext: "Next banner",
     openRfqDraft: "Open Cart",
     uploadSpecMatch: "Upload spec to match",
+    openInTms: "Open in TMS",
     catalogUpdated: "Catalog updated",
     catalogOffline: "This product is no longer available. Ordering is closed.",
     catalogReload: "Reload",
     specMatchTitle: "Match a specification",
-    specMatchHint: "Upload a PDF, Word, Excel, or image. Review the matches, then add them to the cart.",
+    specMatchHint: "Upload a PDF, Word, Excel, or image. For each item, choose how to add it.",
     specMatchClosed: "Not open yet",
     specMatchLimit: "Daily limit reached. Register or log in to continue.",
     specMatchFile: "Choose a specification file",
     specMatchRun: "Match products",
     specMatchConfirm: "Add to cart",
-    specMatchEmpty: "No lines to add.",
+    specMatchEmpty: "Choose how to add at least one item.",
     specMatchProduct: "Catalog product",
     specMatchSuggest: "Suggested match",
-    specMatchTailor: "Tailor Made",
+    specMatchTailor: "Tailor Made Product",
     specMatchRemaining: "{n} uses left today",
+    specMatchYourItem: "Extracted item",
+    specMatchCompareHint: "The left two columns are for comparison. Choose in Add as.",
+    specMatchSample: "Try a sample",
+    specMatchSampleName: "Sample specification",
+    specMatchCloseMatch: "Close match",
+    specMatchCheck: "Please check",
+    specMatchUseProduct: "Use this Marketplace product?",
+    specMatchUseYes: "Yes",
+    specMatchUseNo: "No",
+    specMatchClear: "Clear",
+    specMatchSave: "Save",
+    specMatchInCatalog: "In the Marketplace",
+    specMatchPossible: "Possible match, please confirm",
+    specMatchNone: "Not in the catalog",
+    specMatchUseMm: "Use this MM product",
+    specMatchTailorProduct: "Tailor Made Product",
+    specMatchOther: "Other suggestions",
+    specMatchOtherCount: "Other suggestions ({n})",
+    specMatchSelected: "{n} selected",
+    specMatchAddCart: "Add to cart",
+    specMatchRequestQuote: "Request for quotation",
+    specMatchUnreadable: "Could not read the items in this file",
+    specMatchWorking: "Matching products…",
+    specMatchChangeFile: "Change file",
+    specMatchDrop: "Drop a specification file here, or choose a file. One file at a time.",
+    specMatchOneFile: "Only one specification file is used. The first file was taken.",
+    specMatchQty: "Qty",
+    specMatchMarketplace: "Marketplace product",
+    specMatchAddAs: "Add as",
+    specMatchChoose: "Choose",
+    specMatchCatalog: "Catalog product",
+    specMatchTailorShort: "Tailor made",
+    specMatchFileItem: "File item name",
+    specMatchMoq: "Min. order qty {n}",
     offerEnds: "Offer ends {date}",
     offerRemaining: "{n} more in this offer",
     variantOption: "Option",
+    specMatchClose: "Close",
+    specMatchNoPreview: "This file could not be shown.",
     customPitchCta: "Add a Tailor Made Product",
     browse: "Browse",
     materialCategories: "Material categories",
@@ -120,6 +159,10 @@ const messages = {
     catalogDeskSupport: "Spec search first. Add matching SKUs to your cart.",
     searchPlaceholder: "Search e.g. DN600, S355, plywood, membrane…",
     navSearchPlaceholder: "Search products",
+    suggestWords: "Suggestions",
+    suggestCategories: "Categories",
+    suggestProducts: "Products",
+    suggestEmpty: "No products match.",
     search: "Search",
     category: "Category",
     allCategories: "All categories",
@@ -627,6 +670,8 @@ const messages = {
     langEn: "Eng",
     langZh: "中",
     footerTagline: "Spec-first construction materials marketplace with a clear quote path.",
+    marketplaceQr: "Mattex Marketplace QR code",
+    marketplaceQrDownload: "Download QR code",
     footerMattexProduct: "A Mattex product",
     footerMattexSite: "Mattex official website",
     footerCatalog: "Catalog",
@@ -867,24 +912,61 @@ const messages = {
     promoNext: "下一張",
     openRfqDraft: "開啟購物車",
     uploadSpecMatch: "上傳規格配對",
+    openInTms: "在 TMS 開啟",
     catalogUpdated: "目錄有更新",
     catalogOffline: "這件貨已下架，不能落單",
     catalogReload: "重新載入",
     specMatchTitle: "規格配對",
-    specMatchHint: "上傳 PDF、Word、Excel 或圖片。核對清單後加入購物車。",
+    specMatchHint: "上傳 PDF、Word、Excel 或圖片。每一項選擇點樣加入。",
     specMatchClosed: "暫未開放",
     specMatchLimit: "今日次數已用完。請註冊或登入後繼續。",
     specMatchFile: "選擇規格檔",
     specMatchRun: "開始配對",
     specMatchConfirm: "加入購物車",
-    specMatchEmpty: "沒有可加入的項目。",
+    specMatchEmpty: "請先為最少一項選擇點樣加入。",
     specMatchProduct: "現有貨品",
     specMatchSuggest: "建議配對",
-    specMatchTailor: "Tailor Made",
+    specMatchTailor: "Tailor Made Product",
     specMatchRemaining: "今日剩餘 {n} 次",
+    specMatchYourItem: "抽出的項目",
+    specMatchCompareHint: "左邊兩欄用來對照。請在加入為選擇。",
+    specMatchSample: "用範例試一次",
+    specMatchSampleName: "範例規格",
+    specMatchCloseMatch: "接近",
+    specMatchCheck: "請核對",
+    specMatchUseProduct: "用這件 Marketplace 產品？",
+    specMatchUseYes: "用",
+    specMatchUseNo: "不用",
+    specMatchClear: "清除",
+    specMatchSave: "儲存",
+    specMatchInCatalog: "Marketplace 有這件",
+    specMatchPossible: "可能係這件，請確認",
+    specMatchNone: "目錄沒有這件",
+    specMatchUseMm: "用這件 MM 貨",
+    specMatchTailorProduct: "Tailor Made Product",
+    specMatchOther: "其他建議",
+    specMatchOtherCount: "其他建議 ({n})",
+    specMatchSelected: "已選 {n} 列",
+    specMatchAddCart: "加入購物車",
+    specMatchRequestQuote: "詢價",
+    specMatchUnreadable: "讀唔到這份檔案入面的項目",
+    specMatchWorking: "配對中…",
+    specMatchChangeFile: "更換檔案",
+    specMatchDrop: "拖放一份規格檔到這裡，或選擇檔案。一次一份。",
+    specMatchOneFile: "一次只配對一份規格，已用第一份。",
+    specMatchQty: "數量",
+    specMatchMarketplace: "Marketplace 產品",
+    specMatchAddAs: "加入為",
+    specMatchChoose: "請選擇",
+    specMatchCatalog: "目錄產品",
+    specMatchTailorShort: "度身訂造",
+    specMatchFileItem: "檔內項目名",
+    specMatchMoq: "最低訂購量 {n}",
     offerEnds: "優惠至 {date}",
     offerRemaining: "還有 {n} 件",
     variantOption: "類別",
+    specMatchClose: "關閉",
+    specMatchNoPreview: "這份檔案顯示唔到。",
     customPitchCta: "新增度身訂造產品",
     browse: "瀏覽",
     materialCategories: "物料分類",
@@ -933,6 +1015,10 @@ const messages = {
     catalogDeskSupport: "規格搜尋優先。把符合的 SKU 加入購物車。",
     searchPlaceholder: "例如 DN600、S355、夾板、防水膜…",
     navSearchPlaceholder: "搜尋產品",
+    suggestWords: "建議",
+    suggestCategories: "分類",
+    suggestProducts: "產品",
+    suggestEmpty: "沒有相符產品。",
     search: "搜尋",
     category: "分類",
     allCategories: "全部分類",
@@ -1444,6 +1530,8 @@ const messages = {
     langEn: "Eng",
     langZh: "中",
     footerTagline: "規格優先的建材市集，問價路徑清晰。",
+    marketplaceQr: "Mattex Marketplace QR code",
+    marketplaceQrDownload: "下載 QR code",
     footerMattexProduct: "Mattex 產品",
     footerMattexSite: "Mattex 官網",
     footerCatalog: "目錄",
@@ -1644,7 +1732,7 @@ const LanguageContext = createContext({
 
 function readSavedLang() {
   try {
-    const saved = localStorage.getItem(LANG_KEY);
+    const saved = localStorage.getItem(adminSurface ? ADMIN_LANG_KEY : LANG_KEY);
     return saved === "zh" || saved === "en" ? saved : null;
   } catch {
     return null;
@@ -1656,19 +1744,20 @@ export function LanguageProvider({ children }) {
   const navigate = useNavigate();
   const urlLang = localeFromPath(location.pathname);
   const [lang, setLangState] = useState(() => {
-    if (urlLang) return urlLang;
+    if (!adminSurface && urlLang) return urlLang;
     const saved = readSavedLang();
     if (saved) return saved;
-    return import.meta.env?.VITE_SURFACE === "admin" ? "en" : "zh";
+    return "zh";
   });
 
   useEffect(() => {
+    if (adminSurface) return;
     if (urlLang && urlLang !== lang) setLangState(urlLang);
   }, [urlLang, lang]);
 
   useEffect(() => {
     try {
-      localStorage.setItem(LANG_KEY, lang);
+      localStorage.setItem(adminSurface ? ADMIN_LANG_KEY : LANG_KEY, lang);
     } catch {
       /* ignore */
     }
@@ -1689,13 +1778,12 @@ export function LanguageProvider({ children }) {
     function setLang(next) {
       const locale = next === "zh" ? "zh" : "en";
       setLangState(locale);
-      if (locale !== urlLang) {
-        navigate({
-          pathname: withLocale(locale, location.pathname),
-          search: location.search,
-          hash: location.hash,
-        });
-      }
+      if (adminSurface || locale === urlLang) return;
+      navigate({
+        pathname: withLocale(locale, location.pathname),
+        search: location.search,
+        hash: location.hash,
+      });
     }
     return { lang, setLang, t };
   }, [lang, urlLang, location.pathname, location.search, location.hash, navigate]);

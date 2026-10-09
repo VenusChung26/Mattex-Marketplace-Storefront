@@ -295,11 +295,11 @@ export function QtyStepper({ value, min = 1, unit = "", onChange, size = "card",
   }
 
   return (
-    <div className={stretch ? "w-full" : "min-w-[10.5rem] shrink-0"}>
+    <div className={stretch ? "w-full min-w-0" : "w-fit max-w-full"}>
       <div
-        className={`flex w-full items-stretch overflow-hidden rounded-md border bg-white ${
-          underMin ? "border-amber-400" : "border-line"
-        }`}
+        className={`flex items-stretch overflow-hidden rounded-md border bg-white ${
+          stretch ? "w-full" : "w-fit max-w-full"
+        } ${underMin ? "border-amber-400" : "border-line"}`}
       >
         <span
           className={`flex shrink-0 items-center border-r px-2.5 font-medium text-mute ${
@@ -333,7 +333,9 @@ export function QtyStepper({ value, min = 1, unit = "", onChange, size = "card",
           onKeyDown={(e) => {
             if (e.key === "Enter") e.currentTarget.blur();
           }}
-          className={`${valueBox} min-w-0 flex-1 bg-transparent px-1 text-center font-semibold tabular-nums text-ink outline-none`}
+          className={`${valueBox} bg-transparent px-1 text-center font-semibold tabular-nums text-ink outline-none ${
+            stretch ? "min-w-0 flex-1" : "w-12 shrink-0"
+          }`}
         />
         <button
           type="button"
@@ -566,14 +568,10 @@ export function ProductActions({ product, onAdd, size = "card", qty: qtyProp, on
 
   if (size === "bar") {
     return (
-      <div className="space-y-1.5">
-        <div className="flex items-end gap-2">
-          {stepper}
-          <div className="min-w-0 flex-1">
-            {actionColumns}
-            {tailorBtn ? <div className="mt-1.5">{tailorBtn}</div> : null}
-          </div>
-        </div>
+      <div className="space-y-2">
+        {stepper}
+        {actionColumns}
+        {tailorBtn}
         {tailorNote ? <p className="text-[11px] font-medium text-brand-700">{tailorNote}</p> : null}
         {modal}
       </div>
@@ -641,51 +639,56 @@ export function ProductListRow({ product, onAdd, grouped = false }) {
   const label = selected.name;
 
   return (
-    <article className="relative flex flex-col sm:flex-row sm:items-center gap-3 border border-line bg-white p-3">
-      <Link
-        to={withLocale(lang, `/details/${selected.id}`)}
-        className="h-20 w-full sm:h-16 sm:w-24 shrink-0 overflow-hidden bg-brand-50"
-      >
-        <ProductImage
-          src={selected.image}
-          fallback={selected.imageFallback}
-          alt={label}
-          compact
-          className="h-full w-full"
-          imgClassName="h-full w-full object-cover"
-        />
-      </Link>
-      <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-600">
-          <Link
-            to={withLocale(lang, catalogPathForCategory(selected.category))}
-            className="hover:text-brand-800 hover:underline"
-          >
-            {selected.category}
-          </Link>
-        </p>
-        <h3 className="mt-0.5 font-semibold text-ink leading-snug text-sm sm:text-base break-words">
-          <Link to={withLocale(lang, `/details/${selected.id}`)} className="hover:text-brand-600">
-            {label}
-          </Link>
-        </h3>
-        <p className="mt-0.5 text-xs text-mute truncate">
-          {t("productNo")} {productSkuId(selected) || selected.id}
-          {selected.supplier ? ` · ${t("by")} ${supplierDisplayName(selected.supplier)}` : ""}
-        </p>
-        <VariantChips
-          members={members}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          moreHref={withLocale(lang, `/details/${selected.id}`)}
-          moreLabel={t("moreOptions", { n: Math.max(members.length - 2, 0) })}
-        />
-        <ProductMetaChips product={selected} showTags className="mt-1.5" />
+    <article className="relative flex min-w-0 max-w-full flex-col gap-3 border border-line bg-white p-3 sm:flex-row sm:items-center">
+      <div className="flex min-w-0 gap-3 sm:contents">
+        <Link
+          to={withLocale(lang, `/details/${selected.id}`)}
+          className="h-16 w-16 shrink-0 overflow-hidden bg-brand-50 sm:w-24"
+        >
+          <ProductImage
+            src={selected.image}
+            fallback={selected.imageFallback}
+            alt={label}
+            compact
+            className="h-full w-full"
+            imgClassName="h-full w-full object-cover"
+          />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-600">
+            <Link
+              to={withLocale(lang, catalogPathForCategory(selected.category))}
+              className="hover:text-brand-800 hover:underline"
+            >
+              {selected.category}
+            </Link>
+          </p>
+          <h3 className="mt-0.5 break-words text-sm font-semibold leading-snug text-ink sm:text-base">
+            <Link to={withLocale(lang, `/details/${selected.id}`)} className="hover:text-brand-600">
+              {label}
+            </Link>
+          </h3>
+          <p className="mt-0.5 truncate text-xs text-mute">
+            {t("productNo")} {productSkuId(selected) || selected.id}
+            {selected.supplier ? ` · ${t("by")} ${supplierDisplayName(selected.supplier)}` : ""}
+          </p>
+          <div className="mt-1 sm:hidden">
+            <ProductPrice product={selected} className="!mt-0" />
+          </div>
+          <VariantChips
+            members={members}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            moreHref={withLocale(lang, `/details/${selected.id}`)}
+            moreLabel={t("moreOptions", { n: Math.max(members.length - 2, 0) })}
+          />
+          <ProductMetaChips product={selected} showTags className="mt-1.5" />
+        </div>
       </div>
-      <div className="sm:w-32 shrink-0">
+      <div className="hidden shrink-0 sm:block sm:w-32">
         <ProductPrice product={selected} className="!mt-0" />
       </div>
-      <div className="sm:w-72 shrink-0">
+      <div className="min-w-0 sm:w-72 sm:shrink-0">
         <ProductActions product={selected} onAdd={onAdd} size="row" />
       </div>
     </article>
@@ -699,7 +702,7 @@ export default function ProductCard({ product, onAdd, rank = null, compact = fal
   const label = selected.name;
 
   return (
-    <article className="product-tile relative flex flex-col overflow-visible h-full">
+    <article className="product-tile relative flex h-full min-w-0 max-w-full flex-col overflow-visible">
       <ProductBadges product={selected} rank={selected.id === product.id ? rank : null} />
       <Link
         to={withLocale(lang, `/details/${selected.id}`)}

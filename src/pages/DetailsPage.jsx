@@ -170,7 +170,7 @@ export default function DetailsPage() {
   const path = withLocale(lang, `/details/${product.id}`);
 
   return (
-    <div className="bg-paper min-h-screen pb-28 lg:pb-0">
+    <div className="bg-paper min-h-screen pb-44 lg:pb-0">
       <Seo
         lang={lang}
         path={path}
