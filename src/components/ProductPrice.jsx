@@ -1,4 +1,6 @@
 import { formatPrice, formatQuoteDate, formatQuoteDateShort, getEffectivePrice } from "../lib/store";
+import { findProductOffer } from "../lib/offer";
+import { usePromo } from "../lib/promo";
 import { useLanguage } from "../i18n";
 
 function daysUntil(iso) {
@@ -26,9 +28,12 @@ const URGENCY_SUB = {
   urgent: "font-medium text-red-800/90",
 };
 
-export default function ProductPrice({ product, size = "card", className = "" }) {
+export default function ProductPrice({ product, size = "card", className = "", suppressOffer = false }) {
   const { t, lang } = useLanguage();
+  const { promo } = usePromo();
+  const offer = suppressOffer ? null : findProductOffer(product?.id, promo);
   const { displayPrice, status, quote } = getEffectivePrice(product);
+  const shownPrice = offer ? offer.price : displayPrice;
   const large = size === "detail";
   const date = quote?.validUntil ? formatQuoteDate(quote.validUntil, lang) : "";
   const shortDate = quote?.validUntil ? formatQuoteDateShort(quote.validUntil, lang) : "";
@@ -48,7 +53,7 @@ export default function ProductPrice({ product, size = "card", className = "" })
               : "text-2xl font-bold text-brand-700 tracking-tight"
           }
         >
-          {formatPrice(displayPrice)}
+          {formatPrice(shownPrice)}
         </p>
         {status === "quoted" ? (
           <span
@@ -64,7 +69,11 @@ export default function ProductPrice({ product, size = "card", className = "" })
           <span className="ml-1.5">{t("quotedFromQuotation")}</span>
         </p>
       ) : null}
-      {status === "quoted" && (large ? date : shortDate) ? (
+      {offer ? (
+        <p className={`${chip} inline-block w-fit max-w-full leading-snug font-semibold border ${URGENCY_CHIP.soon}`}>
+          {t("offerEnds", { date: formatQuoteDate(offer.endsOn, lang) })}
+        </p>
+      ) : status === "quoted" && (large ? date : shortDate) ? (
         <p
           className={`${chip} inline-block w-fit max-w-full leading-snug font-semibold border ${URGENCY_CHIP[urgency]}`}
         >

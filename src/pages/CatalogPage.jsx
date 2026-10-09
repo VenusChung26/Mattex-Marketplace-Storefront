@@ -8,8 +8,11 @@ import SearchFieldsSelect from "../components/SearchFieldsSelect";
 import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
+import CartToast from "../components/CartToast";
 import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
+import { catalogGroupIndex, collapseCatalog, useCatalogGroups } from "../lib/catalogGroups";
+import { jumpToId } from "../lib/jumpTo";
 import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { categoryOgPath } from "../lib/ogImage";
 import { seoCopy } from "../lib/seoCopy";
@@ -17,10 +20,12 @@ import {
   getCategoryByName,
   getCategoryBySlug,
   getEffectivePrice,
+  getProductsByCategory,
   isHitProduct,
   searchProducts,
   addFromStorefront,
 } from "../lib/store";
+import { ProductSearchBox } from "../components/SearchSuggestions";
 
 const CATALOG_BATCH = 24;
 const CATALOG_VIEW_KEY = "subbie_catalog_view";
@@ -36,6 +41,7 @@ function readCatalogView() {
 export default function CatalogPage() {
   const { t, lang } = useLanguage();
   const { catalogEpoch, catalogLoading } = useStore();
+  const groupEpoch = useCatalogGroups();
   const { slug } = useParams();
   const [params] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(() => params.get("q") || "");
@@ -43,19 +49,13 @@ export default function CatalogPage() {
   const [priceFilter, setPriceFilter] = useState("all");
   const [greenOnly, setGreenOnly] = useState(false);
   const [catalogView, setCatalogView] = useState(readCatalogView);
-  const [toast, setToast] = useState("");
+  const [toast, setToast] = useState(null);
   const [catalogShown, setCatalogShown] = useState(CATALOG_BATCH);
   const origin = siteOrigin();
   const copy = seoCopy(lang);
   const category = slug ? getCategoryBySlug(slug) : null;
   const catQuery = params.get("cat") || "";
   const catFromQuery = !slug && catQuery ? getCategoryByName(catQuery) : null;
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(""), 3200);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   useEffect(() => {
     try {
@@ -65,14 +65,19 @@ export default function CatalogPage() {
     }
   }, [catalogView]);
 
+  const suggestionsPool = useMemo(
+    () => (category ? getProductsByCategory(category.name) : []),
+    [category, catalogEpoch]
+  );
+
   const products = useMemo(() => {
     if (!category) return [];
     let list = searchProducts(searchQuery, category.name, { fields: searchFields });
     if (greenOnly) list = list.filter((p) => p.green);
     if (priceFilter === "unpriced") list = list.filter((p) => getEffectivePrice(p).displayPrice == null);
     if (priceFilter === "hot") list = list.filter((p) => isHitProduct(p));
-    return list;
-  }, [searchQuery, category, searchFields, priceFilter, greenOnly, catalogEpoch]);
+    return collapseCatalog(list, catalogGroupIndex());
+  }, [searchQuery, category, searchFields, priceFilter, greenOnly, catalogEpoch, groupEpoch]);
 
   useEffect(() => {
     setCatalogShown(CATALOG_BATCH);
@@ -95,11 +100,11 @@ export default function CatalogPage() {
 
   function handleAdd(productId, intent = "quote", qty) {
     const result = addFromStorefront(productId, intent, qty, lang);
-    if (!result?.ok || intent === "quote-now") return;
-    const product = products.find((p) => p.id === productId);
-    setToast(
-      t(intent === "buy" || intent === "buy-now" ? "addedBuyToRfq" : "addedQuoteToRfq", { name: product?.name || "item" })
-    );
+    if (!result?.ok || intent === "quote-now" || intent === "buy-now") return;
+    setToast({
+      message: t(intent === "buy" ? "addedBuyToRfq" : "addedQuoteToRfq"),
+      href: withLocale(lang, "/rfq"),
+    });
   }
 
   function clearFilters() {
@@ -129,11 +134,13 @@ export default function CatalogPage() {
         onSearchSubmit={(event, value) => {
           event?.preventDefault();
           setSearchQuery(value ?? "");
+          jumpToId("catalog-results");
         }}
+        suggestProducts={suggestionsPool}
       />
-      <main className="max-w-7xl mx-auto px-4 py-10 sm:py-12">
-        <div className="flex flex-col lg:flex-row gap-8">
-          <aside className="lg:w-56 xl:w-60 shrink-0">
+      <main className="mx-auto min-w-0 max-w-7xl px-4 py-10 sm:py-12">
+        <div className="flex min-w-0 flex-col gap-8 lg:flex-row">
+          <aside className="w-full min-w-0 max-w-full lg:w-56 lg:shrink-0 xl:w-60">
             <CategorySideNav activeSlug={category.id} offsetTop={88} />
           </aside>
           <div className="min-w-0 flex-1">
@@ -150,21 +157,33 @@ export default function CatalogPage() {
             </div>
 
             <div className="bg-white border border-line rounded-xl p-3 sm:p-3.5 mb-6">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex flex-1 min-w-0 border border-line bg-white">
-                  <input
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <div className="relative flex min-w-[min(100%,18rem)] flex-1 border border-line bg-white">
+                  <ProductSearchBox
                     id="catalog-search"
-                    type="search"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onValue={setSearchQuery}
+                    onTerm={(term) => {
+                      setSearchQuery(term);
+                      jumpToId("catalog-results");
+                    }}
+                    onProduct={(product) => {
+                      setSearchQuery(product.name);
+                      jumpToId("catalog-results");
+                    }}
+                    products={suggestionsPool}
                     placeholder={t("searchPlaceholder")}
-                    className="field-input flex-1 !rounded-none !border-0 !shadow-none"
-                    autoComplete="off"
-                    aria-label={t("catalog")}
+                    ariaLabel={t("catalog")}
+                    className="min-w-0 flex-1"
+                    inputClassName="field-input w-full flex-1 !rounded-none !border-0 !shadow-none"
                   />
-                  <span className="w-px self-stretch my-2 bg-line" aria-hidden />
-                  <SearchFieldsSelect selected={searchFields} onChange={setSearchFields} compact />
                 </div>
+                <SearchFieldsSelect
+                  selected={searchFields}
+                  onChange={setSearchFields}
+                  compact
+                  className="w-max max-w-full shrink-0"
+                />
                 <CatalogViewToggle
                   value={catalogView}
                   onChange={setCatalogViewMode}
@@ -240,7 +259,7 @@ export default function CatalogPage() {
             </div>
             {catalogLoading && !products.length ? (
               <div
-                className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"}
+                className={catalogView === "list" ? "min-w-0 space-y-2" : "grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"}
                 aria-busy="true"
                 aria-live="polite"
               >
@@ -248,12 +267,24 @@ export default function CatalogPage() {
               </div>
             ) : products.length ? (
               <>
-                <div className={catalogView === "list" ? "space-y-2" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"}>
-                  {products.slice(0, catalogShown).map((p) =>
+                <div className={catalogView === "list" ? "min-w-0 space-y-2" : "grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"}>
+                  {products.slice(0, catalogShown).map((entry) =>
                     catalogView === "list" ? (
-                      <ProductListRow key={p.id} product={p} onAdd={handleAdd} />
+                      <ProductListRow
+                        key={entry.product.id}
+                        product={entry.product}
+                        grouped={entry.grouped}
+                        title={entry.groupName}
+                        onAdd={handleAdd}
+                      />
                     ) : (
-                      <ProductCard key={p.id} product={p} onAdd={handleAdd} />
+                      <ProductCard
+                        key={entry.product.id}
+                        product={entry.product}
+                        grouped={entry.grouped}
+                        title={entry.groupName}
+                        onAdd={handleAdd}
+                      />
                     )
                   )}
                 </div>
@@ -285,14 +316,7 @@ export default function CatalogPage() {
         </div>
       </main>
       <SiteFooter />
-      {toast ? (
-        <div
-          className="fixed bottom-44 right-6 z-50 max-w-sm border border-brand-700 bg-charcoal text-white px-4 py-3 text-sm toast shadow-lg"
-          role="status"
-        >
-          {toast}
-        </div>
-      ) : null}
+      <CartToast toast={toast} onDone={() => setToast(null)} />
     </div>
   );
 }

@@ -7,12 +7,15 @@ import Seo, { breadcrumbJsonLd, orgJsonLd, productJsonLd } from "../components/S
 import ProductPrice from "../components/ProductPrice";
 import ProductRating from "../components/ProductRating";
 import { ProductActions, ProductBadges, ProductImage } from "../components/ProductCard";
+import CartToast from "../components/CartToast";
 import { productImageList } from "../lib/compressImage";
 import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
 import { bootProduct } from "../lib/bootPage";
+import { groupOf, useCatalogGroups } from "../lib/catalogGroups";
 import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { seoCopy } from "../lib/seoCopy";
+import { usePromo } from "../lib/promo";
 import {
   addFromStorefront,
   blockProductOrders,
@@ -63,11 +66,18 @@ export default function DetailsPage() {
   const { id } = useParams();
   const [params, setSearchParams] = useSearchParams();
   useStore();
+  useCatalogGroups();
   const product = getProduct(id) || bootProduct(id);
+  const group = groupOf(product?.id);
+  const variantOptions = (group?.members || [])
+    .map((member) => ({ ...member, product: getProduct(member.productId) }))
+    .filter((member) => member.product && isBuyerVisible(member.product));
   const offline = Boolean(product && isProductOrderBlocked(product.id));
   const orderLock = useRef(false);
   const { t, lang } = useLanguage();
+  usePromo();
   const [qty, setQty] = useState(1);
+  const [toast, setToast] = useState(null);
   const autoOpenTailor = params.get("tailor") === "1";
   const gallery = productImageList(product);
   const [activeImage, setActiveImage] = useState(gallery[0] || product?.image || "");
@@ -111,7 +121,7 @@ export default function DetailsPage() {
       : priceStatus === "expired-requote"
         ? t("quotedPriceExpiredRequote")
         : priced
-          ? `${t("buyNowHint")} ${t("requestQuoteHint")}`
+          ? t("requestQuoteHint")
           : t("requestQuoteOnlyHint");
   const minQty = Math.max(1, Number(product.moq) || 1);
   const leadTime = displayLeadTime(product) || "—";
@@ -143,7 +153,13 @@ export default function DetailsPage() {
         return;
       }
       const sendQty = Math.max(minQty, Math.floor(Number(nextQty)) || minQty);
-      addFromStorefront(product.id, intent, sendQty, lang);
+      const result = addFromStorefront(product.id, intent, sendQty, lang);
+      if (result?.ok && intent !== "quote-now" && intent !== "buy-now") {
+        setToast({
+          message: t(intent === "buy" ? "addedBuyToRfq" : "addedQuoteToRfq"),
+          href: withLocale(lang, "/rfq"),
+        });
+      }
     } finally {
       orderLock.current = false;
     }
@@ -154,7 +170,7 @@ export default function DetailsPage() {
   const path = withLocale(lang, `/details/${product.id}`);
 
   return (
-    <div className="bg-paper min-h-screen pb-28 lg:pb-0">
+    <div className="bg-paper min-h-screen pb-44 lg:pb-0">
       <Seo
         lang={lang}
         path={path}
@@ -228,6 +244,30 @@ export default function DetailsPage() {
             <h1 className="mt-2 font-display text-3xl sm:text-4xl font-semibold text-brand-800 leading-tight">
               {product.name}
             </h1>
+            {variantOptions.length > 1 ? (
+              <div className="mt-4">
+                <p className="text-sm font-semibold text-ink">{t("variantOption")}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {variantOptions.map((member) => {
+                    const selected = member.productId === product.id;
+                    return (
+                      <Link
+                        key={member.productId}
+                        to={withLocale(lang, `/details/${member.productId}`)}
+                        aria-current={selected ? "true" : undefined}
+                        className={`rounded-full border px-3 py-1.5 text-sm ${
+                          selected
+                            ? "border-brand-700 bg-brand-50 font-semibold text-brand-800"
+                            : "border-line bg-white text-ink hover:border-brand-400"
+                        }`}
+                      >
+                        {member.option}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
             <p className="mt-3 text-sm text-mute">
               {t("supplierLabel")}:{" "}
               {product.supplier ? (
@@ -363,6 +403,7 @@ export default function DetailsPage() {
           </div>
         )}
       </div>
+      <CartToast toast={toast} onDone={() => setToast(null)} />
     </div>
   );
 }

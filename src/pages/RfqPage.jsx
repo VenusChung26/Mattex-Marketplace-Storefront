@@ -1,7 +1,7 @@
 /**
  * RFQ draft — select products, then confirm logistics on the next page.
  */
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useStore } from "../hooks/useStore";
 import {
   addCustomLine,
@@ -46,6 +46,7 @@ import Seo from "../components/Seo";
 import { VariantA, ConfirmRfqView, CUSTOM_PLACEMENT } from "./rfq-prototype/RfqDraftVariants";
 import { SHOW_RFQ } from "../lib/flags";
 import { useRevealFormIssue } from "../lib/formFocus";
+import { clearSpecConfirm, clearSpecMatchIfSubmitted, clearSpecQuoteDraft, readSpecConfirm, readSpecQuoteDraft, saveSpecQuoteDraft } from "../lib/specMatchSession";
 
 export default function RfqPage() {
   const { user, draft, lastCartWhatsappResult } = useStore();
@@ -57,7 +58,33 @@ export default function RfqPage() {
   const [params] = useSearchParams();
   const variant = String(params.get("variant") || "A").toUpperCase();
   const customPlacement = CUSTOM_PLACEMENT[variant] || "inline";
-  const totals = draftTotals(draft || { lines: [], note: "", responseDate: "", address: "" });
+  const specQuoteRef = useRef(readSpecQuoteDraft());
+  const [specQuote, setSpecQuote] = useState(() => specQuoteRef.current);
+  const sourceDraft = specQuote || draft;
+  const totals = draftTotals(sourceDraft || { lines: [], note: "", responseDate: "", address: "" });
+
+  function writeSpecQuote(patch) {
+    const next = { ...(specQuoteRef.current || {}), ...patch };
+    specQuoteRef.current = next;
+    saveSpecQuoteDraft(next);
+    setSpecQuote(next);
+  }
+
+  function saveLogistics(fields) {
+    if (specQuoteRef.current) {
+      writeSpecQuote(fields);
+      return;
+    }
+    setDraftNote(fields.note);
+    setDraftResponseDate(fields.responseDate);
+    setDraftDeliveryDate(fields.deliveryDate);
+    setDraftDeliveryMode(fields.deliveryMode);
+    setDraftDeliveryLots(fields.deliveryLots);
+    setDraftProject(fields.project);
+    setDraftAddress(fields.address);
+    setDraftCanonicalCategory(fields.canonicalCategory);
+    setDraftAcceptSubstitutes(fields.acceptSubstitutes);
+  }
   const profileProjects = Array.isArray(user?.projects) && user.projects.length ? user.projects : String(user?.project || "").trim() ? [user.project] : [];
   const profileAddress = String(user?.companyAddress || "").trim();
   const [note, setNote] = useState(totals.note || "");
@@ -75,12 +102,21 @@ export default function RfqPage() {
   const [formErrorField, setFormErrorField] = useState("");
   const [successKind, setSuccessKind] = useState("");
   const [wizardStep, setWizardStep] = useState(1);
+  const specConfirm = readSpecConfirm();
+  const specConfirmIds = useRef(specConfirm ? new Set(specConfirm.ids) : null);
+  useEffect(() => {
+    if (specConfirmIds.current || !specQuoteRef.current) return;
+    clearSpecQuoteDraft();
+    specQuoteRef.current = null;
+    setSpecQuote(null);
+  }, []);
+  const navigate = useNavigate();
   const [selectedIds, setSelectedIds] = useState(() =>
-    totals.lines.map((l) => String(l.productId))
+    specConfirm?.ids?.length ? specConfirm.ids.map(String) : totals.lines.map((l) => String(l.productId))
   );
   const [editingId, setEditingId] = useState(null);
   const [showAddCustom, setShowAddCustom] = useState(false);
-  const [confirmKind, setConfirmKind] = useState(null);
+  const [confirmKind, setConfirmKind] = useState(specConfirm ? "quote" : null);
   const [confirmChannel, setConfirmChannel] = useState("rfq");
   const submitLock = useRef(false);
   const { revealIssue } = useRevealFormIssue();
@@ -122,6 +158,10 @@ export default function RfqPage() {
   ]);
 
   useEffect(() => {
+    if (specQuoteRef.current) {
+      if (!String(specQuoteRef.current.address || "").trim() && profileAddress) writeSpecQuote({ address: profileAddress });
+      return;
+    }
     if (String(totals.address || "").trim() || !profileAddress) return;
     setDraftAddress(profileAddress);
   }, [totals.address, profileAddress]);
@@ -131,6 +171,11 @@ export default function RfqPage() {
   useEffect(() => {
     const ids = lineIdsKey ? lineIdsKey.split(",") : [];
     setSelectedIds((prev) => {
+      if (specConfirmIds.current) {
+        const next = ids.filter((id) => specConfirmIds.current.has(id));
+        if (next.length === prev.length && next.every((id, i) => id === prev[i])) return prev;
+        return next;
+      }
       const keep = prev.filter((id) => ids.includes(id));
       const added = ids.filter((id) => !prev.includes(id));
       const next = [...keep, ...added];
@@ -150,13 +195,14 @@ export default function RfqPage() {
     const inferred = inferCanonicalCategory(quoteLines);
     if (inferred) {
       setCanonicalCategory(inferred);
-      setDraftCanonicalCategory(inferred);
+      if (specQuoteRef.current) writeSpecQuote({ canonicalCategory: inferred });
+      else setDraftCanonicalCategory(inferred);
     }
   }, [canonicalCategory, selectedKey, lineIdsKey, totals.lines]);
 
   const selectedTotals = useMemo(
-    () => draftTotals(draft || { lines: [] }, selectedIds),
-    [draft, selectedIds]
+    () => draftTotals(sourceDraft || { lines: [] }, selectedIds),
+    [sourceDraft, selectedIds]
   );
 
   useEffect(() => {
@@ -170,6 +216,9 @@ export default function RfqPage() {
     setConfirmChannel("rfq");
     setSuccess(result.rfq);
     setSuccessKind(result.kind);
+    clearSpecMatchIfSubmitted([...(specConfirmIds.current || [])]);
+    clearSpecConfirm();
+    specConfirmIds.current = null;
   }, [lastCartWhatsappResult]);
 
   const allSelected =
@@ -260,7 +309,7 @@ export default function RfqPage() {
     const member = Boolean(user?.email);
     return (
       <Shell>
-        <div className="max-w-7xl mx-auto px-4 py-10 space-y-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-10 space-y-4">
           <div className="bg-white border border-line rounded-xl p-8 text-center">
             <p className="text-lg font-semibold text-brand-800">{t("emptyDraft")}</p>
             <p className="mt-2 text-sm text-mute">{t("emptyDraftHint")}</p>
@@ -364,15 +413,17 @@ export default function RfqPage() {
     setFormErrorKind("");
     setFormErrorField("");
     if (kind === "buy" || kind === "quote") {
-      setDraftNote(note);
-      setDraftResponseDate(responseDate);
-      setDraftDeliveryDate(deliveryDate);
-      setDraftDeliveryMode(deliveryMode);
-      setDraftDeliveryLots(deliveryLots);
-      setDraftProject(project);
-      setDraftAddress(address);
-      setDraftCanonicalCategory(canonicalCategory);
-      setDraftAcceptSubstitutes(acceptSubstitutes);
+      saveLogistics({
+        note,
+        responseDate,
+        deliveryDate,
+        deliveryMode,
+        deliveryLots,
+        project,
+        address,
+        canonicalCategory,
+        acceptSubstitutes,
+      });
       setConfirmChannel(viaWhatsapp ? "whatsapp" : "rfq");
       setConfirmKind(kind);
       window.scrollTo(0, 0);
@@ -417,15 +468,17 @@ export default function RfqPage() {
       revealIssue();
       return;
     }
-    setDraftNote(note);
-    setDraftResponseDate(responseDate);
-    setDraftDeliveryDate(deliveryDate);
-    setDraftDeliveryMode(deliveryMode);
-    setDraftDeliveryLots(deliveryLots);
-    setDraftProject(project);
-    setDraftAddress(address);
-    setDraftCanonicalCategory(canonicalCategory);
-    setDraftAcceptSubstitutes(acceptSubstitutes);
+    saveLogistics({
+      note,
+      responseDate,
+      deliveryDate,
+      deliveryMode,
+      deliveryLots,
+      project,
+      address,
+      canonicalCategory,
+      acceptSubstitutes,
+    });
     if (viaWhatsapp) {
       if (!isLoggedIn() && !isAuthInviteHidden()) {
         setPendingCartWhatsappSubmit({ kind, ids });
@@ -449,9 +502,13 @@ export default function RfqPage() {
       setConfirmChannel("rfq");
       setSuccess(result.rfq);
       setSuccessKind(kind);
+      clearSpecMatchIfSubmitted(ids);
+      clearSpecConfirm();
+      specConfirmIds.current = null;
       return;
     }
-    const result = submitRfq(ids, { kind, channel: "rfq" });
+    const quotingSpec = Boolean(specQuoteRef.current);
+    const result = submitRfq(ids, quotingSpec ? { kind, channel: "rfq", draft: specQuoteRef.current } : { kind, channel: "rfq" });
     if (!result.ok) {
       setFormErrorKind(kind);
       setFormErrorField(result.error || "");
@@ -465,7 +522,16 @@ export default function RfqPage() {
       revealIssue();
       return;
     }
-    removeLines(ids);
+    if (quotingSpec) {
+      clearSpecQuoteDraft();
+      specQuoteRef.current = null;
+      setSpecQuote(null);
+    } else {
+      removeLines(ids);
+    }
+    clearSpecMatchIfSubmitted(ids);
+    clearSpecConfirm();
+    specConfirmIds.current = null;
     setFormError("");
     setFormErrorKind("");
     setFormErrorField("");
@@ -480,6 +546,41 @@ export default function RfqPage() {
 
   function onSubmit() {
     onSubmitKind("quote");
+  }
+
+  function onConfirmBack() {
+    if (specConfirmIds.current) {
+      clearSpecConfirm();
+      clearSpecQuoteDraft();
+      specQuoteRef.current = null;
+      setSpecQuote(null);
+      specConfirmIds.current = null;
+      navigate(withLocale(lang, "/spec-match"));
+      return;
+    }
+    setConfirmKind(null);
+  }
+
+  function setWorkingLineQty(productId, qty) {
+    if (!specQuoteRef.current) {
+      setLineQty(productId, qty);
+      return;
+    }
+    writeSpecQuote({
+      lines: specQuoteRef.current.lines.map((line) =>
+        String(line.productId) === String(productId) ? { ...line, qty: Math.max(1, Math.floor(Number(qty)) || 1) } : line
+      ),
+    });
+  }
+
+  function removeWorkingLine(productId) {
+    if (!specQuoteRef.current) {
+      removeLine(productId);
+      return;
+    }
+    writeSpecQuote({
+      lines: specQuoteRef.current.lines.filter((line) => String(line.productId) !== String(productId)),
+    });
   }
 
   const variantProps = {
@@ -507,10 +608,10 @@ export default function RfqPage() {
     confirmKind,
     confirmChannel,
     setConfirmKind,
-    setLineQty,
+    setLineQty: setWorkingLineQty,
     setLineIntent,
     setLineRequestedPrice,
-    removeLine,
+    removeLine: removeWorkingLine,
     removeLines,
     setNote,
     setResponseDate,
@@ -552,6 +653,7 @@ export default function RfqPage() {
     onAddCustom: handleAddCustom,
     onUpdateCustom: handleUpdateCustom,
     customPlacement,
+    onBack: onConfirmBack,
   };
 
   return (
@@ -572,9 +674,9 @@ function Shell({ children }) {
   return (
     <div className="bg-paper min-h-screen">
       <Seo lang={lang} path={withLocale(lang, "/rfq")} title={`${t("rfqDraftTitle")} | Mattex Marketplace`} description={t("reviewQuoteHint")} noindex />
-      <SiteHeader />
+      <SiteHeader fluid />
       {specFile?.url ? (
-        <p className="max-w-7xl mx-auto px-4 pt-4 text-sm text-ink">
+        <p className="w-full px-4 sm:px-6 lg:px-8 pt-4 text-sm text-ink">
           <a className="font-semibold text-brand-700 hover:underline" href={specFile.url} target="_blank" rel="noreferrer">
             {specFile.name}
           </a>

@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import ProductCard, { ProductCardSkeleton } from "../components/ProductCard";
+import { ProductSearchBox } from "../components/SearchSuggestions";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
+import CartToast from "../components/CartToast";
 import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
 import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
+import { catalogGroupIndex, collapseCatalog, useCatalogGroups } from "../lib/catalogGroups";
+import { jumpToId } from "../lib/jumpTo";
 import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { seoCopy } from "../lib/seoCopy";
 import { addFromStorefront, getGreenProducts, searchProducts } from "../lib/store";
@@ -13,21 +17,17 @@ import { addFromStorefront, getGreenProducts, searchProducts } from "../lib/stor
 export default function GreenPage() {
   const { t, lang } = useLanguage();
   const { catalogEpoch, catalogLoading } = useStore();
+  const groupEpoch = useCatalogGroups();
   const [searchQuery, setSearchQuery] = useState("");
-  const [toast, setToast] = useState("");
+  const [toast, setToast] = useState(null);
   const [catalogShown, setCatalogShown] = useState(24);
 
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(""), 3200);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
+  const suggestPool = useMemo(() => getGreenProducts(), [catalogEpoch]);
   const products = useMemo(() => {
     const q = searchQuery.trim();
     const list = q ? searchProducts(q).filter((p) => p.green) : getGreenProducts();
-    return list;
-  }, [searchQuery, catalogEpoch]);
+    return collapseCatalog(list, catalogGroupIndex());
+  }, [searchQuery, catalogEpoch, groupEpoch]);
 
   useEffect(() => {
     setCatalogShown(24);
@@ -35,11 +35,11 @@ export default function GreenPage() {
 
   function handleAdd(productId, intent = "quote", qty) {
     const result = addFromStorefront(productId, intent, qty, lang);
-    if (!result?.ok || intent === "quote-now") return;
-    const product = products.find((p) => p.id === productId);
-    setToast(
-      t(intent === "buy" || intent === "buy-now" ? "addedBuyToRfq" : "addedQuoteToRfq", { name: product?.name || "item" })
-    );
+    if (!result?.ok || intent === "quote-now" || intent === "buy-now") return;
+    setToast({
+      message: t(intent === "buy" ? "addedBuyToRfq" : "addedQuoteToRfq"),
+      href: withLocale(lang, "/rfq"),
+    });
   }
 
   return (
@@ -57,7 +57,16 @@ export default function GreenPage() {
           ]),
         ]}
       />
-      <SiteHeader />
+      <SiteHeader
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        onSearchSubmit={(event, value) => {
+          event?.preventDefault();
+          setSearchQuery(value ?? "");
+          jumpToId("catalog-results");
+        }}
+        suggestProducts={suggestPool}
+      />
 
       <section className="relative overflow-hidden bg-brand-800 text-white">
         <div
@@ -88,19 +97,28 @@ export default function GreenPage() {
                   : t("productsLabel", { n: products.length })}
             </p>
           </div>
-          <label className="relative max-w-md w-full sm:w-80 block">
+          <label className="relative block w-full max-w-md sm:w-80">
             <span className="sr-only">{t("search")}</span>
-            <input
-              type="search"
+            <ProductSearchBox
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onValue={setSearchQuery}
+              onTerm={(term) => {
+                setSearchQuery(term);
+                jumpToId("catalog-results");
+              }}
+              onProduct={(product) => {
+                setSearchQuery(product.name);
+                jumpToId("catalog-results");
+              }}
+              products={suggestPool}
               placeholder={t("navSearchPlaceholder")}
-              className="field-input"
-              autoComplete="off"
+              ariaLabel={t("search")}
+              inputClassName="field-input w-full"
             />
           </label>
         </div>
 
+        <div id="catalog-results">
         {catalogLoading && !products.length ? (
           <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4" aria-busy="true">
             <ProductCardSkeleton count={6} />
@@ -108,8 +126,14 @@ export default function GreenPage() {
         ) : products.length ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
-              {products.slice(0, catalogShown).map((p) => (
-                <ProductCard key={p.id} product={p} onAdd={handleAdd} />
+              {products.slice(0, catalogShown).map((entry) => (
+                <ProductCard
+                  key={entry.product.id}
+                  product={entry.product}
+                  grouped={entry.grouped}
+                  title={entry.groupName}
+                  onAdd={handleAdd}
+                />
               ))}
             </div>
             {catalogShown < products.length ? (
@@ -138,17 +162,11 @@ export default function GreenPage() {
             </div>
           </div>
         )}
+        </div>
       </main>
 
       <SiteFooter />
-      {toast ? (
-        <div
-          className="fixed bottom-44 right-6 z-50 max-w-sm border border-brand-700 bg-charcoal text-white px-4 py-3 text-sm toast shadow-lg"
-          role="status"
-        >
-          {toast}
-        </div>
-      ) : null}
+      <CartToast toast={toast} onDone={() => setToast(null)} />
     </div>
   );
 }

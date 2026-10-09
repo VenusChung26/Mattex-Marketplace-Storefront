@@ -9,7 +9,8 @@ import { useLanguage } from "../i18n";
 import { stripLocale, withLocale } from "../lib/locale";
 import { SHOW_RFQ } from "../lib/flags";
 import { usePromo } from "../lib/promo";
-import { closeAuthModal, getCategoryByName, getCategoryDefs, logoutUser, searchProducts } from "../lib/store";
+import { closeAuthModal, getCategoryByName, getCategoryDefs, getProductsByCategory, logoutUser } from "../lib/store";
+import { ProductSearchBox } from "./SearchSuggestions";
 
 function CartIcon({ className = "h-4 w-4" }) {
   return (
@@ -61,6 +62,7 @@ export default function SiteHeader({
   onClearFilters,
   onCatalogClick,
   onDraftClick,
+  suggestProducts,
 } = {}) {
   const { user, cartCount, authModalOpen, catalogEpoch } = useStore();
   const { t, lang } = useLanguage();
@@ -68,17 +70,12 @@ export default function SiteHeader({
   const location = useLocation();
   const categories = useMemo(() => getCategoryDefs(), [catalogEpoch]);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [suggestOpen, setSuggestOpen] = useState(false);
-  const [suggestIndex, setSuggestIndex] = useState(-1);
   const [catsOpen, setCatsOpen] = useState(false);
   const [navSolid, setNavSolid] = useState(!overlay);
   const [query, setQuery] = useState(searchValue || "");
   const isHome = stripLocale(location.pathname) === "/";
-  const suggestions = useMemo(() => {
-    const text = String(query || "").trim();
-    if (!text) return [];
-    return searchProducts(text).slice(0, 8);
-  }, [query, catalogEpoch]);
+  const fallbackCatalog = useMemo(() => getProductsByCategory(), [catalogEpoch]);
+  const suggestPool = suggestProducts || fallbackCatalog;
   const lp = (path) => withLocale(lang, path);
 
   useEffect(() => {
@@ -156,14 +153,15 @@ export default function SiteHeader({
   function setSearch(value) {
     setQuery(value);
     onSearchChange?.(value);
-    setSuggestOpen(Boolean(String(value || "").trim()));
-    setSuggestIndex(-1);
   }
 
-  function pickSuggestion(name) {
-    setSuggestOpen(false);
-    setSearch(name);
-    submitSearch(null, name);
+  function pickTerm(term) {
+    setSearch(term);
+    submitSearch(null, term);
+  }
+
+  function openProduct(product) {
+    pickTerm(product.name);
   }
 
   function goCatalog(extra = {}) {
@@ -186,7 +184,6 @@ export default function SiteHeader({
   function submitSearch(event, forced) {
     event?.preventDefault();
     const next = String(forced ?? query ?? "").trim();
-    setSuggestOpen(false);
     closeMenu();
     if (onSearchSubmit) {
       onSearchSubmit(event, next);
@@ -243,78 +240,33 @@ export default function SiteHeader({
       className={`nav-glass ${overlay ? "fixed" : "sticky"} top-0 left-0 right-0 z-40 ${navSolid ? "is-solid" : ""}`}
     >
       <div className={`${width} mx-auto px-4 sm:px-6 lg:px-8`}>
-        <div className="flex items-center gap-4 py-3">
-          <Link to={lp("/")} className="shrink-0 flex items-center gap-2.5 text-white min-w-0">
+        <div className="flex items-center gap-2 py-3 lg:gap-4">
+          <Link to={lp("/")} className="flex min-w-0 shrink-0 items-center gap-2.5 text-white">
             <img
               src="/assets/mattex-logo.webp"
               alt=""
               className="h-9 w-auto shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]"
             />
-            <div className="leading-tight min-w-0">
-              <span className="block text-[15px] sm:text-lg font-semibold tracking-tight truncate">
-                {t("brandName")}
-              </span>
-            </div>
+            <span className="sr-only lg:hidden">{t("brandName")}</span>
+            <span className="hidden min-w-0 truncate text-[15px] font-semibold tracking-tight lg:block lg:text-lg">
+              {t("brandName")}
+            </span>
           </Link>
 
-          <form className="relative hidden md:block flex-1 min-w-0 max-w-xl" onSubmit={submitSearch}>
-            <input
-              type="search"
+          <form className="hidden min-w-0 flex-1 md:block max-w-xl" onSubmit={submitSearch}>
+            <ProductSearchBox
               value={query}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setSuggestOpen(Boolean(e.target.value.trim()));
-                setSuggestIndex(-1);
-              }}
-              onFocus={() => setSuggestOpen(Boolean(String(query || "").trim()))}
-              onBlur={() => setSuggestOpen(false)}
-              onKeyDown={(e) => {
-                if (e.key === "ArrowDown") {
-                  e.preventDefault();
-                  setSuggestOpen(true);
-                  setSuggestIndex((index) => Math.min(index + 1, suggestions.length - 1));
-                } else if (e.key === "ArrowUp") {
-                  e.preventDefault();
-                  setSuggestIndex((index) => Math.max(index - 1, 0));
-                } else if (e.key === "Enter" && suggestIndex >= 0 && suggestions[suggestIndex]) {
-                  e.preventDefault();
-                  const name = suggestions[suggestIndex].name;
-                  setSearch(name);
-                  submitSearch(e, name);
-                } else if (e.key === "Escape") {
-                  setSuggestOpen(false);
-                }
-              }}
+              onValue={setSearch}
+              onTerm={pickTerm}
+              onProduct={openProduct}
+              products={suggestPool}
               placeholder={t("navSearchPlaceholder")}
-              className="w-full bg-white/10 border border-white/20 text-white placeholder:text-white/45 px-3.5 py-2 text-sm"
-              autoComplete="off"
-              aria-label={t("search")}
-              role="combobox"
+              ariaLabel={t("search")}
+              inputClassName="w-full border border-white/20 bg-white/10 px-3.5 py-2 text-sm text-white placeholder:text-white/45"
             />
-            {suggestOpen && suggestions.length ? (
-              <ul role="listbox" className="absolute left-0 right-0 top-full z-50 mt-1 max-h-80 overflow-auto border border-line bg-white text-ink shadow-lg">
-                {suggestions.map((product, index) => (
-                  <li key={product.id}>
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={index === suggestIndex}
-                      className={`block w-full px-3 py-2 text-left text-sm ${index === suggestIndex ? "bg-brand-50" : "hover:bg-paper"}`}
-                      onMouseDown={(event) => {
-                        event.preventDefault();
-                        setSearch(product.name);
-                        submitSearch(event, product.name);
-                      }}
-                    >
-                      {product.name}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
           </form>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2">
             <button
               type="button"
               className="md:hidden inline-flex h-10 w-10 items-center justify-center border border-white/20 text-white hover:bg-white/10"
@@ -341,7 +293,7 @@ export default function SiteHeader({
               <button
                 type="button"
                 onClick={onRfqsClick}
-                className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium hover:text-white hover:bg-white/10 transition-colors ${
+                className={`hidden items-center gap-2 px-3 py-2 text-sm font-medium hover:text-white hover:bg-white/10 transition-colors lg:inline-flex ${
                   stripLocale(location.pathname) === "/rfqs" ? "text-white" : "text-white/85"
                 }`}
                 aria-label={t("myRfqs")}
@@ -351,7 +303,9 @@ export default function SiteHeader({
               </button>
             ) : null}
             <AccountMenu user={user} light />
-            <LangToggle light />
+            <div className="hidden lg:block">
+              <LangToggle light />
+            </div>
             <button
               type="button"
               className="lg:hidden inline-flex h-10 w-10 items-center justify-center border border-white/20 text-white hover:bg-white/10"
@@ -451,15 +405,16 @@ export default function SiteHeader({
                 </button>
               ))}
             </div>
-            <form onSubmit={submitSearch}>
-              <input
-                type="search"
+            <form className="mb-2" onSubmit={submitSearch}>
+              <ProductSearchBox
                 value={query}
-                onChange={(e) => setSearch(e.target.value)}
+                onValue={setSearch}
+                onTerm={pickTerm}
+                onProduct={openProduct}
+                products={suggestPool}
                 placeholder={t("navSearchPlaceholder")}
-                className="w-full bg-white/10 border border-white/20 text-white placeholder:text-white/45 px-3 py-2 text-sm mb-2"
-                autoComplete="off"
-                aria-label={t("search")}
+                ariaLabel={t("search")}
+                inputClassName="w-full border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/45"
               />
             </form>
             {navLinks.map((l) => (

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import CopyLinkButton from "./CopyLinkButton";
 import { useLanguage } from "../i18n";
@@ -25,7 +26,33 @@ export default function CategorySideNav({
 }) {
   const { t, lang } = useLanguage();
   const categories = getCategoryDefs();
+  const listRef = useRef(null);
   const allActive = !activeSlug;
+  const countKey = categories.map((category) => category.count).join(",");
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return undefined;
+    const align = () => {
+      const current = list.querySelector("[aria-current='page']");
+      if (!current) return;
+      const listRect = list.getBoundingClientRect();
+      const itemRect = current.getBoundingClientRect();
+      if (itemRect.height <= 0 || listRect.height <= 0) return;
+      const pad = 12;
+      if (itemRect.top < listRect.top + pad) {
+        list.scrollTop -= listRect.top + pad - itemRect.top;
+      } else if (itemRect.bottom > listRect.bottom - pad) {
+        list.scrollTop += itemRect.bottom - (listRect.bottom - pad);
+      }
+    };
+    const frame = requestAnimationFrame(align);
+    const timer = window.setTimeout(align, 60);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [activeSlug, countKey]);
   const maxHeight = `calc(100dvh - ${offsetTop}px - 12px)`;
   const allProductsPath = withLocale(lang, "/");
   const allProductsHref = allProductsTo(lang);
@@ -37,11 +64,11 @@ export default function CategorySideNav({
   return (
     <nav
       aria-label={t("categories")}
-      className="flex max-h-60 flex-col overflow-hidden lg:sticky lg:max-h-[var(--cat-nav-max)]"
+      className="flex w-full min-w-0 max-w-full max-h-60 flex-col overflow-hidden lg:sticky lg:max-h-[var(--cat-nav-max)]"
       style={{ top: offsetTop, "--cat-nav-max": maxHeight }}
     >
       <p className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-mute mb-2">{t("categories")}</p>
-      <ul className="min-h-0 flex-1 overflow-y-auto overscroll-contain border border-line bg-white divide-y divide-line">
+      <ul ref={listRef} className="min-h-0 w-full min-w-0 flex-1 overflow-y-auto overscroll-contain border border-line bg-white divide-y divide-line">
         <li className={`flex items-stretch ${allActive ? "bg-brand-50" : "hover:bg-paper"}`}>
           {allActive ? (
             <span aria-current="page" className={allProductsClass}>
@@ -77,23 +104,23 @@ export default function CategorySideNav({
               {filterMode && onSelectCategory ? (
                 active ? (
                   <span aria-current="page" className={nameClass}>
-                    <span className="block">{category.name}</span>
+                    <span className="block break-words">{category.name}</span>
                     <span className="block text-[11px] font-medium text-mute mt-0.5">{category.count}</span>
                   </span>
                 ) : (
                   <button type="button" onClick={() => onSelectCategory(category)} className={nameClass}>
-                    <span className="block">{category.name}</span>
+                    <span className="block break-words">{category.name}</span>
                     <span className="block text-[11px] font-medium text-mute mt-0.5">{category.count}</span>
                   </button>
                 )
               ) : active ? (
                 <span aria-current="page" className={nameClass}>
-                  <span className="block">{category.name}</span>
+                  <span className="block break-words">{category.name}</span>
                   <span className="block text-[11px] font-medium text-mute mt-0.5">{category.count}</span>
                 </span>
               ) : (
                 <Link to={path} className={nameClass}>
-                    <span className="block">{category.name}</span>
+                    <span className="block break-words">{category.name}</span>
                     <span className="block text-[11px] font-medium text-mute mt-0.5">{category.count}</span>
                   </Link>
               )}

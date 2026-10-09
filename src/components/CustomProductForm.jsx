@@ -42,6 +42,7 @@ export default function CustomProductForm({
   onSubmit,
   onCancel,
   compact = false,
+  submitLabel = "",
 }) {
   const { t } = useLanguage();
   const categories = useMemo(() => getCategoryDefs(), []);
@@ -416,7 +417,7 @@ export default function CustomProductForm({
       ) : null}
       <div className="flex flex-wrap gap-2 pt-1">
         <button type="submit" className="btn-primary !px-4 !py-2.5" disabled={extracting}>
-          {extracting ? t("extracting") : mode === "edit" ? t("saveChanges") : t("addToCart")}
+          {extracting ? t("extracting") : submitLabel || (mode === "edit" ? t("saveChanges") : t("addToCart"))}
         </button>
         {onCancel ? (
           <button type="button" className="btn-soft !px-4 !py-2.5" onClick={onCancel}>

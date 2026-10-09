@@ -1,4 +1,74 @@
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  overflow-x: clip;
+  max-width: 100%;
+}
+body,
+#root {
+  overflow-x: clip;
+  max-width: 100%;
+}
+#root > .min-h-screen,
+#root > .min-h-dvh {
+  width: 100%;
+  min-width: 0;
+  align-items: stretch;
+}
+#root > .min-h-screen > main,
+#root > .min-h-dvh > main {
+  width: 100%;
+  min-width: 0;
+}
+#root > .min-h-screen:not(.flex),
+#root > .min-h-dvh:not(.flex),
+#root > .min-h-screen.flex-col,
+#root > .min-h-dvh.flex-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+#root > .min-h-screen > footer,
+#root > .min-h-dvh > footer,
+#root > .min-h-screen > div:has(> footer),
+#root > .min-h-dvh > div:has(> footer) {
+  margin-top: auto;
+}
+.group\/act { position: relative; }
+.buy-now-hint { display: none; }
+@media (hover: hover) {
+  .group\/act:hover > .buy-now-hint {
+    display: block;
+    position: absolute;
+    z-index: 40;
+    left: 50%;
+    bottom: calc(100% + 6px);
+    width: max-content;
+    max-width: 12rem;
+    margin: 0;
+    padding: 0.3rem 0.45rem;
+    border-radius: 0.35rem;
+    background: #101513;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: center;
+    white-space: normal;
+    transform: translateX(-50%);
+    box-shadow: 0 8px 18px rgba(16, 21, 19, 0.22);
+    pointer-events: none;
+  }
+  .group\/act:hover > .buy-now-hint::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: #101513;
+  }
+}
 body {
   margin: 0;
   background:
@@ -46,12 +116,17 @@ body {
   to { transform: scale(1.06) translate3d(-1.5%, 0, 0); }
 }
 
+.offer-banner-fade {
+  transition: opacity 400ms ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-shell::before { animation: none; }
   .reveal, .reveal-delay, .reveal-delay-2 { animation: none !important; opacity: 1; transform: none; }
   .btn-added { animation: none; }
   .btn-added-check { animation: none; }
   .metric-ring { animation: none; }
+  .offer-banner-fade { transition: none; }
 }
 
 .sheet {
@@ -140,6 +215,8 @@ body {
 .product-tile {
   content-visibility: auto;
   contain-intrinsic-size: auto 28rem;
+  min-width: 0;
+  max-width: 100%;
   transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
   background: #fff;
   border: 1px solid rgba(214, 221, 216, 0.7);
@@ -161,6 +238,7 @@ body {
   to { background-position: -100% 0; }
 }
 .product-tile:hover {
+  content-visibility: visible;
   transform: translateY(-4px);
   border-color: rgba(36, 90, 65, 0.28);
   box-shadow: 0 16px 32px rgba(16, 21, 19, 0.1);
@@ -172,6 +250,8 @@ body {
 .cat-tile {
   content-visibility: auto;
   contain-intrinsic-size: auto 12rem;
+  min-width: 0;
+  max-width: 100%;
   position: relative;
   isolation: isolate;
   overflow: hidden;

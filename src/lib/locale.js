@@ -1,5 +1,16 @@
 export const LOCALES = ["en", "zh"];
-export const DEFAULT_LOCALE = "en";
+export const DEFAULT_LOCALE = "zh";
+const SAVED_LANG_KEY = "subbie_lang";
+
+export function preferredLocale() {
+  try {
+    const saved = localStorage.getItem(SAVED_LANG_KEY);
+    if (saved === "en" || saved === "zh") return saved;
+  } catch {
+    /* ignore */
+  }
+  return "zh";
+}
 
 export function localeFromPath(pathname) {
   const match = String(pathname || "").match(/^\/(en|zh)(?=\/|$)/);

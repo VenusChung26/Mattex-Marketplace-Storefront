@@ -18,32 +18,23 @@ function readEnv(name) {
     ) {
       return String(meta.VITE_SUPABASE_PUBLISHABLE_KEY || meta.VITE_SUPABASE_ANON_KEY || "").trim();
     }
-    if (meta[name] != null) return String(meta[name] || "").trim();
-  }
-  if (typeof process !== "undefined" && process.env && process.env[name] != null) {
-    return String(process.env[name] || "").trim();
   }
   return "";
 }
 
 export function supabaseConfig() {
-  const url =
-    readEnv("VITE_SUPABASE_URL") ||
-    readEnv("SUPABASE_URL") ||
-    readEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const url = readEnv("VITE_SUPABASE_URL") || readEnv("NEXT_PUBLIC_SUPABASE_URL");
   const anon =
     readEnv("VITE_SUPABASE_PUBLISHABLE_KEY") ||
     readEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") ||
     readEnv("VITE_SUPABASE_ANON_KEY") ||
-    readEnv("SUPABASE_ANON_KEY") ||
     readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-  const service = readEnv("SUPABASE_SERVICE_ROLE_KEY");
-  return { url, anon, service };
+  return { url, anon };
 }
 
 export function isSupabaseConfigured() {
-  const { url, anon, service } = supabaseConfig();
-  return Boolean(url && (anon || service));
+  const { url, anon } = supabaseConfig();
+  return Boolean(url && anon);
 }
 
 let remoteDataReady = null;
@@ -79,22 +70,12 @@ export async function probeRemoteData() {
 }
 
 let anonClient = null;
-let serviceClient = null;
 
-export function getSupabase(preferService = false) {
-  const { url, anon, service } = supabaseConfig();
-  const key = preferService && service ? service : anon || service;
-  if (!url || !key) return null;
-  if (preferService && service) {
-    if (!serviceClient) {
-      serviceClient = createClient(url, service, {
-        auth: { persistSession: false, autoRefreshToken: false },
-      });
-    }
-    return serviceClient;
-  }
+export function getSupabase() {
+  const { url, anon } = supabaseConfig();
+  if (!url || !anon) return null;
   if (!anonClient) {
-    anonClient = createClient(url, key, {
+    anonClient = createClient(url, anon, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
   }
@@ -280,7 +261,7 @@ async function fetchPublicCatalog(sb, publicKeys) {
   if (cached?.stamp === stamp && cached.state) return cached.state;
   const [kvRes, productRes, metricRes] = await Promise.all([
     sb.from("app_kv").select("key,value").in("key", publicKeys),
-    sb.from("products").select("id,payload,image_url"),
+    sb.from("products").select("id,payload,image_url").eq("published", true).eq("deleted", false).eq("held", false),
     sb.from("supplier_metrics").select("*"),
   ]);
   if (productRes.error) {

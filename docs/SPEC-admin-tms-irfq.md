@@ -6,7 +6,7 @@ Locked UX for Mattex Sales portal RFQ detail / inbox actions.
 
 - Trigger: **Create TMS iRFQ** (after Accept; also allowed after Submit To Buyer).
 - Method: TMS-integration **server bot** logs into TMS and creates one inbound iRFQ from this marketplace RFQ (lines + optional PDF).
-- Assignment: `handled_by` is the bot TMS user when that account is the handler; if the portal login email exists as a TMS user, that user is the handler; otherwise handler is left blank.
+- Assignment: take the signed-in sales account email (not the display name). Look up TMS users where `email` equals that address. That user is `handled_by`. If no TMS user has that email, leave the handler blank. The server bot only logs in.
 - Portal TMS password is **not** required to create.
 
 ## After iRFQ created (MUST)

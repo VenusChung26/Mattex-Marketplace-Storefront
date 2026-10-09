@@ -113,41 +113,18 @@ function emailKey(value) {
   return String(value || "").trim().toLowerCase();
 }
 
-function emailsMatch(a, b) {
-  const left = emailKey(a);
-  const right = emailKey(b);
-  return Boolean(left && right && left === right);
-}
-
-function handlerIdOf(row) {
-  return row?.uid || row?.user_id || row?.handler_id || row?.id || null;
-}
-
-async function matchHandlerByEmail(cfg, token, staffEmail, login) {
+async function matchHandlerByEmail(cfg, token, staffEmail) {
   const needle = emailKey(staffEmail);
-  if (!needle) return null;
-  if (emailsMatch(needle, login?.email) && login?.uid) return login.uid;
-  const encoded = encodeURIComponent(needle);
-  const paths = [
-    `/tms/api/v1/users?current=1&pageSize=100&email=${encoded}`,
-    `/tms/api/v1/users?current=1&pageSize=100&keyword=${encoded}`,
-    `/tms/api/v1/users?current=1&pageSize=100`,
-    `/tms/api/v1/staff?current=1&pageSize=100`,
-    `/tms/api/v1/employees?current=1&pageSize=100`,
-    `/users?current=1&pageSize=100`,
-  ];
-  for (const path of paths) {
-    try {
-      const data = await tmsFetch(cfg, token, "GET", path);
-      const rows = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-      const row = rows.find((item) => emailsOf(item).includes(needle));
-      const id = handlerIdOf(row);
-      if (id) return id;
-    } catch {
-      /* try next user list */
-    }
+  if (!needle || !needle.includes("@")) return null;
+  try {
+    const data = await tmsFetch(cfg, token, "GET", `/tms/api/v1/users?current=1&pageSize=20&email=${encodeURIComponent(needle)}`);
+    const rows = Array.isArray(data?.data) ? data.data : [];
+    const row = rows.find((item) => emailKey(item?.email) === needle);
+    const id = row?.id || row?.emat_user_id || null;
+    return id ? { id, email: emailKey(row.email) } : null;
+  } catch {
+    return null;
   }
-  return null;
 }
 
 function emailsOf(row) {
@@ -291,9 +268,9 @@ export async function submitInboundRfq(payload) {
   const cfg = config();
   const lines = Array.isArray(payload?.lines) ? payload.lines : [];
   if (!lines.length) throw new Error("No RFQ lines to submit");
-  const { token, uid, email: tmsEmail } = await login(cfg);
-  const matchedHandler = await matchHandlerByEmail(cfg, token, payload?.staffEmail, { uid, email: tmsEmail || cfg.email });
-  const handlerId = matchedHandler || uid || null;
+  const { token } = await login(cfg);
+  const handler = await matchHandlerByEmail(cfg, token, payload?.staffEmail);
+  const handlerId = handler?.id || null;
   const assignHandler = Boolean(handlerId);
   const units = await unitMap(cfg, token);
   const fallbackUnit = { id: cfg.unitId, unit: cfg.unit };
@@ -377,5 +354,6 @@ export async function submitInboundRfq(payload) {
     fileName: file?.file_name || null,
     handlerAssigned: assignHandler,
     handledBy: assignHandler ? handlerId : null,
+    handlerEmail: assignHandler ? handler.email : "",
   };
 }

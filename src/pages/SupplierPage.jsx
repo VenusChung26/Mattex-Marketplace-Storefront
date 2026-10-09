@@ -1,11 +1,15 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
+import { ProductSearchBox } from "../components/SearchSuggestions";
 import SupplierLogo from "../components/SupplierLogo";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
+import CartToast from "../components/CartToast";
 import Seo, { breadcrumbJsonLd, orgJsonLd } from "../components/Seo";
 import { useLanguage } from "../i18n";
+import { catalogGroupIndex, collapseCatalog, useCatalogGroups } from "../lib/catalogGroups";
+import { jumpToId } from "../lib/jumpTo";
 import { allProductsTo, siteOrigin, withLocale } from "../lib/locale";
 import { seoCopy } from "../lib/seoCopy";
 import { SHOW_RFQ } from "../lib/flags";
@@ -23,19 +27,14 @@ export default function SupplierPage() {
   const { slug } = useParams();
   const supplier = getSupplier(slug);
   const { t, lang } = useLanguage();
+  const groupEpoch = useCatalogGroups();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [priceFilter, setPriceFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
   const [greenOnly, setGreenOnly] = useState(false);
-  const [toast, setToast] = useState("");
+  const [toast, setToast] = useState(null);
   const [catalogShown, setCatalogShown] = useState(24);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(""), 3200);
-    return () => clearTimeout(timer);
-  }, [toast]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -52,8 +51,8 @@ export default function SupplierPage() {
   }, [searchQuery, selectedCategory, priceFilter, stockFilter, greenOnly]);
 
   const top = useMemo(
-    () => (supplier ? getTopProductsForSupplier(supplier.slug) : []),
-    [supplier]
+    () => collapseCatalog(supplier ? getTopProductsForSupplier(supplier.slug) : [], catalogGroupIndex()),
+    [supplier, groupEpoch]
   );
   const catalog = useMemo(
     () => (supplier ? getProductsBySupplier(supplier.slug) : []),
@@ -67,6 +66,10 @@ export default function SupplierPage() {
     });
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [catalog]);
+  const suggestPool = useMemo(
+    () => (selectedCategory ? catalog.filter((product) => product.category === selectedCategory) : catalog),
+    [catalog, selectedCategory]
+  );
   const searched = useMemo(
     () => (supplier ? searchSupplierProducts(supplier.slug, searchQuery) : []),
     [supplier, searchQuery]
@@ -79,8 +82,8 @@ export default function SupplierPage() {
     if (priceFilter === "unpriced") list = list.filter((p) => getEffectivePrice(p).displayPrice == null);
     if (priceFilter === "hot") list = list.filter((p) => isHitProduct(p));
     if (stockFilter !== "all") list = list.filter((p) => p.stockStatus === stockFilter);
-    return list;
-  }, [searched, selectedCategory, greenOnly, priceFilter, stockFilter]);
+    return collapseCatalog(list, catalogGroupIndex());
+  }, [searched, selectedCategory, greenOnly, priceFilter, stockFilter, groupEpoch]);
 
   if (!supplier) {
     return (
@@ -101,14 +104,11 @@ export default function SupplierPage() {
 
   function handleAdd(productId, intent = "quote", qty) {
     const result = addFromStorefront(productId, intent, qty, lang);
-    if (!result?.ok || intent === "quote-now") return;
-    const product =
-      products.find((p) => p.id === productId) ||
-      catalog.find((p) => p.id === productId) ||
-      top.find((p) => p.id === productId);
-    setToast(
-      t(intent === "buy" || intent === "buy-now" ? "addedBuyToRfq" : "addedQuoteToRfq", { name: product?.name || "item" })
-    );
+    if (!result?.ok || intent === "quote-now" || intent === "buy-now") return;
+    setToast({
+      message: t(intent === "buy" ? "addedBuyToRfq" : "addedQuoteToRfq"),
+      href: withLocale(lang, "/rfq"),
+    });
   }
 
   const cats = `${supplier.categories.slice(0, 3).join(", ")}${
@@ -131,7 +131,16 @@ export default function SupplierPage() {
           ]),
         ]}
       />
-      <SiteHeader />
+      <SiteHeader
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        onSearchSubmit={(event, value) => {
+          event?.preventDefault();
+          setSearchQuery(value ?? "");
+          jumpToId("supplier-products");
+        }}
+        suggestProducts={suggestPool}
+      />
 
       <section className="relative overflow-hidden bg-charcoal text-white min-h-[42vh] flex items-end">
         <div
@@ -173,9 +182,17 @@ export default function SupplierPage() {
               {t("topProducts")}
             </h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
-            {top.map((p) => (
-              <ProductCard key={p.id} product={p} compact rank={p.featuredRank} onAdd={handleAdd} />
+          <div className="grid min-w-0 grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {top.map((entry) => (
+              <ProductCard
+                key={entry.product.id}
+                product={entry.product}
+                compact
+                rank={entry.product.featuredRank}
+                grouped={entry.grouped}
+                title={entry.groupName}
+                onAdd={handleAdd}
+              />
             ))}
           </div>
         </section>
@@ -210,15 +227,23 @@ export default function SupplierPage() {
 
             <div className="min-w-0 mt-6 lg:mt-0">
               <div className="flex flex-col sm:flex-row sm:items-stretch gap-3 mb-6">
-                <label className="relative block flex-1 min-w-0">
+                <label className="relative block min-w-0 flex-1">
                   <span className="sr-only">{t("catalog")}</span>
-                  <input
-                    type="search"
+                  <ProductSearchBox
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onValue={setSearchQuery}
+                    onTerm={(term) => {
+                      setSearchQuery(term);
+                      jumpToId("supplier-products");
+                    }}
+                    onProduct={(product) => {
+                      setSearchQuery(product.name);
+                      jumpToId("supplier-products");
+                    }}
+                    products={suggestPool}
                     placeholder={t("supplierSearchPlaceholder")}
-                    className="field-input"
-                    autoComplete="off"
+                    ariaLabel={t("catalog")}
+                    inputClassName="field-input w-full"
                   />
                 </label>
                 <label className="relative sm:w-[11rem] shrink-0">
@@ -286,9 +311,15 @@ export default function SupplierPage() {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {products.slice(0, catalogShown).map((p) => (
-                      <ProductCard key={p.id} product={p} onAdd={handleAdd} />
+                  <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {products.slice(0, catalogShown).map((entry) => (
+                      <ProductCard
+                        key={entry.product.id}
+                        product={entry.product}
+                        grouped={entry.grouped}
+                        title={entry.groupName}
+                        onAdd={handleAdd}
+                      />
                     ))}
                   </div>
                   {catalogShown < products.length ? (
@@ -311,11 +342,7 @@ export default function SupplierPage() {
         <SiteFooter />
       </main>
 
-      {toast ? (
-        <div className="toast fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-charcoal text-white text-sm px-4 py-2.5 shadow-lg rounded-none">
-          {toast}
-        </div>
-      ) : null}
+      <CartToast toast={toast} onDone={() => setToast(null)} />
     </div>
   );
 }
@@ -335,7 +362,7 @@ function SupplierCategoryMenu({ t, total, counts, selected, onSelect }) {
       <p className="px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-mute">
         {t("categories")}
       </p>
-      <ul className="mt-3 flex gap-2 overflow-x-auto lg:block lg:overflow-visible lg:space-y-1">
+      <ul className="mt-3 flex max-w-full min-w-0 gap-2 overflow-x-auto overscroll-x-contain lg:block lg:overflow-visible lg:space-y-1">
         {items.map((item) => {
           const active = selected === item.name;
           return (

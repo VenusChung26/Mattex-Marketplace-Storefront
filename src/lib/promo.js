@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { setOfferPromo } from "./offer";
 
 export function promoBanners(promo) {
   return (Array.isArray(promo?.banners) ? promo.banners : []).filter((banner) => banner?.id && banner?.src);
@@ -14,9 +15,40 @@ export function bannerName(banner, lang) {
   return lang === "zh" ? banner.nameZh || banner.nameEn || "" : banner.nameEn || banner.nameZh || "";
 }
 
+export function sectionTitle(promo, lang) {
+  if (!promo) return "";
+  const zh = String(promo.titleZh || "").trim();
+  const en = String(promo.titleEn || "").trim();
+  return lang === "zh" ? zh || en : en || zh;
+}
+
 export function sentenceOf(promo, lang) {
   if (!promo) return "";
   return lang === "zh" ? promo.sentenceZh || promo.sentenceEn || "" : promo.sentenceEn || promo.sentenceZh || "";
+}
+
+export function bannerSentence(banner, promo, lang) {
+  const own = lang === "zh" ? banner?.sentenceZh : banner?.sentenceEn;
+  const other = lang === "zh" ? banner?.sentenceEn : banner?.sentenceZh;
+  return String(own || other || sentenceOf(promo, lang) || "").trim();
+}
+
+function promoAssetSrc(value) {
+  const src = String(value || "");
+  if (/^\/assets\/promo\/[a-zA-Z0-9._/-]+$/.test(src) && !src.includes("..")) return src;
+  if (/^https:\/\/[a-z0-9.-]+\.public\.blob\.vercel-storage\.com\/promo\/[A-Za-z0-9._~/-]+$/.test(src)) return src;
+  return "";
+}
+
+export function bannerHeroSrc(banner) {
+  return promoAssetSrc(banner?.heroSrc) || promoAssetSrc(banner?.src) || String(banner?.src || "");
+}
+
+export const OFFER_SECTION_HERO = "/assets/promo/offer-hero-prices.jpg";
+
+export function landingBanners(promo) {
+  const banners = promoBanners(promo);
+  return banners.length ? [banners[0]] : [];
 }
 
 let pending = null;
@@ -40,6 +72,7 @@ export function usePromo() {
     let cancel = false;
     loadPromo().then((data) => {
       if (cancel) return;
+      setOfferPromo(data);
       setPromo(data);
       setReady(true);
     });

@@ -11,7 +11,7 @@ export default defineConfig((env) => {
     },
     server: {
       ...cfg.server,
-      port: 5179,
+      port: 5183,
       host: true,
     },
   };

@@ -1,21 +1,84 @@
-import { Link } from "react-router-dom";
-import { bannerName } from "../lib/promo";
+import { useEffect, useRef, useState } from "react";
+import { useLanguage } from "../i18n";
+import { bannerName, OFFER_SECTION_HERO } from "../lib/promo";
 
-function AskLink({ href, className, children }) {
-  if (!href) return <span className={className}>{children}</span>;
-  return (
-    <a href={href} className={className}>
-      {children}
-    </a>
-  );
+const ZOOM_STEPS = [100, 125, 150];
+const NORMAL_PX = 560;
+
+function posterWidth(zoom) {
+  return Math.round((NORMAL_PX * zoom) / 100);
 }
 
-function BrowseLink({ to, className, children }) {
-  if (!to) return <span className={className}>{children}</span>;
+function posterFile(src, name) {
+  const ext = String(src || "").split(".").pop()?.split("?")[0] || "webp";
+  const base = String(name || "poster").trim().replace(/\s+/g, "-") || "poster";
+  return `${base}.${ext}`;
+}
+
+function PosterView({ src, name }) {
+  const { t } = useLanguage();
+  const boxRef = useRef(null);
+  const [zoom, setZoom] = useState(100);
+  const [columnWidth, setColumnWidth] = useState(0);
+  const step = Math.max(0, ZOOM_STEPS.indexOf(zoom));
+  const maxPx = posterWidth(zoom);
+  const rendered = columnWidth > 0 ? Math.min(columnWidth, maxPx) : maxPx;
+  const nextZoom = ZOOM_STEPS[step + 1];
+  const nextRendered = nextZoom ? Math.min(columnWidth || posterWidth(nextZoom), posterWidth(nextZoom)) : rendered;
+
+  useEffect(() => {
+    const column = boxRef.current?.parentElement;
+    if (!column || typeof ResizeObserver === "undefined") return undefined;
+    const measure = () => setColumnWidth(column.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(column);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <Link to={to} className={className}>
-      {children}
-    </Link>
+    <div ref={boxRef} className="w-full" style={{ maxWidth: maxPx }}>
+      <img src={src} alt={name} className="block h-auto w-full rounded-2xl border border-line bg-white" />
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            aria-label={t("promoZoomOut")}
+            disabled={step <= 0}
+            onClick={() => setZoom(ZOOM_STEPS[step - 1])}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-base font-semibold text-brand-800 hover:bg-paper disabled:opacity-35"
+          >
+            −
+          </button>
+          <span className="w-12 text-center text-xs font-semibold tabular-nums text-mute">{zoom}%</span>
+          <button
+            type="button"
+            aria-label={t("promoZoomIn")}
+            disabled={!nextZoom || nextRendered <= rendered + 1}
+            onClick={() => setZoom(nextZoom)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-base font-semibold text-brand-800 hover:bg-paper disabled:opacity-35"
+          >
+            +
+          </button>
+          {zoom !== 100 ? (
+            <button
+              type="button"
+              onClick={() => setZoom(100)}
+              className="ml-1 inline-flex h-8 items-center px-2 text-sm font-semibold text-brand-800 hover:underline"
+            >
+              {t("promoZoomReset")}
+            </button>
+          ) : null}
+        </div>
+        <a
+          href={src}
+          download={posterFile(src, name)}
+          className="inline-flex h-8 shrink-0 items-center px-2.5 text-sm font-semibold text-brand-800 hover:underline"
+        >
+          {t("promoDownload")}
+        </a>
+      </div>
+    </div>
   );
 }
 
@@ -26,80 +89,72 @@ export default function PromoOfferLayout({
   activeId,
   onSelect,
   lang,
-  askLabel,
-  browseLabel,
-  askHref,
-  browseTo,
-  remaining,
+  listLabel,
   heading = "h2",
+  children,
 }) {
   const Title = heading;
   const total = banners.length;
   const index = Math.max(0, banners.findIndex((banner) => banner.id === activeId));
   const active = banners[index] || null;
   const name = bannerName(active, lang);
+  const hero = OFFER_SECTION_HERO;
 
   return (
     <div>
       <section className="relative overflow-hidden bg-brand-800 text-white">
-        {active?.src ? (
+        {hero ? (
           <div
-            className="absolute inset-0 bg-cover bg-top opacity-30"
-            style={{ backgroundImage: `url("${active.src}")` }}
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url("${hero}")` }}
             aria-hidden
           />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-800 via-brand-800/92 to-brand-800/75" aria-hidden />
-        <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-12 sm:py-16 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <Title className="font-display text-3xl font-semibold leading-tight sm:text-5xl">{title}</Title>
-            {sentence ? <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/75 sm:text-base">{sentence}</p> : null}
-          </div>
-          <div className="flex shrink-0 flex-wrap gap-3 lg:justify-end">
-            <AskLink href={askHref} className="inline-flex items-center bg-white px-5 py-2.5 text-sm font-semibold text-brand-800 hover:bg-brand-50">
-              {askLabel}
-            </AskLink>
-            <BrowseLink to={browseTo} className="inline-flex items-center border border-white/40 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10">
-              {browseLabel}
-            </BrowseLink>
-          </div>
+        <div
+          className="absolute inset-0 bg-[linear-gradient(90deg,#143528_0%,#143528_46%,rgba(20,53,40,0.2)_82%)]"
+          aria-hidden
+        />
+        <div className="relative mx-auto max-w-7xl px-4 py-6 sm:py-8">
+          <Title className="font-display text-3xl font-semibold leading-tight sm:text-4xl">{title}</Title>
+          {sentence ? <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/75 sm:text-base">{sentence}</p> : null}
         </div>
       </section>
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:py-12">
-        {total > 1 ? (
-          <div>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              {banners.map((banner) => {
-                const selected = banner.id === active?.id;
-                return (
-                  <button
-                    key={banner.id}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => onSelect?.(banner.id)}
-                    className={`flex min-w-0 items-center gap-2 rounded-xl border bg-white p-2 text-left text-sm font-semibold ${
-                      selected ? "border-brand-600 ring-2 ring-brand-600" : "border-line hover:border-brand-600"
-                    }`}
-                  >
-                    <img src={banner.src} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover object-top" />
-                    <span className="min-w-0 leading-snug">{bannerName(banner, lang) || (lang === "zh" ? "中文名" : "English name")}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-3 text-sm text-mute">
-              <span className="font-semibold tabular-nums text-ink">
-                {index + 1} / {total}
-              </span>
-              {remaining ? <span className="ml-2">{remaining}</span> : null}
-            </p>
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:py-10">
+        <div className={total > 1 ? "lg:grid lg:grid-cols-[18rem_minmax(0,1fr)] lg:items-start lg:gap-8" : ""}>
+          {total > 1 ? (
+            <aside className="lg:sticky lg:top-24">
+              <div className="mb-3 flex items-baseline justify-between gap-3">
+                <h2 className="text-sm font-semibold text-ink">{listLabel}</h2>
+                <span className="text-xs tabular-nums text-mute">{total}</span>
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1 lg:block lg:max-h-[calc(100vh-8rem)] lg:space-y-2 lg:overflow-y-auto lg:pb-0">
+                {banners.map((banner) => {
+                  const selected = banner.id === active?.id;
+                  return (
+                    <button
+                      key={banner.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => onSelect?.(banner.id)}
+                      className={`flex w-56 shrink-0 items-center gap-3 rounded-xl border p-2.5 text-left lg:w-full ${
+                        selected ? "border-brand-700 bg-brand-50" : "border-line bg-white hover:border-brand-600"
+                      }`}
+                    >
+                      <img src={banner.src} alt="" className="h-14 w-16 shrink-0 rounded-lg bg-paper object-cover object-top" />
+                      <span className="line-clamp-2 min-w-0 text-sm font-semibold leading-snug">
+                        {bannerName(banner, lang) || (lang === "zh" ? "中文名" : "English name")}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </aside>
+          ) : null}
+          <div className={total > 1 ? "mt-6 min-w-0 lg:mt-0" : "min-w-0"}>
+            {active ? <PosterView key={active.src} src={active.src} name={name} /> : null}
+            {children}
           </div>
-        ) : null}
-        {active ? (
-          <div className={`${total > 1 ? "mt-6" : ""} mx-auto max-w-xl overflow-hidden rounded-2xl border border-line bg-white`}>
-            <img key={active.src} src={active.src} alt={name} className="block h-auto w-full" />
-          </div>
-        ) : null}
+        </div>
       </div>
     </div>
   );

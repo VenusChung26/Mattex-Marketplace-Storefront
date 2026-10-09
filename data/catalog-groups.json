@@ -1,0 +1,3294 @@
+{
+  "groups": [
+    {
+      "id": "鋼筋網-reinforcement-mesh-鋼筋網-reinforcement-mesh",
+      "name": "鋼筋網, Reinforcement Mesh",
+      "members": [
+        {
+          "productId": "mkt-mesh-a142",
+          "productNo": "MKT-MESH-A142",
+          "option": "A142"
+        },
+        {
+          "productId": "mkt-mesh-a193",
+          "productNo": "MKT-MESH-A193",
+          "option": "A193"
+        },
+        {
+          "productId": "mkt-mesh-a252",
+          "productNo": "MKT-MESH-A252",
+          "option": "A252"
+        },
+        {
+          "productId": "mkt-mesh-a393",
+          "productNo": "MKT-MESH-A393",
+          "option": "A393"
+        },
+        {
+          "productId": "mkt-mesh-b503",
+          "productNo": "MKT-MESH-B503",
+          "option": "B503"
+        },
+        {
+          "productId": "mkt-mesh-c283",
+          "productNo": "MKT-MESH-C283",
+          "option": "C283"
+        },
+        {
+          "productId": "mkt-mesh-c503",
+          "productNo": "MKT-MESH-C503",
+          "option": "C503"
+        },
+        {
+          "productId": "mkt-mesh-c636",
+          "productNo": "MKT-MESH-C636",
+          "option": "C636"
+        },
+        {
+          "productId": "mkt-mesh-b1131",
+          "productNo": "MKT-MESH-B1131",
+          "option": "B1131"
+        },
+        {
+          "productId": "mkt-mesh-b785",
+          "productNo": "MKT-MESH-B785",
+          "option": "B785"
+        },
+        {
+          "productId": "mkt-mesh-b283",
+          "productNo": "MKT-MESH-B283",
+          "option": "B283"
+        },
+        {
+          "productId": "mkt-mesh-c785",
+          "productNo": "MKT-MESH-C785",
+          "option": "C785"
+        }
+      ]
+    },
+    {
+      "id": "密目防燃安全網-dense-mesh-flame-retardant-safety-net-2",
+      "name": "(2)",
+      "members": [
+        {
+          "productId": "mkt-dense-mesh-flame-retardant-safety-net-fr-safety-net-1-5x6m",
+          "productNo": "MKT-DMF-0002",
+          "option": "1.5*6m"
+        },
+        {
+          "productId": "mkt-dense-mesh-flame-retardant-safety-net-fr-safety-net-2x8m",
+          "productNo": "MKT-DMF-0003",
+          "option": "2*8m"
+        },
+        {
+          "productId": "mkt-dense-mesh-flame-retardant-safety-net-fr-safety-net-4x10m",
+          "productNo": "MKT-DMF-0004",
+          "option": "4*10m"
+        },
+        {
+          "productId": "mkt-dense-mesh-flame-retardant-safety-net-fr-safety-net-4x15m",
+          "productNo": "MKT-DMF-0005",
+          "option": "4*15m"
+        }
+      ]
+    },
+    {
+      "id": "密目防燃安全網-dense-mesh-flame-retardant-safety-net-3",
+      "name": "(3)",
+      "members": [
+        {
+          "productId": "mkt-dense-mesh-flame-retardant-safety-net-fr-safety-net-4x9m-2",
+          "productNo": "MKT-DMF-0006",
+          "option": "4*9m"
+        },
+        {
+          "productId": "mkt-dense-mesh-flame-retardant-safety-net-fr-safety-net-2x18m",
+          "productNo": "MKT-DMF-0007",
+          "option": "2x18m"
+        }
+      ]
+    },
+    {
+      "id": "擠塑板-xps-foam-board-jl150-b1-b2",
+      "name": "JL150 (B1) (B2)",
+      "members": [
+        {
+          "productId": "mkt-xps-foam-board-jl150-xps-50-mm",
+          "productNo": "MKT-XFB-0001",
+          "option": "1200x600x50"
+        },
+        {
+          "productId": "mkt-xps-foam-board-jl150-xps-75-mm",
+          "productNo": "MKT-XFB-0002",
+          "option": "1200x600x75"
+        },
+        {
+          "productId": "mkt-xps-foam-board-jl150-xps-100-mm",
+          "productNo": "MKT-XFB-0003",
+          "option": "1200x600x100"
+        }
+      ]
+    },
+    {
+      "id": "擠塑板-xps-foam-board-jl250-b1-b2",
+      "name": "JL250 (B1) (B2)",
+      "members": [
+        {
+          "productId": "mkt-xps-foam-board-jl250-xps-50-mm",
+          "productNo": "MKT-XFB-0004",
+          "option": "1200x600x50"
+        },
+        {
+          "productId": "mkt-xps-foam-board-jl250-xps-75-mm",
+          "productNo": "MKT-XFB-0005",
+          "option": "1200x600x75"
+        },
+        {
+          "productId": "mkt-xps-foam-board-jl250-xps-100-mm",
+          "productNo": "MKT-XFB-0006",
+          "option": "1200x600x100"
+        }
+      ]
+    },
+    {
+      "id": "擠塑板-xps-foam-board-jl350-b1-b2",
+      "name": "JL350 (B1) (B2)",
+      "members": [
+        {
+          "productId": "mkt-xps-foam-board-jl350-xps-50-mm",
+          "productNo": "MKT-XFB-0007",
+          "option": "1200x600x50"
+        },
+        {
+          "productId": "mkt-xps-foam-board-jl350-xps-75-mm",
+          "productNo": "MKT-XFB-0008",
+          "option": "1200x600x75"
+        },
+        {
+          "productId": "mkt-xps-foam-board-jl350-xps-100-mm",
+          "productNo": "MKT-XFB-0009",
+          "option": "1200x600x100"
+        }
+      ]
+    },
+    {
+      "id": "擠塑板-xps-foam-board-jl450-b1-b2",
+      "name": "JL450 (B1) (B2)",
+      "members": [
+        {
+          "productId": "mkt-xps-foam-board-jl450-xps-50-mm",
+          "productNo": "MKT-XFB-0010",
+          "option": "1200x600x50"
+        },
+        {
+          "productId": "mkt-xps-foam-board-jl450-xps-75-mm",
+          "productNo": "MKT-XFB-0011",
+          "option": "1200x600x75"
+        },
+        {
+          "productId": "mkt-xps-foam-board-jl450-xps-100-mm",
+          "productNo": "MKT-XFB-0012",
+          "option": "1200x600x100"
+        }
+      ]
+    },
+    {
+      "id": "擠塑板-xps-foam-board-jl500-b1-b2",
+      "name": "JL500 (B1) (B2)",
+      "members": [
+        {
+          "productId": "mkt-xps-foam-board-jl500-xps-50-mm",
+          "productNo": "MKT-XFB-0013",
+          "option": "1200x600x50"
+        },
+        {
+          "productId": "mkt-xps-foam-board-jl500-xps-75-mm",
+          "productNo": "MKT-XFB-0014",
+          "option": "1200x600x75"
+        },
+        {
+          "productId": "mkt-xps-foam-board-jl500-xps-100-mm",
+          "productNo": "MKT-XFB-0015",
+          "option": "1200x600x100"
+        }
+      ]
+    },
+    {
+      "id": "擠塑板-xps-foam-board-jl700-b1-b2",
+      "name": "JL700 (B1) (B2)",
+      "members": [
+        {
+          "productId": "mkt-xps-foam-board-jl700-xps-50-mm",
+          "productNo": "MKT-XFB-0016",
+          "option": "1200x600x50"
+        },
+        {
+          "productId": "mkt-xps-foam-board-jl700-xps-75-mm",
+          "productNo": "MKT-XFB-0017",
+          "option": "1200x600x75"
+        },
+        {
+          "productId": "mkt-xps-foam-board-jl700-xps-100-mm",
+          "productNo": "MKT-XFB-0018",
+          "option": "1200x600x100"
+        }
+      ]
+    },
+    {
+      "id": "擠塑板-xps-foam-board-jl900-b1-b2",
+      "name": "JL900 (B1) (B2)",
+      "members": [
+        {
+          "productId": "mkt-xps-foam-board-jl900-xps-50-mm",
+          "productNo": "MKT-XFB-0019",
+          "option": "1200x600x50"
+        },
+        {
+          "productId": "mkt-xps-foam-board-jl900-xps-75-mm",
+          "productNo": "MKT-XFB-0020",
+          "option": "1200x600x75"
+        },
+        {
+          "productId": "mkt-xps-foam-board-jl900-xps-100-mm",
+          "productNo": "MKT-XFB-0021",
+          "option": "1200x600x100"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-textrue-sintered-stone",
+      "name": "Textrue · Sintered Stone",
+      "members": [
+        {
+          "productId": "mkt-tiles-textrue-sintered-stone-900x2600mm",
+          "productNo": "MKT-T-0002",
+          "option": "900*2600mm"
+        },
+        {
+          "productId": "mkt-tiles-textrue-sintered-stone-1200x2700mm",
+          "productNo": "MKT-T-0003",
+          "option": "1200*2700mm"
+        },
+        {
+          "productId": "mkt-tiles-textrue-sintered-stone-1200x3000mm",
+          "productNo": "MKT-T-0004",
+          "option": "1200*3000mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-the-divine-light-series",
+      "name": "The Divine Light Series",
+      "members": [
+        {
+          "productId": "mkt-tiles-the-divine-light-series-600x1200mm",
+          "productNo": "MKT-T-0005",
+          "option": "600*1200mm"
+        },
+        {
+          "productId": "mkt-tiles-the-divine-light-series-900x1800mm",
+          "productNo": "MKT-T-0006",
+          "option": "900*1800mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-marble-design-series",
+      "name": "Marble Design Series",
+      "members": [
+        {
+          "productId": "mkt-tiles-marble-design-series-800x800mm",
+          "productNo": "MKT-T-0007",
+          "option": "800*800mm"
+        },
+        {
+          "productId": "mkt-tiles-marble-design-series-600x1200mm",
+          "productNo": "MKT-T-0008",
+          "option": "600*1200mm"
+        },
+        {
+          "productId": "mkt-tiles-marble-design-series-750x1500mm",
+          "productNo": "MKT-T-0009",
+          "option": "750*1500mm"
+        },
+        {
+          "productId": "mkt-tiles-marble-design-series-900x1800mm",
+          "productNo": "MKT-T-0010",
+          "option": "900*1800mm"
+        },
+        {
+          "productId": "mkt-tiles-marble-design-series-400x800mm",
+          "productNo": "MKT-T-0022",
+          "option": "400*800mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-kun-lun-marble-design-series",
+      "name": "Kun Lun Marble Design Series",
+      "members": [
+        {
+          "productId": "mkt-tiles-kun-lun-marble-design-series-750x1500mm",
+          "productNo": "MKT-T-0011",
+          "option": "750*1500mm"
+        },
+        {
+          "productId": "mkt-tiles-kun-lun-marble-design-series-900x1800mm",
+          "productNo": "MKT-T-0012",
+          "option": "900*1800mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-texture-rustic-series",
+      "name": "Texture Rustic Series",
+      "members": [
+        {
+          "productId": "mkt-tiles-texture-rustic-series-900x1800mm",
+          "productNo": "MKT-T-0014",
+          "option": "900*1800mm"
+        },
+        {
+          "productId": "mkt-tiles-texture-rustic-series-800x800mm",
+          "productNo": "MKT-T-0018",
+          "option": "800*800mm"
+        },
+        {
+          "productId": "mkt-tiles-texture-rustic-series-600x1200mm",
+          "productNo": "MKT-T-0019",
+          "option": "600*1200mm"
+        },
+        {
+          "productId": "mkt-tiles-texture-rustic-series-600x1350mm",
+          "productNo": "MKT-T-0020",
+          "option": "600*1350mm"
+        },
+        {
+          "productId": "mkt-tiles-texture-rustic-series-750x1500mm",
+          "productNo": "MKT-T-0021",
+          "option": "750*1500mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-celestial-mountains-texture-rustic-series",
+      "name": "Celestial Mountains Texture Rustic Series",
+      "members": [
+        {
+          "productId": "mkt-tiles-celestial-mountains-texture-rustic-series-",
+          "productNo": "MKT-T-0015",
+          "option": "600*1200mm"
+        },
+        {
+          "productId": "mkt-tiles-celestial-mountains-texture-rustic-series--2",
+          "productNo": "MKT-T-0016",
+          "option": "600*1350mm"
+        },
+        {
+          "productId": "mkt-tiles-celestial-mountains-texture-rustic-series--3",
+          "productNo": "MKT-T-0017",
+          "option": "900*1800mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-wood-design-series",
+      "name": "Wood Design Series",
+      "members": [
+        {
+          "productId": "mkt-tiles-wood-design-series-200x1200mm",
+          "productNo": "MKT-T-0023",
+          "option": "200*1200mm"
+        },
+        {
+          "productId": "mkt-tiles-wood-design-series-250x1500mm",
+          "productNo": "MKT-T-0024",
+          "option": "250*1500mm"
+        },
+        {
+          "productId": "mkt-tiles-wood-design-series-600x1200mm",
+          "productNo": "MKT-T-0025",
+          "option": "600*1200mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-slate-export-product",
+      "name": "Slate (Export Product)",
+      "members": [
+        {
+          "productId": "mkt-tiles-slate-export-product-600x600mm",
+          "productNo": "MKT-T-0026",
+          "option": "600*600mm"
+        },
+        {
+          "productId": "mkt-tiles-slate-export-product-600x1200mm",
+          "productNo": "MKT-T-0027",
+          "option": "600*1200mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-limestone-xz-export-product",
+      "name": "Limestone XZ (Export Product)",
+      "members": [
+        {
+          "productId": "mkt-tiles-limestone-xz-export-product-600x600mm",
+          "productNo": "MKT-T-0028",
+          "option": "600*600mm"
+        },
+        {
+          "productId": "mkt-tiles-limestone-xz-export-product-600x1200mm",
+          "productNo": "MKT-T-0029",
+          "option": "600*1200mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-portland-series-export-product",
+      "name": "Portland Series (Export Product)",
+      "members": [
+        {
+          "productId": "mkt-tiles-portland-series-export-product-600x600mm",
+          "productNo": "MKT-T-0030",
+          "option": "600*600mm"
+        },
+        {
+          "productId": "mkt-tiles-portland-series-export-product-600x1200mm",
+          "productNo": "MKT-T-0031",
+          "option": "600*1200mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-super-white-series-export-product",
+      "name": "Super White Series (Export Product)",
+      "members": [
+        {
+          "productId": "mkt-tiles-super-white-series-export-product-600x600m",
+          "productNo": "MKT-T-0033",
+          "option": "600*600mm"
+        },
+        {
+          "productId": "mkt-tiles-super-white-series-export-product-600x1200",
+          "productNo": "MKT-T-0034",
+          "option": "600*1200mm"
+        },
+        {
+          "productId": "mkt-tiles-super-white-series-export-product-750x1500",
+          "productNo": "MKT-T-0035",
+          "option": "750*1500mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-pure-color",
+      "name": "Pure Color",
+      "members": [
+        {
+          "productId": "mkt-tiles-pure-color-600x600mm",
+          "productNo": "MKT-T-0037",
+          "option": "600*600mm"
+        },
+        {
+          "productId": "mkt-tiles-pure-color-800x800mm",
+          "productNo": "MKT-T-0038",
+          "option": "800*800mm"
+        },
+        {
+          "productId": "mkt-tiles-pure-color-600x1200mm",
+          "productNo": "MKT-T-0039",
+          "option": "600*1200mm"
+        },
+        {
+          "productId": "mkt-tiles-pure-color-900x1800mm",
+          "productNo": "MKT-T-0040",
+          "option": "900*1800mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-snow-white",
+      "name": "Snow White",
+      "members": [
+        {
+          "productId": "mkt-tiles-snow-white-600x600mm",
+          "productNo": "MKT-T-0041",
+          "option": "600*600mm"
+        },
+        {
+          "productId": "mkt-tiles-snow-white-800x800mm",
+          "productNo": "MKT-T-0042",
+          "option": "800*800mm"
+        },
+        {
+          "productId": "mkt-tiles-snow-white-600x1200mm",
+          "productNo": "MKT-T-0043",
+          "option": "600*1200mm"
+        },
+        {
+          "productId": "mkt-tiles-snow-white-900x1800mm",
+          "productNo": "MKT-T-0044",
+          "option": "900*1800mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-solar-stone",
+      "name": "Solar Stone",
+      "members": [
+        {
+          "productId": "mkt-tiles-solar-stone-600x600mm",
+          "productNo": "MKT-T-0045",
+          "option": "600*600mm"
+        },
+        {
+          "productId": "mkt-tiles-solar-stone-600x1200mm",
+          "productNo": "MKT-T-0046",
+          "option": "600*1200mm"
+        },
+        {
+          "productId": "mkt-tiles-solar-stone-900x1800mm",
+          "productNo": "MKT-T-0047",
+          "option": "900*1800mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-salt-and-pepper",
+      "name": "Salt and Pepper",
+      "members": [
+        {
+          "productId": "mkt-tiles-salt-and-pepper-600x600mm",
+          "productNo": "MKT-T-0048",
+          "option": "600*600mm"
+        },
+        {
+          "productId": "mkt-tiles-salt-and-pepper-600x1200mm",
+          "productNo": "MKT-T-0049",
+          "option": "600*1200mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-charm-series",
+      "name": "Charm Series",
+      "members": [
+        {
+          "productId": "mkt-tiles-charm-series-900x1800mm",
+          "productNo": "MKT-T-0054",
+          "option": "900*1800mm"
+        },
+        {
+          "productId": "mkt-tiles-charm-series-900x2600mm",
+          "productNo": "MKT-T-0055",
+          "option": "900*2600mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-moonlight-rock",
+      "name": "Moonlight Rock",
+      "members": [
+        {
+          "productId": "mkt-tiles-moonlight-rock-750x1500mm",
+          "productNo": "MKT-T-0056",
+          "option": "750*1500mm"
+        },
+        {
+          "productId": "mkt-tiles-moonlight-rock-900x1800mm",
+          "productNo": "MKT-T-0057",
+          "option": "900*1800mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-textured-marble",
+      "name": "Textured Marble",
+      "members": [
+        {
+          "productId": "mkt-tiles-textured-marble-800x800mm",
+          "productNo": "MKT-T-0058",
+          "option": "800*800mm"
+        },
+        {
+          "productId": "mkt-tiles-textured-marble-750x1500mm",
+          "productNo": "MKT-T-0059",
+          "option": "750*1500mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-plan-luxury-micro-cement",
+      "name": "Plan Luxury · Micro Cement",
+      "members": [
+        {
+          "productId": "mkt-tiles-plan-luxury-micro-cement-600x1200x9mm",
+          "productNo": "MKT-T-0060",
+          "option": "600*1200*9mm"
+        },
+        {
+          "productId": "mkt-tiles-plan-luxury-micro-cement-750x1500x9-5mm",
+          "productNo": "MKT-T-0061",
+          "option": "750*1500*9.5mm"
+        },
+        {
+          "productId": "mkt-tiles-plan-luxury-micro-cement-750x1500x10mm",
+          "productNo": "MKT-T-0062",
+          "option": "750*1500*10mm"
+        },
+        {
+          "productId": "mkt-tiles-plan-luxury-micro-cement-900x1800x10mm",
+          "productNo": "MKT-T-0063",
+          "option": "900*1800*10mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-jing-max",
+      "name": "Jing MAX",
+      "members": [
+        {
+          "productId": "mkt-tiles-jing-max-750x1500x9-5mm",
+          "productNo": "MKT-T-0064",
+          "option": "750*1500*9.5mm"
+        },
+        {
+          "productId": "mkt-tiles-jing-max-750x1500x10mm",
+          "productNo": "MKT-T-0065",
+          "option": "750*1500*10mm"
+        },
+        {
+          "productId": "mkt-tiles-jing-max-900x1800x10mm",
+          "productNo": "MKT-T-0066",
+          "option": "900*1800*10mm"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-rock-slab",
+      "name": "Rock Slab",
+      "members": [
+        {
+          "productId": "mkt-tiles-rock-slab-1200x2400x9mm",
+          "productNo": "MKT-T-0067",
+          "option": "1200*2400*9mm"
+        },
+        {
+          "productId": "mkt-tiles-rock-slab-800x2600x9mm",
+          "productNo": "MKT-T-0068",
+          "option": "800*2600*9mm"
+        },
+        {
+          "productId": "mkt-tiles-rock-slab-1000x2600x9mm-glazed",
+          "productNo": "MKT-T-0069",
+          "option": "1000*2600*9mm Glazed"
+        },
+        {
+          "productId": "mkt-tiles-rock-slab-1200x2700x6mm-glazed",
+          "productNo": "MKT-T-0070",
+          "option": "1200*2700*6mm Glazed"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-star-stone",
+      "name": "Star Stone",
+      "members": [
+        {
+          "productId": "mkt-tiles-star-stone-600x1200mm-glazed",
+          "productNo": "MKT-T-0071",
+          "option": "600*1200mm Glazed"
+        },
+        {
+          "productId": "mkt-tiles-star-stone-800x800mm-glazed",
+          "productNo": "MKT-T-0072",
+          "option": "800*800mm Glazed"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-super-stone",
+      "name": "Super Stone",
+      "members": [
+        {
+          "productId": "mkt-tiles-super-stone-600x1200mm-glazed",
+          "productNo": "MKT-T-0073",
+          "option": "600*1200mm Glazed"
+        },
+        {
+          "productId": "mkt-tiles-super-stone-600x600mm-glazed",
+          "productNo": "MKT-T-0085",
+          "option": "600*600mm Glazed"
+        },
+        {
+          "productId": "mkt-tiles-super-stone-800x800mm-glazed",
+          "productNo": "MKT-T-0086",
+          "option": "800*800mm Glazed"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-royal-glaze",
+      "name": "Royal Glaze",
+      "members": [
+        {
+          "productId": "mkt-tiles-royal-glaze-800x800mm-glazed",
+          "productNo": "MKT-T-0074",
+          "option": "800*800mm Glazed"
+        },
+        {
+          "productId": "mkt-tiles-royal-glaze-600x1200x9mm-glazed",
+          "productNo": "MKT-T-0075",
+          "option": "600*1200*9mm Glazed"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-forest-song-series",
+      "name": "Forest Song Series",
+      "members": [
+        {
+          "productId": "mkt-tiles-forest-song-series-150x900mm-glazed",
+          "productNo": "MKT-T-0076",
+          "option": "150*900mm Glazed"
+        },
+        {
+          "productId": "mkt-tiles-forest-song-series-200x1200mm-glazed",
+          "productNo": "MKT-T-0077",
+          "option": "200*1200mm Glazed"
+        },
+        {
+          "productId": "mkt-tiles-forest-song-series-600x1200mm-glazed",
+          "productNo": "MKT-T-0078",
+          "option": "600*1200mm Glazed"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-cenozoic-era",
+      "name": "Cenozoic Era",
+      "members": [
+        {
+          "productId": "mkt-tiles-cenozoic-era-600x600mm-glazed",
+          "productNo": "MKT-T-0080",
+          "option": "600*600mm Glazed"
+        },
+        {
+          "productId": "mkt-tiles-cenozoic-era-800x800mm-glazed",
+          "productNo": "MKT-T-0081",
+          "option": "800*800mm Glazed"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-godness",
+      "name": "Godness",
+      "members": [
+        {
+          "productId": "mkt-tiles-godness-600x600mm-matt-surface-r9",
+          "productNo": "MKT-T-0082",
+          "option": "600*600mm Matt surface-R9"
+        },
+        {
+          "productId": "mkt-tiles-godness-800x800mm-matt-surface-r9",
+          "productNo": "MKT-T-0083",
+          "option": "800*800mm Matt surface-R9"
+        },
+        {
+          "productId": "mkt-tiles-godness-600x1200mm-matt-surface-r9",
+          "productNo": "MKT-T-0084",
+          "option": "600*1200mm Matt surface-R9"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-light-luxury-vitrolite-series",
+      "name": "Light Luxury · Vitrolite Series",
+      "members": [
+        {
+          "productId": "mkt-tiles-light-luxury-vitrolite-series-400x400mm-gl",
+          "productNo": "MKT-T-0088",
+          "option": "400*400mm Glazed"
+        },
+        {
+          "productId": "mkt-tiles-light-luxury-vitrolite-series-400x800mm-gl",
+          "productNo": "MKT-T-0089",
+          "option": "400*800mm Glazed"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-urban-porcelain-classic",
+      "name": "Urban Porcelain Classic",
+      "members": [
+        {
+          "productId": "mkt-tiles-urban-porcelain-classic-300x300mm-glazed",
+          "productNo": "MKT-T-0090",
+          "option": "300*300mm Glazed"
+        },
+        {
+          "productId": "mkt-tiles-urban-porcelain-classic-300x600mm-glazed",
+          "productNo": "MKT-T-0091",
+          "option": "300*600mm Glazed"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-lime",
+      "name": "Lime",
+      "members": [
+        {
+          "productId": "mkt-tiles-lime-600x600mm-r11",
+          "productNo": "MKT-T-0092",
+          "option": "600*600mm R11"
+        },
+        {
+          "productId": "mkt-tiles-lime-600x1200mm-r11",
+          "productNo": "MKT-T-0093",
+          "option": "600*1200mm R11"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-stay-stone",
+      "name": "Stay Stone",
+      "members": [
+        {
+          "productId": "mkt-tiles-stay-stone-600x600mm-r10",
+          "productNo": "MKT-T-0094",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-stay-stone-800x800mm-r10",
+          "productNo": "MKT-T-0095",
+          "option": "800*800mm R10"
+        },
+        {
+          "productId": "mkt-tiles-stay-stone-600x1200mm-r10",
+          "productNo": "MKT-T-0096",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-shoreline-serenity",
+      "name": "Shoreline Serenity",
+      "members": [
+        {
+          "productId": "mkt-tiles-shoreline-serenity-600x600mm-r9",
+          "productNo": "MKT-T-0097",
+          "option": "600*600mm R9"
+        },
+        {
+          "productId": "mkt-tiles-shoreline-serenity-600x1200mm-r9",
+          "productNo": "MKT-T-0098",
+          "option": "600*1200mm R9"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-nimbus",
+      "name": "Nimbus",
+      "members": [
+        {
+          "productId": "mkt-tiles-nimbus-600x600mm-r10",
+          "productNo": "MKT-T-0099",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-nimbus-600x1200mm-r10",
+          "productNo": "MKT-T-0100",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-crest",
+      "name": "Crest",
+      "members": [
+        {
+          "productId": "mkt-tiles-crest-600x600mm-r10",
+          "productNo": "MKT-T-0101",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-crest-600x1200mm-r10",
+          "productNo": "MKT-T-0102",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-yuma",
+      "name": "Yuma",
+      "members": [
+        {
+          "productId": "mkt-tiles-yuma-600x600mm-r9",
+          "productNo": "MKT-T-0103",
+          "option": "600*600mm R9"
+        },
+        {
+          "productId": "mkt-tiles-yuma-600x1200mm-r9",
+          "productNo": "MKT-T-0104",
+          "option": "600*1200mm R9"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-florida",
+      "name": "Florida",
+      "members": [
+        {
+          "productId": "mkt-tiles-florida-600x600mm-r10",
+          "productNo": "MKT-T-0105",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-florida-600x1200mm-r10",
+          "productNo": "MKT-T-0106",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-lowa",
+      "name": "Lowa",
+      "members": [
+        {
+          "productId": "mkt-tiles-lowa-600x600mm-r10",
+          "productNo": "MKT-T-0107",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-lowa-600x1200mm-r10",
+          "productNo": "MKT-T-0108",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-glassgow",
+      "name": "Glassgow",
+      "members": [
+        {
+          "productId": "mkt-tiles-glassgow-600x600mm-r10",
+          "productNo": "MKT-T-0109",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-glassgow-600x1200mm-r10",
+          "productNo": "MKT-T-0110",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-malbec",
+      "name": "Malbec",
+      "members": [
+        {
+          "productId": "mkt-tiles-malbec-600x600mm-r10",
+          "productNo": "MKT-T-0111",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-malbec-600x1200mm-r10",
+          "productNo": "MKT-T-0112",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-england",
+      "name": "England",
+      "members": [
+        {
+          "productId": "mkt-tiles-england-600x600mm-r10",
+          "productNo": "MKT-T-0116",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-england-600x1200mm-r10",
+          "productNo": "MKT-T-0117",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-rock",
+      "name": "Rock",
+      "members": [
+        {
+          "productId": "mkt-tiles-rock-600x600mm-r10",
+          "productNo": "MKT-T-0118",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-rock-600x1200mm-r10",
+          "productNo": "MKT-T-0119",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-metro",
+      "name": "Metro",
+      "members": [
+        {
+          "productId": "mkt-tiles-metro-600x600mm-r10",
+          "productNo": "MKT-T-0120",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-metro-600x1200mm-r10",
+          "productNo": "MKT-T-0121",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-king-sotne",
+      "name": "King Sotne",
+      "members": [
+        {
+          "productId": "mkt-tiles-king-sotne-600x600mm-r10",
+          "productNo": "MKT-T-0122",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-king-sotne-600x1200mm-r10",
+          "productNo": "MKT-T-0123",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-belfast",
+      "name": "Belfast",
+      "members": [
+        {
+          "productId": "mkt-tiles-belfast-600x600mm-r10",
+          "productNo": "MKT-T-0124",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-belfast-600x1200mm-r10",
+          "productNo": "MKT-T-0125",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-auks",
+      "name": "Auks",
+      "members": [
+        {
+          "productId": "mkt-tiles-auks-600x600mm-r10",
+          "productNo": "MKT-T-0130",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-auks-600x1200mm-r10",
+          "productNo": "MKT-T-0131",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-hutone",
+      "name": "Hutone",
+      "members": [
+        {
+          "productId": "mkt-tiles-hutone-600x600mm-r10",
+          "productNo": "MKT-T-0132",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-hutone-600x1200mm-r10",
+          "productNo": "MKT-T-0133",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-lore-stone",
+      "name": "Lore Stone",
+      "members": [
+        {
+          "productId": "mkt-tiles-lore-stone-600x600mm-r10",
+          "productNo": "MKT-T-0136",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-lore-stone-600x1200mm-r10",
+          "productNo": "MKT-T-0137",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-luna",
+      "name": "Luna",
+      "members": [
+        {
+          "productId": "mkt-tiles-luna-600x600mm-r10",
+          "productNo": "MKT-T-0138",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-luna-600x1200mm-r10",
+          "productNo": "MKT-T-0139",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-sand-stone",
+      "name": "Sand Stone",
+      "members": [
+        {
+          "productId": "mkt-tiles-sand-stone-600x600mm-r10",
+          "productNo": "MKT-T-0140",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-sand-stone-600x1200mm-r10",
+          "productNo": "MKT-T-0141",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-turkey",
+      "name": "Turkey",
+      "members": [
+        {
+          "productId": "mkt-tiles-turkey-600x600mm-r10",
+          "productNo": "MKT-T-0145",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-turkey-600x1200mm-r10",
+          "productNo": "MKT-T-0146",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-tibet",
+      "name": "Tibet",
+      "members": [
+        {
+          "productId": "mkt-tiles-tibet-600x600mm-r10",
+          "productNo": "MKT-T-0147",
+          "option": "600*600mm R10"
+        },
+        {
+          "productId": "mkt-tiles-tibet-600x1200mm-r10",
+          "productNo": "MKT-T-0148",
+          "option": "600*1200mm R10"
+        }
+      ]
+    },
+    {
+      "id": "預製混凝土-precasted-concrete-precast-concrete-block",
+      "name": "Precast Concrete Block",
+      "members": [
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-block-300x300x200",
+          "productNo": "MKT-PC-0001",
+          "option": "300x300x200"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-block-1000x1000x1000",
+          "productNo": "MKT-PC-0002",
+          "option": "1000x1000x1000"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-block-1200x500x1700mm",
+          "productNo": "MKT-PC-0003",
+          "option": "1200 x 500 x 1700mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-block-1500x1300x1000mm",
+          "productNo": "MKT-PC-0004",
+          "option": "1500 x 1300 x 1000mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-block-2400x750x600mm",
+          "productNo": "MKT-PC-0005",
+          "option": "2400 x 750 x 600mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-block-2800x250x750mm",
+          "productNo": "MKT-PC-0006",
+          "option": "2800 x 250 x 750mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-block-5100x425x1200mm",
+          "productNo": "MKT-PC-0007",
+          "option": "5100 x 425 x 1200mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-block-customize",
+          "productNo": "MKT-PC-0008",
+          "option": "Customize"
+        }
+      ]
+    },
+    {
+      "id": "結構鋼-金屬製品-structure-steel-element-metal-product-equal-angles",
+      "name": "Equal Angles",
+      "members": [
+        {
+          "productId": "mkt-loc-y7auttmr-001",
+          "productNo": "MKT-LOC-Y7AUTTMR-001",
+          "option": "Grading / option: S275J0"
+        },
+        {
+          "productId": "mkt-loc-y7auttmr-002",
+          "productNo": "MKT-LOC-Y7AUTTMR-002",
+          "option": "Grading / option: S355J0"
+        }
+      ]
+    },
+    {
+      "id": "結構鋼-金屬製品-structure-steel-element-metal-product-square-reinforcement-mesh",
+      "name": "Square Reinforcement Mesh",
+      "members": [
+        {
+          "productId": "mkt-loc-tecmp8tz-001",
+          "productNo": "MKT-LOC-TECMP8TZ-001",
+          "option": "2.1m x 4.8m / Customize · MKT-LOC-TECMP8TZ-001"
+        },
+        {
+          "productId": "mkt-loc-tecmp8tz-002",
+          "productNo": "MKT-LOC-TECMP8TZ-002",
+          "option": "2.1m x 4.8m / Customize · MKT-LOC-TECMP8TZ-002"
+        },
+        {
+          "productId": "mkt-loc-tecmp8tz-003",
+          "productNo": "MKT-LOC-TECMP8TZ-003",
+          "option": "2.1m x 4.8m / Customize · MKT-LOC-TECMP8TZ-003"
+        },
+        {
+          "productId": "mkt-loc-tecmp8tz-004",
+          "productNo": "MKT-LOC-TECMP8TZ-004",
+          "option": "2.1m x 4.8m / Customize · MKT-LOC-TECMP8TZ-004"
+        }
+      ]
+    },
+    {
+      "id": "結構鋼-金屬製品-structure-steel-element-metal-product-building-structural-mesh",
+      "name": "Building Structural Mesh",
+      "members": [
+        {
+          "productId": "mkt-loc-tecmp8tz-005",
+          "productNo": "MKT-LOC-TECMP8TZ-005",
+          "option": "2.1m x 4.8m / Customize · MKT-LOC-TECMP8TZ-005"
+        },
+        {
+          "productId": "mkt-loc-tecmp8tz-006",
+          "productNo": "MKT-LOC-TECMP8TZ-006",
+          "option": "2.1m x 4.8m / Customize · MKT-LOC-TECMP8TZ-006"
+        },
+        {
+          "productId": "mkt-loc-tecmp8tz-007",
+          "productNo": "MKT-LOC-TECMP8TZ-007",
+          "option": "2.1m x 4.8m / Customize · MKT-LOC-TECMP8TZ-007"
+        },
+        {
+          "productId": "mkt-loc-tecmp8tz-008",
+          "productNo": "MKT-LOC-TECMP8TZ-008",
+          "option": "2.1m x 4.8m / Customize · MKT-LOC-TECMP8TZ-008"
+        }
+      ]
+    },
+    {
+      "id": "結構鋼-金屬製品-structure-steel-element-metal-product-rectangular-reinforcement",
+      "name": "Rectangular Reinforcement Mesh",
+      "members": [
+        {
+          "productId": "mkt-loc-tecmp8tz-009",
+          "productNo": "MKT-LOC-TECMP8TZ-009",
+          "option": "2.1m x 4.8m / Customize · MKT-LOC-TECMP8TZ-009"
+        },
+        {
+          "productId": "mkt-loc-tecmp8tz-010",
+          "productNo": "MKT-LOC-TECMP8TZ-010",
+          "option": "2.1m x 4.8m / Customize · MKT-LOC-TECMP8TZ-010"
+        },
+        {
+          "productId": "mkt-loc-tecmp8tz-011",
+          "productNo": "MKT-LOC-TECMP8TZ-011",
+          "option": "2.1m x 4.8m / Customize · MKT-LOC-TECMP8TZ-011"
+        },
+        {
+          "productId": "mkt-loc-tecmp8tz-012",
+          "productNo": "MKT-LOC-TECMP8TZ-012",
+          "option": "2.1m x 4.8m / Customize · MKT-LOC-TECMP8TZ-012"
+        }
+      ]
+    },
+    {
+      "id": "結構鋼-金屬製品-structure-steel-element-metal-product-universal-beams",
+      "name": "Universal Beams",
+      "members": [
+        {
+          "productId": "mkt-loc-voyf7hif-001",
+          "productNo": "MKT-LOC-VOYF7HIF-001",
+          "option": "Grading / option: S275J0"
+        },
+        {
+          "productId": "mkt-loc-voyf7hif-002",
+          "productNo": "MKT-LOC-VOYF7HIF-002",
+          "option": "Grading / option: S355J0"
+        },
+        {
+          "productId": "mkt-loc-voyf7hif-003",
+          "productNo": "MKT-LOC-VOYF7HIF-003",
+          "option": "Grading / option: S450J0"
+        }
+      ]
+    },
+    {
+      "id": "結構鋼-金屬製品-structure-steel-element-metal-product-circular-hollow-sections",
+      "name": "Circular Hollow Sections",
+      "members": [
+        {
+          "productId": "mkt-loc-gu8hjfoz-001",
+          "productNo": "MKT-LOC-GU8HJFOZ-001",
+          "option": "Grading / option: S275J0H / S355J0H（待配對） · MKT-LOC-GU8HJFOZ-001"
+        },
+        {
+          "productId": "mkt-loc-gu8hjfoz-002",
+          "productNo": "MKT-LOC-GU8HJFOZ-002",
+          "option": "Grading / option: S275J0H / S355J0H（待配對） · MKT-LOC-GU8HJFOZ-002"
+        }
+      ]
+    },
+    {
+      "id": "結構鋼-金屬製品-structure-steel-element-metal-product-sheet-piles",
+      "name": "Sheet Piles",
+      "members": [
+        {
+          "productId": "mkt-loc-e1z2qznk-001",
+          "productNo": "MKT-LOC-E1Z2QZNK-001",
+          "option": "Grading / option: S270GP"
+        },
+        {
+          "productId": "mkt-loc-e1z2qznk-002",
+          "productNo": "MKT-LOC-E1Z2QZNK-002",
+          "option": "Grading / option: S355GP"
+        },
+        {
+          "productId": "mkt-loc-e1z2qznk-003",
+          "productNo": "MKT-LOC-E1Z2QZNK-003",
+          "option": "Grading / option: SY295"
+        },
+        {
+          "productId": "mkt-loc-e1z2qznk-004",
+          "productNo": "MKT-LOC-E1Z2QZNK-004",
+          "option": "Grading / option: SY390"
+        }
+      ]
+    },
+    {
+      "id": "結構鋼-金屬製品-structure-steel-element-metal-product-steel-plate",
+      "name": "Steel Plate",
+      "members": [
+        {
+          "productId": "mkt-loc-ae40pxsh-001",
+          "productNo": "MKT-LOC-AE40PXSH-001",
+          "option": "Grading / option: S275M"
+        },
+        {
+          "productId": "mkt-loc-ae40pxsh-002",
+          "productNo": "MKT-LOC-AE40PXSH-002",
+          "option": "Grading / option: S355M"
+        },
+        {
+          "productId": "mkt-loc-ae40pxsh-003",
+          "productNo": "MKT-LOC-AE40PXSH-003",
+          "option": "Grading / option: S460M"
+        }
+      ]
+    },
+    {
+      "id": "結構鋼-金屬製品-structure-steel-element-metal-product-railing",
+      "name": "Railing",
+      "members": [
+        {
+          "productId": "mkt-loc-t2ncg5gk-001",
+          "productNo": "MKT-LOC-T2NCG5GK-001",
+          "option": "1460mm x 900mm (H) · MKT-LOC-T2NCG5GK-001"
+        },
+        {
+          "productId": "mkt-loc-t2ncg5gk-002",
+          "productNo": "MKT-LOC-T2NCG5GK-002",
+          "option": "1460mm x 900mm (H) · MKT-LOC-T2NCG5GK-002"
+        },
+        {
+          "productId": "mkt-loc-t2ncg5gk-003",
+          "productNo": "MKT-LOC-T2NCG5GK-003",
+          "option": "1460mm x 900mm (H) · MKT-LOC-T2NCG5GK-003"
+        },
+        {
+          "productId": "mkt-loc-t2ncg5gk-004",
+          "productNo": "MKT-LOC-T2NCG5GK-004",
+          "option": "376mm x 900mm (H)"
+        },
+        {
+          "productId": "mkt-loc-t2ncg5gk-005",
+          "productNo": "MKT-LOC-T2NCG5GK-005",
+          "option": "40 x 40 x 965mm (H), base plate 150 x 150 x 15mm · MKT-LOC-T2NCG5GK-005"
+        },
+        {
+          "productId": "mkt-loc-t2ncg5gk-006",
+          "productNo": "MKT-LOC-T2NCG5GK-006",
+          "option": "40 x 40 x 965mm (H), base plate 150 x 150 x 15mm · MKT-LOC-T2NCG5GK-006"
+        },
+        {
+          "productId": "mkt-loc-t2ncg5gk-007",
+          "productNo": "MKT-LOC-T2NCG5GK-007",
+          "option": "M8 x 85mm"
+        },
+        {
+          "productId": "mkt-loc-t2ncg5gk-008",
+          "productNo": "MKT-LOC-T2NCG5GK-008",
+          "option": "Grading / option: S275J0"
+        },
+        {
+          "productId": "mkt-loc-t2ncg5gk-009",
+          "productNo": "MKT-LOC-T2NCG5GK-009",
+          "option": "376 x 900mm (H)"
+        }
+      ]
+    },
+    {
+      "id": "結構鋼-金屬製品-structure-steel-element-metal-product-other-steel-products",
+      "name": "Other Steel Products",
+      "members": [
+        {
+          "productId": "mkt-loc-fsm7jwyf-001",
+          "productNo": "MKT-LOC-FSM7JWYF-001",
+          "option": "Grading / option: Available upon request · MKT-LOC-FSM7JWYF-001"
+        },
+        {
+          "productId": "mkt-loc-fsm7jwyf-002",
+          "productNo": "MKT-LOC-FSM7JWYF-002",
+          "option": "Grading / option: Available upon request · MKT-LOC-FSM7JWYF-002"
+        },
+        {
+          "productId": "mkt-loc-fsm7jwyf-003",
+          "productNo": "MKT-LOC-FSM7JWYF-003",
+          "option": "Grading / option: Available upon request · MKT-LOC-FSM7JWYF-003"
+        },
+        {
+          "productId": "mkt-loc-fsm7jwyf-004",
+          "productNo": "MKT-LOC-FSM7JWYF-004",
+          "option": "Grading / option: Available upon request · MKT-LOC-FSM7JWYF-004"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-homogenous-tile",
+      "name": "Homogenous Tile",
+      "members": [
+        {
+          "productId": "mkt-loc-ss97x4vr-001",
+          "productNo": "MKT-LOC-SS97X4VR-001",
+          "option": "Grading / option: Slip resistance R10"
+        },
+        {
+          "productId": "mkt-loc-ss97x4vr-002",
+          "productNo": "MKT-LOC-SS97X4VR-002",
+          "option": "Grading / option: Slip resistance R11"
+        },
+        {
+          "productId": "mkt-loc-ss97x4vr-003",
+          "productNo": "MKT-LOC-SS97X4VR-003",
+          "option": "Grading / option: Slip resistance R12"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-natural-marble-tiles",
+      "name": "Natural Marble Tiles",
+      "members": [
+        {
+          "productId": "mkt-loc-kbcdi6o1-001",
+          "productNo": "MKT-LOC-KBCDI6O1-001",
+          "option": "Grading / option: Slip resistance R10"
+        },
+        {
+          "productId": "mkt-loc-kbcdi6o1-002",
+          "productNo": "MKT-LOC-KBCDI6O1-002",
+          "option": "Grading / option: Slip resistance R11"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-roof-tile",
+      "name": "Roof Tile",
+      "members": [
+        {
+          "productId": "mkt-loc-h88yvlmy-001",
+          "productNo": "MKT-LOC-H88YVLMY-001",
+          "option": "Grading / option: Slip resistance R10"
+        },
+        {
+          "productId": "mkt-loc-h88yvlmy-002",
+          "productNo": "MKT-LOC-H88YVLMY-002",
+          "option": "Grading / option: Slip resistance R11"
+        },
+        {
+          "productId": "mkt-loc-h88yvlmy-003",
+          "productNo": "MKT-LOC-H88YVLMY-003",
+          "option": "Grading / option: Slip resistance R12"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-tactile-tile",
+      "name": "Tactile Tile",
+      "members": [
+        {
+          "productId": "mkt-loc-f7kuygfv-001",
+          "productNo": "MKT-LOC-F7KUYGFV-001",
+          "option": "Tactile Tile · MKT-LOC-F7KUYGFV-001"
+        },
+        {
+          "productId": "mkt-loc-f7kuygfv-002",
+          "productNo": "MKT-LOC-F7KUYGFV-002",
+          "option": "Tactile Tile · MKT-LOC-F7KUYGFV-002"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-vinyl-flooring",
+      "name": "Vinyl Flooring",
+      "members": [
+        {
+          "productId": "mkt-loc-zc0456cr-001",
+          "productNo": "MKT-LOC-ZC0456CR-001",
+          "option": "Grading / option: Slip resistance R10 / R11（待配對） · MKT-LOC-ZC0456CR-001"
+        },
+        {
+          "productId": "mkt-loc-zc0456cr-002",
+          "productNo": "MKT-LOC-ZC0456CR-002",
+          "option": "Grading / option: Slip resistance R10 / R11（待配對） · MKT-LOC-ZC0456CR-002"
+        }
+      ]
+    },
+    {
+      "id": "瓷磚-tiles-other-tiles",
+      "name": "Other Tiles",
+      "members": [
+        {
+          "productId": "mkt-loc-wjmmhu9p-001",
+          "productNo": "MKT-LOC-WJMMHU9P-001",
+          "option": "<5 cm"
+        },
+        {
+          "productId": "mkt-loc-wjmmhu9p-002",
+          "productNo": "MKT-LOC-WJMMHU9P-002",
+          "option": "Grading / option: Custom specifications available · MKT-LOC-WJMMHU9P-002"
+        },
+        {
+          "productId": "mkt-loc-wjmmhu9p-003",
+          "productNo": "MKT-LOC-WJMMHU9P-003",
+          "option": "Grading / option: Custom specifications available · MKT-LOC-WJMMHU9P-003"
+        },
+        {
+          "productId": "mkt-loc-wjmmhu9p-004",
+          "productNo": "MKT-LOC-WJMMHU9P-004",
+          "option": "Grading / option: Custom specifications available · MKT-LOC-WJMMHU9P-004"
+        },
+        {
+          "productId": "mkt-loc-wjmmhu9p-005",
+          "productNo": "MKT-LOC-WJMMHU9P-005",
+          "option": "Grading / option: Custom specifications available · MKT-LOC-WJMMHU9P-005"
+        }
+      ]
+    },
+    {
+      "id": "板材-board-gypsum-board",
+      "name": "Gypsum Board",
+      "members": [
+        {
+          "productId": "mkt-loc-vnqih9ip-001",
+          "productNo": "MKT-LOC-VNQIH9IP-001",
+          "option": "Grading / option: 1 hr FRR; acoustic rating 37–69 dB（待配對）"
+        },
+        {
+          "productId": "mkt-loc-vnqih9ip-002",
+          "productNo": "MKT-LOC-VNQIH9IP-002",
+          "option": "Grading / option: 2 hr FRR; acoustic rating 37–69 dB（待配對）"
+        },
+        {
+          "productId": "mkt-loc-vnqih9ip-003",
+          "productNo": "MKT-LOC-VNQIH9IP-003",
+          "option": "Grading / option: 4 hr FRR; acoustic rating 37–69 dB（待配對）"
+        }
+      ]
+    },
+    {
+      "id": "板材-board-rigid-xps-insulation-board",
+      "name": "Rigid XPS Insulation Board",
+      "members": [
+        {
+          "productId": "mkt-loc-skwy1hcl-001",
+          "productNo": "MKT-LOC-SKWY1HCL-001",
+          "option": "1.25m x 0.6m x 20mm"
+        },
+        {
+          "productId": "mkt-loc-skwy1hcl-002",
+          "productNo": "MKT-LOC-SKWY1HCL-002",
+          "option": "1.25m x 0.6m x 25mm"
+        },
+        {
+          "productId": "mkt-loc-skwy1hcl-003",
+          "productNo": "MKT-LOC-SKWY1HCL-003",
+          "option": "1.25m x 0.6m x 40mm"
+        },
+        {
+          "productId": "mkt-loc-skwy1hcl-004",
+          "productNo": "MKT-LOC-SKWY1HCL-004",
+          "option": "1.25m x 0.6m x 50mm"
+        },
+        {
+          "productId": "mkt-loc-skwy1hcl-005",
+          "productNo": "MKT-LOC-SKWY1HCL-005",
+          "option": "1.25m x 0.6m x 75mm"
+        },
+        {
+          "productId": "mkt-loc-skwy1hcl-006",
+          "productNo": "MKT-LOC-SKWY1HCL-006",
+          "option": "1.25m x 0.6m x 100mm"
+        }
+      ]
+    },
+    {
+      "id": "板材-board-partition-board",
+      "name": "Partition Board",
+      "members": [
+        {
+          "productId": "mkt-loc-d7bxrg86-001",
+          "productNo": "MKT-LOC-D7BXRG86-001",
+          "option": "Grading / option: 1 hr FRR; STC 55/54/53/46/43（待配對）"
+        },
+        {
+          "productId": "mkt-loc-d7bxrg86-002",
+          "productNo": "MKT-LOC-D7BXRG86-002",
+          "option": "Grading / option: 2 hr FRR; STC 55/54/53/46/43（待配對）"
+        }
+      ]
+    },
+    {
+      "id": "石料-aggregate-coarse-aggregate",
+      "name": "Coarse Aggregate",
+      "members": [
+        {
+          "productId": "mkt-loc-mn0as1tm-001",
+          "productNo": "MKT-LOC-MN0AS1TM-001",
+          "option": "5 mm"
+        },
+        {
+          "productId": "mkt-loc-mn0as1tm-002",
+          "productNo": "MKT-LOC-MN0AS1TM-002",
+          "option": "10 mm"
+        },
+        {
+          "productId": "mkt-loc-mn0as1tm-003",
+          "productNo": "MKT-LOC-MN0AS1TM-003",
+          "option": "20 mm"
+        },
+        {
+          "productId": "mkt-loc-mn0as1tm-004",
+          "productNo": "MKT-LOC-MN0AS1TM-004",
+          "option": "40 mm"
+        }
+      ]
+    },
+    {
+      "id": "石料-aggregate-sub-base",
+      "name": "Sub-base",
+      "members": [
+        {
+          "productId": "mkt-loc-udkz7oh4-001",
+          "productNo": "MKT-LOC-UDKZ7OH4-001",
+          "option": "5 mm"
+        },
+        {
+          "productId": "mkt-loc-udkz7oh4-002",
+          "productNo": "MKT-LOC-UDKZ7OH4-002",
+          "option": "10 mm"
+        },
+        {
+          "productId": "mkt-loc-udkz7oh4-003",
+          "productNo": "MKT-LOC-UDKZ7OH4-003",
+          "option": "20 mm"
+        },
+        {
+          "productId": "mkt-loc-udkz7oh4-004",
+          "productNo": "MKT-LOC-UDKZ7OH4-004",
+          "option": "40 mm"
+        }
+      ]
+    },
+    {
+      "id": "石料-aggregate-granular-fill",
+      "name": "Granular Fill",
+      "members": [
+        {
+          "productId": "mkt-loc-s94fdim7-001",
+          "productNo": "MKT-LOC-S94FDIM7-001",
+          "option": "Grading / option: TypeA"
+        },
+        {
+          "productId": "mkt-loc-s94fdim7-002",
+          "productNo": "MKT-LOC-S94FDIM7-002",
+          "option": "Grading / option: TypeB"
+        }
+      ]
+    },
+    {
+      "id": "石料-aggregate-rockfill",
+      "name": "Rockfill",
+      "members": [
+        {
+          "productId": "mkt-loc-okpdqn87-001",
+          "productNo": "MKT-LOC-OKPDQN87-001",
+          "option": "Grading / option: Grade 75"
+        },
+        {
+          "productId": "mkt-loc-okpdqn87-002",
+          "productNo": "MKT-LOC-OKPDQN87-002",
+          "option": "Grading / option: Grade 200"
+        },
+        {
+          "productId": "mkt-loc-okpdqn87-003",
+          "productNo": "MKT-LOC-OKPDQN87-003",
+          "option": "Grading / option: Grade 400"
+        },
+        {
+          "productId": "mkt-loc-okpdqn87-004",
+          "productNo": "MKT-LOC-OKPDQN87-004",
+          "option": "Grading / option: Grade 700"
+        }
+      ]
+    },
+    {
+      "id": "批盪-plastering-base-plaster",
+      "name": "Base Plaster",
+      "members": [
+        {
+          "productId": "mkt-loc-cuav5hph-001",
+          "productNo": "MKT-LOC-CUAV5HPH-001",
+          "option": "Grading / option: 15 MPa"
+        },
+        {
+          "productId": "mkt-loc-cuav5hph-002",
+          "productNo": "MKT-LOC-CUAV5HPH-002",
+          "option": "Grading / option: 30 MPa"
+        }
+      ]
+    },
+    {
+      "id": "批盪-plastering-skimcoat",
+      "name": "Skimcoat",
+      "members": [
+        {
+          "productId": "mkt-loc-iko2vtaw-001",
+          "productNo": "MKT-LOC-IKO2VTAW-001",
+          "option": "Grading / option: 6 MPa"
+        },
+        {
+          "productId": "mkt-loc-iko2vtaw-002",
+          "productNo": "MKT-LOC-IKO2VTAW-002",
+          "option": "Grading / option: 11 MPa"
+        }
+      ]
+    },
+    {
+      "id": "批盪-plastering-concrete-additive",
+      "name": "Concrete Additive",
+      "members": [
+        {
+          "productId": "mkt-loc-imvx8gm7-001",
+          "productNo": "MKT-LOC-IMVX8GM7-001",
+          "option": "Grading / option: Water reduction 15–30%（description）"
+        },
+        {
+          "productId": "mkt-loc-imvx8gm7-002",
+          "productNo": "MKT-LOC-IMVX8GM7-002",
+          "option": "Grading / option: Setting time halved（description）"
+        },
+        {
+          "productId": "mkt-loc-imvx8gm7-003",
+          "productNo": "MKT-LOC-IMVX8GM7-003",
+          "option": "Grading / option: 4–7% air voids（description）"
+        },
+        {
+          "productId": "mkt-loc-imvx8gm7-004",
+          "productNo": "MKT-LOC-IMVX8GM7-004",
+          "option": "Concrete Additive"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-cast-iron-pipe-fittings",
+      "name": "Cast Iron Pipe & Fittings",
+      "members": [
+        {
+          "productId": "mkt-loc-s9jbxjfm-001",
+          "productNo": "MKT-LOC-S9JBXJFM-001",
+          "option": "Cast Iron Pipe & Fittings · MKT-LOC-S9JBXJFM-001"
+        },
+        {
+          "productId": "mkt-loc-s9jbxjfm-002",
+          "productNo": "MKT-LOC-S9JBXJFM-002",
+          "option": "Cast Iron Pipe & Fittings · MKT-LOC-S9JBXJFM-002"
+        },
+        {
+          "productId": "mkt-loc-s9jbxjfm-003",
+          "productNo": "MKT-LOC-S9JBXJFM-003",
+          "option": "Cast Iron Pipe & Fittings · MKT-LOC-S9JBXJFM-003"
+        },
+        {
+          "productId": "mkt-loc-s9jbxjfm-004",
+          "productNo": "MKT-LOC-S9JBXJFM-004",
+          "option": "Cast Iron Pipe & Fittings · MKT-LOC-S9JBXJFM-004"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-copper-pipe-copper-alloy-fittings",
+      "name": "Copper Pipe & Copper Alloy Fittings",
+      "members": [
+        {
+          "productId": "mkt-loc-lei16za7-001",
+          "productNo": "MKT-LOC-LEI16ZA7-001",
+          "option": "Copper Pipe & Copper Alloy Fittings · MKT-LOC-LEI16ZA7-001"
+        },
+        {
+          "productId": "mkt-loc-lei16za7-002",
+          "productNo": "MKT-LOC-LEI16ZA7-002",
+          "option": "Copper Pipe & Copper Alloy Fittings · MKT-LOC-LEI16ZA7-002"
+        },
+        {
+          "productId": "mkt-loc-lei16za7-003",
+          "productNo": "MKT-LOC-LEI16ZA7-003",
+          "option": "Copper Pipe & Copper Alloy Fittings · MKT-LOC-LEI16ZA7-003"
+        },
+        {
+          "productId": "mkt-loc-lei16za7-004",
+          "productNo": "MKT-LOC-LEI16ZA7-004",
+          "option": "Copper Pipe & Copper Alloy Fittings · MKT-LOC-LEI16ZA7-004"
+        },
+        {
+          "productId": "mkt-loc-lei16za7-005",
+          "productNo": "MKT-LOC-LEI16ZA7-005",
+          "option": "Copper Pipe & Copper Alloy Fittings · MKT-LOC-LEI16ZA7-005"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-ductile-iron-pipe-fittings",
+      "name": "Ductile Iron Pipe & Fittings",
+      "members": [
+        {
+          "productId": "mkt-loc-z1bwrtjl-001",
+          "productNo": "MKT-LOC-Z1BWRTJL-001",
+          "option": "Ductile Iron Pipe & Fittings · MKT-LOC-Z1BWRTJL-001"
+        },
+        {
+          "productId": "mkt-loc-z1bwrtjl-002",
+          "productNo": "MKT-LOC-Z1BWRTJL-002",
+          "option": "Ductile Iron Pipe & Fittings · MKT-LOC-Z1BWRTJL-002"
+        },
+        {
+          "productId": "mkt-loc-z1bwrtjl-003",
+          "productNo": "MKT-LOC-Z1BWRTJL-003",
+          "option": "Ductile Iron Pipe & Fittings · MKT-LOC-Z1BWRTJL-003"
+        },
+        {
+          "productId": "mkt-loc-z1bwrtjl-004",
+          "productNo": "MKT-LOC-Z1BWRTJL-004",
+          "option": "Ductile Iron Pipe & Fittings · MKT-LOC-Z1BWRTJL-004"
+        },
+        {
+          "productId": "mkt-loc-z1bwrtjl-005",
+          "productNo": "MKT-LOC-Z1BWRTJL-005",
+          "option": "Ductile Iron Pipe & Fittings · MKT-LOC-Z1BWRTJL-005"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-galvanized-steel-pipe-fittings",
+      "name": "Galvanized Steel Pipe & Fittings",
+      "members": [
+        {
+          "productId": "mkt-loc-yw47zho2-001",
+          "productNo": "MKT-LOC-YW47ZHO2-001",
+          "option": "Galvanized Steel Pipe & Fittings · MKT-LOC-YW47ZHO2-001"
+        },
+        {
+          "productId": "mkt-loc-yw47zho2-002",
+          "productNo": "MKT-LOC-YW47ZHO2-002",
+          "option": "Galvanized Steel Pipe & Fittings · MKT-LOC-YW47ZHO2-002"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-upvc-pipe-fittings",
+      "name": "UPVC Pipe & Fittings",
+      "members": [
+        {
+          "productId": "mkt-loc-xdb0b1rf-001",
+          "productNo": "MKT-LOC-XDB0B1RF-001",
+          "option": "Color: Grey"
+        },
+        {
+          "productId": "mkt-loc-xdb0b1rf-002",
+          "productNo": "MKT-LOC-XDB0B1RF-002",
+          "option": "Color: White"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-concrete-pipe",
+      "name": "Concrete Pipe",
+      "members": [
+        {
+          "productId": "mkt-loc-fy2wox2l-001",
+          "productNo": "MKT-LOC-FY2WOX2L-001",
+          "option": "Diameter 150mm"
+        },
+        {
+          "productId": "mkt-loc-fy2wox2l-002",
+          "productNo": "MKT-LOC-FY2WOX2L-002",
+          "option": "Diameter 225mm"
+        },
+        {
+          "productId": "mkt-loc-fy2wox2l-003",
+          "productNo": "MKT-LOC-FY2WOX2L-003",
+          "option": "Diameter 300mm"
+        },
+        {
+          "productId": "mkt-loc-fy2wox2l-004",
+          "productNo": "MKT-LOC-FY2WOX2L-004",
+          "option": "Diameter 375mm"
+        },
+        {
+          "productId": "mkt-loc-fy2wox2l-005",
+          "productNo": "MKT-LOC-FY2WOX2L-005",
+          "option": "Diameter 450mm"
+        },
+        {
+          "productId": "mkt-loc-fy2wox2l-006",
+          "productNo": "MKT-LOC-FY2WOX2L-006",
+          "option": "Diameter 525mm"
+        },
+        {
+          "productId": "mkt-loc-fy2wox2l-007",
+          "productNo": "MKT-LOC-FY2WOX2L-007",
+          "option": "Diameter 600mm"
+        }
+      ]
+    },
+    {
+      "id": "批盪-plastering-cement",
+      "name": "Cement",
+      "members": [
+        {
+          "productId": "mkt-loc-am9q2aq8-001",
+          "productNo": "MKT-LOC-AM9Q2AQ8-001",
+          "option": "Grade: 42.5N"
+        },
+        {
+          "productId": "mkt-loc-am9q2aq8-002",
+          "productNo": "MKT-LOC-AM9Q2AQ8-002",
+          "option": "Grade: 52.5N"
+        }
+      ]
+    },
+    {
+      "id": "結構鋼-金屬製品-structure-steel-element-metal-product-stainless-steel-angle",
+      "name": "Stainless Steel Angle",
+      "members": [
+        {
+          "productId": "mkt-loc-i9sbp5ik-001",
+          "productNo": "MKT-LOC-I9SBP5IK-001",
+          "option": "Grade: 304"
+        },
+        {
+          "productId": "mkt-loc-i9sbp5ik-002",
+          "productNo": "MKT-LOC-I9SBP5IK-002",
+          "option": "Grade: 304L"
+        },
+        {
+          "productId": "mkt-loc-i9sbp5ik-003",
+          "productNo": "MKT-LOC-I9SBP5IK-003",
+          "option": "Grade: 316"
+        },
+        {
+          "productId": "mkt-loc-i9sbp5ik-004",
+          "productNo": "MKT-LOC-I9SBP5IK-004",
+          "option": "Grade: 316L"
+        },
+        {
+          "productId": "mkt-loc-i9sbp5ik-005",
+          "productNo": "MKT-LOC-I9SBP5IK-005",
+          "option": "Grade: 201"
+        }
+      ]
+    },
+    {
+      "id": "結構鋼-金屬製品-structure-steel-element-metal-product-stainless-steel-plate",
+      "name": "Stainless Steel Plate",
+      "members": [
+        {
+          "productId": "mkt-loc-tzqi8op6-001",
+          "productNo": "MKT-LOC-TZQI8OP6-001",
+          "option": "Grade: 304"
+        },
+        {
+          "productId": "mkt-loc-tzqi8op6-002",
+          "productNo": "MKT-LOC-TZQI8OP6-002",
+          "option": "Grade: 316"
+        }
+      ]
+    },
+    {
+      "id": "預製混凝土-precasted-concrete-precast-concrete-paving",
+      "name": "Precast Concrete Paving",
+      "members": [
+        {
+          "productId": "mkt-loc-e4ap0exl-001",
+          "productNo": "MKT-LOC-E4AP0EXL-001",
+          "option": "Grading / option: Grey"
+        },
+        {
+          "productId": "mkt-loc-e4ap0exl-002",
+          "productNo": "MKT-LOC-E4AP0EXL-002",
+          "option": "Grading / option: Red"
+        },
+        {
+          "productId": "mkt-loc-e4ap0exl-003",
+          "productNo": "MKT-LOC-E4AP0EXL-003",
+          "option": "Grading / option: Dark Grey"
+        },
+        {
+          "productId": "mkt-loc-e4ap0exl-004",
+          "productNo": "MKT-LOC-E4AP0EXL-004",
+          "option": "Grading / option: Natural Concrete"
+        }
+      ]
+    },
+    {
+      "id": "磚-砌塊-brick-block-precast-concrete-block",
+      "name": "Precast Concrete Block",
+      "members": [
+        {
+          "productId": "mkt-loc-tdhe8gv6-001",
+          "productNo": "MKT-LOC-TDHE8GV6-001",
+          "option": "Grading / option: Standard / not stated"
+        },
+        {
+          "productId": "mkt-loc-tdhe8gv6-002",
+          "productNo": "MKT-LOC-TDHE8GV6-002",
+          "option": "Grading / option: 1 Hour"
+        },
+        {
+          "productId": "mkt-loc-tdhe8gv6-003",
+          "productNo": "MKT-LOC-TDHE8GV6-003",
+          "option": "Grading / option: 2 Hours"
+        },
+        {
+          "productId": "mkt-loc-tdhe8gv6-004",
+          "productNo": "MKT-LOC-TDHE8GV6-004",
+          "option": "Grading / option: 4 Hours"
+        }
+      ]
+    },
+    {
+      "id": "圍欄-barriers-barriers",
+      "name": "Barriers",
+      "members": [
+        {
+          "productId": "mkt-loc-awbwht8f-001",
+          "productNo": "MKT-LOC-AWBWHT8F-001",
+          "option": "4.3m (L)"
+        },
+        {
+          "productId": "mkt-loc-awbwht8f-002",
+          "productNo": "MKT-LOC-AWBWHT8F-002",
+          "option": "100m x 50m x 1.5m (L) — as printed; verify likely unit typo"
+        },
+        {
+          "productId": "mkt-loc-awbwht8f-003",
+          "productNo": "MKT-LOC-AWBWHT8F-003",
+          "option": "M16 x 40"
+        },
+        {
+          "productId": "mkt-loc-awbwht8f-004",
+          "productNo": "MKT-LOC-AWBWHT8F-004",
+          "option": "M16 x 220"
+        }
+      ]
+    },
+    {
+      "id": "圍欄-barriers-water-barriers",
+      "name": "Water Barriers",
+      "members": [
+        {
+          "productId": "mkt-loc-lw93dd39-001",
+          "productNo": "MKT-LOC-LW93DD39-001",
+          "option": "1500mm (L) x 900mm (H) x 450mm (W)"
+        },
+        {
+          "productId": "mkt-loc-lw93dd39-002",
+          "productNo": "MKT-LOC-LW93DD39-002",
+          "option": "1800mm or 2000mm (H) x 1170mm (W)"
+        },
+        {
+          "productId": "mkt-loc-lw93dd39-003",
+          "productNo": "MKT-LOC-LW93DD39-003",
+          "option": "1500mm (L) x 900mm (H) x 360mm (W)"
+        },
+        {
+          "productId": "mkt-loc-lw93dd39-004",
+          "productNo": "MKT-LOC-LW93DD39-004",
+          "option": "1600mm or 2000mm (L) x 1000mm (H)"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-copper-gate-valve",
+      "name": "Copper Gate Valve",
+      "members": [
+        {
+          "productId": "mkt-loc-wusbbyfh-001",
+          "productNo": "MKT-LOC-WUSBBYFH-001",
+          "option": "Diameter 15mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-002",
+          "productNo": "MKT-LOC-WUSBBYFH-002",
+          "option": "Diameter 22mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-003",
+          "productNo": "MKT-LOC-WUSBBYFH-003",
+          "option": "Diameter 28mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-004",
+          "productNo": "MKT-LOC-WUSBBYFH-004",
+          "option": "Diameter 35mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-005",
+          "productNo": "MKT-LOC-WUSBBYFH-005",
+          "option": "Diameter 42mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-006",
+          "productNo": "MKT-LOC-WUSBBYFH-006",
+          "option": "Diameter 54mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-007",
+          "productNo": "MKT-LOC-WUSBBYFH-007",
+          "option": "Diameter 67mm"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-copper-globe-valve",
+      "name": "Copper Globe Valve",
+      "members": [
+        {
+          "productId": "mkt-loc-wusbbyfh-008",
+          "productNo": "MKT-LOC-WUSBBYFH-008",
+          "option": "Diameter 15mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-009",
+          "productNo": "MKT-LOC-WUSBBYFH-009",
+          "option": "Diameter 22mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-010",
+          "productNo": "MKT-LOC-WUSBBYFH-010",
+          "option": "Diameter 28mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-011",
+          "productNo": "MKT-LOC-WUSBBYFH-011",
+          "option": "Diameter 35mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-012",
+          "productNo": "MKT-LOC-WUSBBYFH-012",
+          "option": "Diameter 42mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-013",
+          "productNo": "MKT-LOC-WUSBBYFH-013",
+          "option": "Diameter 54mm"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-copper-y-strainer",
+      "name": "Copper Y-Strainer",
+      "members": [
+        {
+          "productId": "mkt-loc-wusbbyfh-014",
+          "productNo": "MKT-LOC-WUSBBYFH-014",
+          "option": "Diameter 15mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-015",
+          "productNo": "MKT-LOC-WUSBBYFH-015",
+          "option": "Diameter 22mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-016",
+          "productNo": "MKT-LOC-WUSBBYFH-016",
+          "option": "Diameter 28mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-017",
+          "productNo": "MKT-LOC-WUSBBYFH-017",
+          "option": "Diameter 35mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-018",
+          "productNo": "MKT-LOC-WUSBBYFH-018",
+          "option": "Diameter 42mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-019",
+          "productNo": "MKT-LOC-WUSBBYFH-019",
+          "option": "Diameter 54mm"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-copper-check-valve",
+      "name": "Copper Check Valve",
+      "members": [
+        {
+          "productId": "mkt-loc-wusbbyfh-020",
+          "productNo": "MKT-LOC-WUSBBYFH-020",
+          "option": "Diameter 15mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-021",
+          "productNo": "MKT-LOC-WUSBBYFH-021",
+          "option": "Diameter 22mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-022",
+          "productNo": "MKT-LOC-WUSBBYFH-022",
+          "option": "Diameter 28mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-023",
+          "productNo": "MKT-LOC-WUSBBYFH-023",
+          "option": "Diameter 35mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-024",
+          "productNo": "MKT-LOC-WUSBBYFH-024",
+          "option": "Diameter 42mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-025",
+          "productNo": "MKT-LOC-WUSBBYFH-025",
+          "option": "Diameter 54mm"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-copper-pressure-reducing-valve",
+      "name": "Copper Pressure Reducing Valve",
+      "members": [
+        {
+          "productId": "mkt-loc-wusbbyfh-026",
+          "productNo": "MKT-LOC-WUSBBYFH-026",
+          "option": "Diameter 15mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-027",
+          "productNo": "MKT-LOC-WUSBBYFH-027",
+          "option": "Diameter 22mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-028",
+          "productNo": "MKT-LOC-WUSBBYFH-028",
+          "option": "Diameter 28mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-029",
+          "productNo": "MKT-LOC-WUSBBYFH-029",
+          "option": "Diameter 35mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-030",
+          "productNo": "MKT-LOC-WUSBBYFH-030",
+          "option": "Diameter 42mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-031",
+          "productNo": "MKT-LOC-WUSBBYFH-031",
+          "option": "Diameter 54mm"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-copper-ball-float-valve",
+      "name": "Copper Ball Float Valve",
+      "members": [
+        {
+          "productId": "mkt-loc-wusbbyfh-032",
+          "productNo": "MKT-LOC-WUSBBYFH-032",
+          "option": "Diameter 15mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-033",
+          "productNo": "MKT-LOC-WUSBBYFH-033",
+          "option": "Diameter 22mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-034",
+          "productNo": "MKT-LOC-WUSBBYFH-034",
+          "option": "Diameter 28mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-035",
+          "productNo": "MKT-LOC-WUSBBYFH-035",
+          "option": "Diameter 35mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-036",
+          "productNo": "MKT-LOC-WUSBBYFH-036",
+          "option": "Diameter 42mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-037",
+          "productNo": "MKT-LOC-WUSBBYFH-037",
+          "option": "Diameter 54mm"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-cast-iron-gate-valve",
+      "name": "Cast Iron Gate Valve",
+      "members": [
+        {
+          "productId": "mkt-loc-wusbbyfh-038",
+          "productNo": "MKT-LOC-WUSBBYFH-038",
+          "option": "Diameter 50mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-039",
+          "productNo": "MKT-LOC-WUSBBYFH-039",
+          "option": "Diameter 65mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-040",
+          "productNo": "MKT-LOC-WUSBBYFH-040",
+          "option": "Diameter 80mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-041",
+          "productNo": "MKT-LOC-WUSBBYFH-041",
+          "option": "Diameter 100mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-042",
+          "productNo": "MKT-LOC-WUSBBYFH-042",
+          "option": "Diameter 150mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-043",
+          "productNo": "MKT-LOC-WUSBBYFH-043",
+          "option": "Diameter 200mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-044",
+          "productNo": "MKT-LOC-WUSBBYFH-044",
+          "option": "Diameter 250mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-045",
+          "productNo": "MKT-LOC-WUSBBYFH-045",
+          "option": "Diameter 300mm"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-ductile-iron-check-valve",
+      "name": "Ductile Iron Check Valve",
+      "members": [
+        {
+          "productId": "mkt-loc-wusbbyfh-046",
+          "productNo": "MKT-LOC-WUSBBYFH-046",
+          "option": "Diameter 50mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-047",
+          "productNo": "MKT-LOC-WUSBBYFH-047",
+          "option": "Diameter 65mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-048",
+          "productNo": "MKT-LOC-WUSBBYFH-048",
+          "option": "Diameter 80mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-049",
+          "productNo": "MKT-LOC-WUSBBYFH-049",
+          "option": "Diameter 100mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-050",
+          "productNo": "MKT-LOC-WUSBBYFH-050",
+          "option": "Diameter 150mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-051",
+          "productNo": "MKT-LOC-WUSBBYFH-051",
+          "option": "Diameter 200mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-052",
+          "productNo": "MKT-LOC-WUSBBYFH-052",
+          "option": "Diameter 250mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-053",
+          "productNo": "MKT-LOC-WUSBBYFH-053",
+          "option": "Diameter 300mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-054",
+          "productNo": "MKT-LOC-WUSBBYFH-054",
+          "option": "Diameter 350mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-055",
+          "productNo": "MKT-LOC-WUSBBYFH-055",
+          "option": "Diameter 400mm"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-ductile-iron-y-strainer",
+      "name": "Ductile Iron Y-Strainer",
+      "members": [
+        {
+          "productId": "mkt-loc-wusbbyfh-056",
+          "productNo": "MKT-LOC-WUSBBYFH-056",
+          "option": "Diameter 65mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-057",
+          "productNo": "MKT-LOC-WUSBBYFH-057",
+          "option": "Diameter 80mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-058",
+          "productNo": "MKT-LOC-WUSBBYFH-058",
+          "option": "Diameter 100mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-059",
+          "productNo": "MKT-LOC-WUSBBYFH-059",
+          "option": "Diameter 150mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-060",
+          "productNo": "MKT-LOC-WUSBBYFH-060",
+          "option": "Diameter 200mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-061",
+          "productNo": "MKT-LOC-WUSBBYFH-061",
+          "option": "Diameter 250mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-062",
+          "productNo": "MKT-LOC-WUSBBYFH-062",
+          "option": "Diameter 300mm"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-ductile-iron-pressure-reducing-valve",
+      "name": "Ductile Iron Pressure Reducing Valve",
+      "members": [
+        {
+          "productId": "mkt-loc-wusbbyfh-063",
+          "productNo": "MKT-LOC-WUSBBYFH-063",
+          "option": "Diameter 65mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-064",
+          "productNo": "MKT-LOC-WUSBBYFH-064",
+          "option": "Diameter 80mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-065",
+          "productNo": "MKT-LOC-WUSBBYFH-065",
+          "option": "Diameter 100mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-066",
+          "productNo": "MKT-LOC-WUSBBYFH-066",
+          "option": "Diameter 150mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-067",
+          "productNo": "MKT-LOC-WUSBBYFH-067",
+          "option": "Diameter 200mm"
+        }
+      ]
+    },
+    {
+      "id": "喉管-配件-pipe-fittings-accessories-stainless-steel-ball-float-valve",
+      "name": "Stainless Steel Ball Float Valve",
+      "members": [
+        {
+          "productId": "mkt-loc-wusbbyfh-068",
+          "productNo": "MKT-LOC-WUSBBYFH-068",
+          "option": "Diameter 20mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-069",
+          "productNo": "MKT-LOC-WUSBBYFH-069",
+          "option": "Diameter 25mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-070",
+          "productNo": "MKT-LOC-WUSBBYFH-070",
+          "option": "Diameter 32mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-071",
+          "productNo": "MKT-LOC-WUSBBYFH-071",
+          "option": "Diameter 40mm"
+        },
+        {
+          "productId": "mkt-loc-wusbbyfh-072",
+          "productNo": "MKT-LOC-WUSBBYFH-072",
+          "option": "Diameter 50mm"
+        }
+      ]
+    },
+    {
+      "id": "磚-砌塊-brick-block-ytong-aac-block",
+      "name": "YTONG AAC Block",
+      "members": [
+        {
+          "productId": "mkt-loc-y974em5j-001",
+          "productNo": "MKT-LOC-Y974EM5J-001",
+          "option": "600mm x 200mm x 75mm"
+        },
+        {
+          "productId": "mkt-loc-y974em5j-002",
+          "productNo": "MKT-LOC-Y974EM5J-002",
+          "option": "600mm x 200mm x 100mm"
+        },
+        {
+          "productId": "mkt-loc-y974em5j-003",
+          "productNo": "MKT-LOC-Y974EM5J-003",
+          "option": "600mm x 200mm x 150mm"
+        },
+        {
+          "productId": "mkt-loc-y974em5j-004",
+          "productNo": "MKT-LOC-Y974EM5J-004",
+          "option": "600mm x 200mm x 225mm"
+        }
+      ]
+    },
+    {
+      "id": "密目防燃安全網-dense-mesh-flame-retardant-safety-net-safety-net",
+      "name": "Safety Net",
+      "members": [
+        {
+          "productId": "mkt-loc-wzszn9sy-001",
+          "productNo": "MKT-LOC-WZSZN9SY-001",
+          "option": "Color: Green"
+        },
+        {
+          "productId": "mkt-loc-wzszn9sy-002",
+          "productNo": "MKT-LOC-WZSZN9SY-002",
+          "option": "Color: Customization"
+        }
+      ]
+    },
+    {
+      "id": "傳力桿-dowel-bar-mild-steel",
+      "name": "Mild Steel",
+      "members": [
+        {
+          "productId": "mkt-db-0001",
+          "productNo": "MKT-DB-0001",
+          "option": "16mm"
+        },
+        {
+          "productId": "mkt-db-0002",
+          "productNo": "MKT-DB-0002",
+          "option": "20mm"
+        },
+        {
+          "productId": "mkt-db-0003",
+          "productNo": "MKT-DB-0003",
+          "option": "22mm"
+        },
+        {
+          "productId": "mkt-db-0004",
+          "productNo": "MKT-DB-0004",
+          "option": "25mm"
+        },
+        {
+          "productId": "mkt-db-0005",
+          "productNo": "MKT-DB-0005",
+          "option": "32mm"
+        },
+        {
+          "productId": "mkt-db-0006",
+          "productNo": "MKT-DB-0006",
+          "option": "36mm"
+        },
+        {
+          "productId": "mkt-db-0007",
+          "productNo": "MKT-DB-0007",
+          "option": "38mm"
+        },
+        {
+          "productId": "mkt-db-0008",
+          "productNo": "MKT-DB-0008",
+          "option": "40mm"
+        },
+        {
+          "productId": "mkt-db-0009",
+          "productNo": "MKT-DB-0009",
+          "option": "50mm"
+        }
+      ]
+    },
+    {
+      "id": "傳力桿-dowel-bar-galvanized-steel",
+      "name": "Galvanized Steel",
+      "members": [
+        {
+          "productId": "mkt-db-0010",
+          "productNo": "MKT-DB-0010",
+          "option": "16mm"
+        },
+        {
+          "productId": "mkt-db-0011",
+          "productNo": "MKT-DB-0011",
+          "option": "20mm"
+        },
+        {
+          "productId": "mkt-db-0012",
+          "productNo": "MKT-DB-0012",
+          "option": "22mm"
+        },
+        {
+          "productId": "mkt-db-0013",
+          "productNo": "MKT-DB-0013",
+          "option": "25mm"
+        },
+        {
+          "productId": "mkt-db-0014",
+          "productNo": "MKT-DB-0014",
+          "option": "32mm"
+        },
+        {
+          "productId": "mkt-db-0015",
+          "productNo": "MKT-DB-0015",
+          "option": "36mm"
+        },
+        {
+          "productId": "mkt-db-0016",
+          "productNo": "MKT-DB-0016",
+          "option": "38mm"
+        },
+        {
+          "productId": "mkt-db-0017",
+          "productNo": "MKT-DB-0017",
+          "option": "40mm"
+        },
+        {
+          "productId": "mkt-db-0018",
+          "productNo": "MKT-DB-0018",
+          "option": "50mm"
+        }
+      ]
+    },
+    {
+      "id": "傳力桿-dowel-bar-stainless-steel",
+      "name": "Stainless Steel",
+      "members": [
+        {
+          "productId": "mkt-db-0019",
+          "productNo": "MKT-DB-0019",
+          "option": "16mm"
+        },
+        {
+          "productId": "mkt-db-0020",
+          "productNo": "MKT-DB-0020",
+          "option": "20mm"
+        },
+        {
+          "productId": "mkt-db-0021",
+          "productNo": "MKT-DB-0021",
+          "option": "22mm"
+        },
+        {
+          "productId": "mkt-db-0022",
+          "productNo": "MKT-DB-0022",
+          "option": "25mm"
+        },
+        {
+          "productId": "mkt-db-0023",
+          "productNo": "MKT-DB-0023",
+          "option": "32mm"
+        },
+        {
+          "productId": "mkt-db-0024",
+          "productNo": "MKT-DB-0024",
+          "option": "36mm"
+        },
+        {
+          "productId": "mkt-db-0025",
+          "productNo": "MKT-DB-0025",
+          "option": "38mm"
+        },
+        {
+          "productId": "mkt-db-0026",
+          "productNo": "MKT-DB-0026",
+          "option": "40mm"
+        },
+        {
+          "productId": "mkt-db-0027",
+          "productNo": "MKT-DB-0027",
+          "option": "50mm"
+        }
+      ]
+    },
+    {
+      "id": "油漆-paint-multi-effect-functional-coating",
+      "name": "Multi-effect Functional Coating",
+      "members": [
+        {
+          "productId": "mkt-pnt-0025",
+          "productNo": "MKT-PNT-0025",
+          "option": "Waterproof Coating Series"
+        },
+        {
+          "productId": "mkt-pnt-0026",
+          "productNo": "MKT-PNT-0026",
+          "option": "Deodorant And Formaldehyde"
+        },
+        {
+          "productId": "mkt-pnt-0027",
+          "productNo": "MKT-PNT-0027",
+          "option": "Waterproof And Heat Insulation Integration Coating"
+        },
+        {
+          "productId": "mkt-pnt-0028",
+          "productNo": "MKT-PNT-0028",
+          "option": "Resistant Emulsion Universal Paint"
+        }
+      ]
+    },
+    {
+      "id": "油漆-paint-nano-waterproof-coating",
+      "name": "Nano Waterproof Coating",
+      "members": [
+        {
+          "productId": "mkt-pnt-0029",
+          "productNo": "MKT-PNT-0029",
+          "option": "Nano Waterproof Series"
+        },
+        {
+          "productId": "mkt-pnt-0030",
+          "productNo": "MKT-PNT-0030",
+          "option": "Nano Rooftop Waterproof Coating"
+        }
+      ]
+    },
+    {
+      "id": "架空地板-raised-access-floors-all-steel-oa-floor",
+      "name": "All Steel OA Floor",
+      "members": [
+        {
+          "productId": "mkt-raf-0001",
+          "productNo": "MKT-RAF-0001",
+          "option": "500*500*28"
+        },
+        {
+          "productId": "mkt-raf-0002",
+          "productNo": "MKT-RAF-0002",
+          "option": "600*600*33"
+        }
+      ]
+    },
+    {
+      "id": "架空地板-raised-access-floors-calcium-sulphate-oa-floor",
+      "name": "Calcium Sulphate OA Floor",
+      "members": [
+        {
+          "productId": "mkt-raf-0006",
+          "productNo": "MKT-RAF-0006",
+          "option": "600*600*22"
+        },
+        {
+          "productId": "mkt-raf-0007",
+          "productNo": "MKT-RAF-0007",
+          "option": "600*600*30"
+        }
+      ]
+    },
+    {
+      "id": "架空地板-raised-access-floors-anti-static-ceramic-finish-floor",
+      "name": "Anti-Static Ceramic Finish Floor",
+      "members": [
+        {
+          "productId": "mkt-raf-0009",
+          "productNo": "MKT-RAF-0009",
+          "option": "600*600*40"
+        },
+        {
+          "productId": "mkt-raf-0010",
+          "productNo": "MKT-RAF-0010",
+          "option": "600*600*45"
+        }
+      ]
+    },
+    {
+      "id": "架空地板-raised-access-floors-grc-inorganic-floor",
+      "name": "GRC Inorganic Floor",
+      "members": [
+        {
+          "productId": "mkt-raf-0011",
+          "productNo": "MKT-RAF-0011",
+          "option": "500*500*26"
+        },
+        {
+          "productId": "mkt-raf-0012",
+          "productNo": "MKT-RAF-0012",
+          "option": "500*500*28"
+        },
+        {
+          "productId": "mkt-raf-0013",
+          "productNo": "MKT-RAF-0013",
+          "option": "500*500*25"
+        }
+      ]
+    },
+    {
+      "id": "架空地板-raised-access-floors-anti-static-aluminum-floor",
+      "name": "Anti-Static Aluminum Floor",
+      "members": [
+        {
+          "productId": "mkt-raf-0015",
+          "productNo": "MKT-RAF-0015",
+          "option": "600*600*55"
+        },
+        {
+          "productId": "mkt-raf-0016",
+          "productNo": "MKT-RAF-0016",
+          "option": "500*500*25"
+        }
+      ]
+    },
+    {
+      "id": "石膏磚-gypsum-block-gypsum-block",
+      "name": "Gypsum Block",
+      "members": [
+        {
+          "productId": "mkt-gypsum-block-gypsum-block-500x500x80mm-1100-1200kg-m3",
+          "productNo": "MKT-GB-0001",
+          "option": "500*500*80mm"
+        },
+        {
+          "productId": "mkt-gypsum-block-gypsum-block-500x500x100mm-1100-1200kg-m3",
+          "productNo": "MKT-GB-0002",
+          "option": "500*500*100mm"
+        },
+        {
+          "productId": "mkt-gypsum-block-gypsum-block-500x250x150mm-1100-1200kg-m3",
+          "productNo": "MKT-GB-0003",
+          "option": "500*250*150mm"
+        }
+      ]
+    },
+    {
+      "id": "預製混凝土-precasted-concrete-precast-concrete-slabs-預製混凝土-precasted-concrete",
+      "name": "Precast Concrete Slabs — 預製混凝土, Precasted Concrete",
+      "members": [
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3000x500x120mm",
+          "productNo": "MKT-PC-0009",
+          "option": "3000*500*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3300x500x120mm",
+          "productNo": "MKT-PC-0010",
+          "option": "3300*500*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3600x500x120mm",
+          "productNo": "MKT-PC-0011",
+          "option": "3600*500*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3900x500x120mm",
+          "productNo": "MKT-PC-0012",
+          "option": "3900*500*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-4200x500x120mm",
+          "productNo": "MKT-PC-0013",
+          "option": "4200*500*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3000x600x120mm",
+          "productNo": "MKT-PC-0014",
+          "option": "3000*600*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3300x600x120mm",
+          "productNo": "MKT-PC-0015",
+          "option": "3300*600*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3600x600x120mm",
+          "productNo": "MKT-PC-0016",
+          "option": "3600*600*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3900x600x120mm",
+          "productNo": "MKT-PC-0017",
+          "option": "3900*600*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-4200x600x120mm",
+          "productNo": "MKT-PC-0018",
+          "option": "4200*600*120mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3000x500x150mm",
+          "productNo": "MKT-PC-0019",
+          "option": "3000*500*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3300x500x150mm",
+          "productNo": "MKT-PC-0020",
+          "option": "3300*500*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3600x500x150mm",
+          "productNo": "MKT-PC-0021",
+          "option": "3600*500*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3900x500x150mm",
+          "productNo": "MKT-PC-0022",
+          "option": "3900*500*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-4200x500x150mm",
+          "productNo": "MKT-PC-0023",
+          "option": "4200*500*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3000x600x150mm",
+          "productNo": "MKT-PC-0024",
+          "option": "3000*600*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3300x600x150mm",
+          "productNo": "MKT-PC-0025",
+          "option": "3300*600*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3600x600x150mm",
+          "productNo": "MKT-PC-0026",
+          "option": "3600*600*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-3900x600x150mm",
+          "productNo": "MKT-PC-0027",
+          "option": "3900*600*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-4200x600x150mm",
+          "productNo": "MKT-PC-0028",
+          "option": "4200*600*150mm"
+        },
+        {
+          "productId": "mkt-precasted-concrete-precast-concrete-slabs-customize",
+          "productNo": "MKT-PC-0029",
+          "option": "Customize"
+        }
+      ]
+    },
+    {
+      "id": "石膏板-gypsum-board-fire-resistant-gypsum-board-rock-wool-framework",
+      "name": "Fire-Resistant Gypsum Board / Rock Wool / Framework",
+      "members": [
+        {
+          "productId": "mkt-gypsum-board-fire-resistant-gypsum-board-rock-wool-fram",
+          "productNo": "MKT-GBOARD-0001",
+          "option": "1220*2440*9.5mm"
+        },
+        {
+          "productId": "mkt-gypsum-board-fire-resistant-gypsum-board-rock-wool-fram-2",
+          "productNo": "MKT-GBOARD-0002",
+          "option": "1220*2440*12mm"
+        },
+        {
+          "productId": "mkt-gypsum-board-fire-resistant-gypsum-board-rock-wool-fram-3",
+          "productNo": "MKT-GBOARD-0003",
+          "option": "1220*2440*12.5mm"
+        },
+        {
+          "productId": "mkt-gypsum-board-fire-resistant-gypsum-board-rock-wool-fram-4",
+          "productNo": "MKT-GB-0004",
+          "option": "1220*2440*15mm"
+        }
+      ]
+    },
+    {
+      "id": "沙井-渠道-manhole-channel-manhole-cover-cast-iron-double-triangular-desiltin",
+      "name": "Manhole Cover — Cast Iron Double-Triangular & Desilting Manhole Cover and Frame — Storm Water — opening 550mm",
+      "members": [
+        {
+          "productId": "mkt-loc-w938oa76-034",
+          "productNo": "MKT-LOC-W938OA76-034",
+          "option": "Clear opening 550mm · MKT-LOC-W938OA76-034"
+        },
+        {
+          "productId": "mkt-loc-w938oa76-036",
+          "productNo": "MKT-LOC-W938OA76-036",
+          "option": "Clear opening 550mm · MKT-LOC-W938OA76-036"
+        }
+      ]
+    },
+    {
+      "id": "沙井-渠道-manhole-channel-manhole-cover-cast-iron-double-triangular-desiltin-2",
+      "name": "Manhole Cover — Cast Iron Double-Triangular & Desilting Manhole Cover and Frame — Foul Water — opening 550mm",
+      "members": [
+        {
+          "productId": "mkt-loc-w938oa76-035",
+          "productNo": "MKT-LOC-W938OA76-035",
+          "option": "Clear opening 550mm · MKT-LOC-W938OA76-035"
+        },
+        {
+          "productId": "mkt-loc-w938oa76-037",
+          "productNo": "MKT-LOC-W938OA76-037",
+          "option": "Clear opening 550mm · MKT-LOC-W938OA76-037"
+        }
+      ]
+    },
+    {
+      "id": "沙井-渠道-manhole-channel-manhole-cover-square-one-piece-ductile-iron-double",
+      "name": "Manhole Cover — Square One-Piece Ductile Iron Double Seal Terminal Manhole Cover and Frame — Storm Water — opening 675mm x 675mm",
+      "members": [
+        {
+          "productId": "mkt-loc-w938oa76-046",
+          "productNo": "MKT-LOC-W938OA76-046",
+          "option": "Clear opening 675mm x 675mm · MKT-LOC-W938OA76-046"
+        },
+        {
+          "productId": "mkt-loc-w938oa76-048",
+          "productNo": "MKT-LOC-W938OA76-048",
+          "option": "Clear opening 675mm x 675mm · MKT-LOC-W938OA76-048"
+        }
+      ]
+    },
+    {
+      "id": "沙井-渠道-manhole-channel-manhole-cover-square-one-piece-ductile-iron-double-2",
+      "name": "Manhole Cover — Square One-Piece Ductile Iron Double Seal Terminal Manhole Cover and Frame — Foul Water — opening 675mm x 675mm",
+      "members": [
+        {
+          "productId": "mkt-loc-w938oa76-047",
+          "productNo": "MKT-LOC-W938OA76-047",
+          "option": "Clear opening 675mm x 675mm · MKT-LOC-W938OA76-047"
+        },
+        {
+          "productId": "mkt-loc-w938oa76-049",
+          "productNo": "MKT-LOC-W938OA76-049",
+          "option": "Clear opening 675mm x 675mm · MKT-LOC-W938OA76-049"
+        }
+      ]
+    },
+    {
+      "id": "沙井-渠道-manhole-channel-manhole-cover-square-ductile-iron-surface-box-open",
+      "name": "Manhole Cover — Square Ductile Iron Surface Box — opening 300mm x 300mm",
+      "members": [
+        {
+          "productId": "mkt-loc-w938oa76-050",
+          "productNo": "MKT-LOC-W938OA76-050",
+          "option": "Clear opening 300mm x 300mm · MKT-LOC-W938OA76-050"
+        },
+        {
+          "productId": "mkt-loc-w938oa76-051",
+          "productNo": "MKT-LOC-W938OA76-051",
+          "option": "Clear opening 300mm x 300mm · MKT-LOC-W938OA76-051"
+        }
+      ]
+    },
+    {
+      "id": "油漆-paint-interior-wall-paint",
+      "name": "Interior Wall Paint",
+      "members": [
+        {
+          "productId": "mkt-pnt-0001",
+          "productNo": "MKT-PNT-0001",
+          "option": "Archi+ Pietra Intonaco"
+        },
+        {
+          "productId": "mkt-pnt-0002",
+          "productNo": "MKT-PNT-0002",
+          "option": "Crystal Diamond Sand Paint"
+        },
+        {
+          "productId": "mkt-pnt-0003",
+          "productNo": "MKT-PNT-0003",
+          "option": "Nalan Starry Glitter Paint"
+        },
+        {
+          "productId": "mkt-pnt-0004",
+          "productNo": "MKT-PNT-0004",
+          "option": "Eggshell Wall Paint 3.0"
+        },
+        {
+          "productId": "mkt-pnt-0005",
+          "productNo": "MKT-PNT-0005",
+          "option": "Velvet Wall Paint"
+        },
+        {
+          "productId": "mkt-pnt-0006",
+          "productNo": "MKT-PNT-0006",
+          "option": "Liquid Polish Paint"
+        },
+        {
+          "productId": "mkt-pnt-0007",
+          "productNo": "MKT-PNT-0007",
+          "option": "Elegance Spar Paint"
+        },
+        {
+          "productId": "mkt-pnt-0008",
+          "productNo": "MKT-PNT-0008",
+          "option": "Skin Texture Paint"
+        },
+        {
+          "productId": "mkt-pnt-0009",
+          "productNo": "MKT-PNT-0009",
+          "option": "Microcement Paint"
+        },
+        {
+          "productId": "mkt-pnt-0010",
+          "productNo": "MKT-PNT-0010",
+          "option": "Interior Latex Paint"
+        },
+        {
+          "productId": "mkt-pnt-0011",
+          "productNo": "MKT-PNT-0011",
+          "option": "Waterborne Metallic Paint"
+        },
+        {
+          "productId": "mkt-pnt-0012",
+          "productNo": "MKT-PNT-0012",
+          "option": "Antileakage Waterproof Coating"
+        },
+        {
+          "productId": "mkt-pnt-0013",
+          "productNo": "MKT-PNT-0013",
+          "option": "Matte Multicolored Art Paint"
+        },
+        {
+          "productId": "mkt-pnt-0014",
+          "productNo": "MKT-PNT-0014",
+          "option": "Venetian Plaster"
+        },
+        {
+          "productId": "mkt-pnt-0015",
+          "productNo": "MKT-PNT-0015",
+          "option": "Granite Stone Coating-A"
+        }
+      ]
+    },
+    {
+      "id": "油漆-paint-exterior-wall-paint",
+      "name": "Exterior Wall Paint",
+      "members": [
+        {
+          "productId": "mkt-pnt-0016",
+          "productNo": "MKT-PNT-0016",
+          "option": "Liquid Stone Coating"
+        },
+        {
+          "productId": "mkt-pnt-0017",
+          "productNo": "MKT-PNT-0017",
+          "option": "Granite Stone Coating-B"
+        },
+        {
+          "productId": "mkt-pnt-0018",
+          "productNo": "MKT-PNT-0018",
+          "option": "Crystal Diamond Sand Paint"
+        },
+        {
+          "productId": "mkt-pnt-0019",
+          "productNo": "MKT-PNT-0019",
+          "option": "Texture Series"
+        },
+        {
+          "productId": "mkt-pnt-0020",
+          "productNo": "MKT-PNT-0020",
+          "option": "Exterior Latex Paint"
+        },
+        {
+          "productId": "mkt-pnt-0021",
+          "productNo": "MKT-PNT-0021",
+          "option": "Natural Stone Paint"
+        }
+      ]
+    },
+    {
+      "id": "油漆-paint-floor-paint",
+      "name": "Floor Paint",
+      "members": [
+        {
+          "productId": "mkt-pnt-0022",
+          "productNo": "MKT-PNT-0022",
+          "option": "Mineral Sand Paint"
+        },
+        {
+          "productId": "mkt-pnt-0023",
+          "productNo": "MKT-PNT-0023",
+          "option": "Microcement"
+        },
+        {
+          "productId": "mkt-pnt-0024",
+          "productNo": "MKT-PNT-0024",
+          "option": "Epoxy Floor Paint"
+        }
+      ]
+    }
+  ]
+}

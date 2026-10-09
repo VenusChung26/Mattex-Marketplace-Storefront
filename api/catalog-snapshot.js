@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { readSession } from "./auth.js";
+import { handleCatalogGroupsGet, handleCatalogGroupsSave } from "../server/catalog-groups.js";
 
 const DIR = path.join(process.cwd(), "data");
 const SNAPSHOT_FILE = path.join(DIR, "catalog-snapshot.json");
@@ -280,8 +281,24 @@ function partOf(request) {
   return new URL(request.url).searchParams.get("part") || "";
 }
 
+function buyerVisibleProduct(product) {
+  return Boolean(product) && product.published !== false && !product.deleted && !product.held;
+}
+
+function catalogForCaller(snapshot, request) {
+  if (!snapshot || readSession(request, "staff")) return snapshot;
+  return {
+    ...snapshot,
+    products: (snapshot.products || []).filter(buyerVisibleProduct),
+  };
+}
+
 export async function GET(request) {
   const headers = { "cache-control": "no-store" };
+  if (partOf(request) === "groups") {
+    const result = await handleCatalogGroupsGet();
+    return Response.json(result.body, { status: result.status || 200, headers });
+  }
   if (partOf(request) === "version") {
     return Response.json(await handleCatalogVersion(), { headers });
   }
@@ -290,15 +307,25 @@ export async function GET(request) {
     const snapshot = await handleCatalogGet();
     if (!snapshot) return Response.json({ ok: true, found: true, live: true }, { headers });
     const product = (snapshot.products || []).find((row) => String(row.id) === id) || null;
-    const live = Boolean(product) && product.published !== false && !product.deleted && !product.held;
+    const live = buyerVisibleProduct(product);
     return Response.json({ ok: true, found: Boolean(product), live }, { headers });
   }
-  const snapshot = await handleCatalogGet();
+  const snapshot = catalogForCaller(await handleCatalogGet(), request);
   if (!snapshot) return Response.json({ etag: SEED }, { status: 404, headers });
   return Response.json(snapshot, { headers });
 }
 
 export async function POST(request) {
+  if (partOf(request) === "groups") {
+    let body = {};
+    try {
+      body = await request.json();
+    } catch {
+      return Response.json({ ok: false, error: "invalid json" }, { status: 400 });
+    }
+    const result = await handleCatalogGroupsSave(body, request);
+    return Response.json(result.body, { status: result.status || 200, headers: { "cache-control": "no-store" } });
+  }
   if (partOf(request) !== "commit") {
     return Response.json({ ok: false, error: "invalid" }, { status: 404, headers: { "cache-control": "no-store" } });
   }

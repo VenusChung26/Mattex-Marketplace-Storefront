@@ -6,10 +6,11 @@ import { handleTmsLogin, handleTmsStatus, handleTmsSubmit } from "./api/tms-subm
 import { handleSendEmail } from "./api/send-email.js";
 import { handleAuth } from "./api/auth.js";
 import { handleData } from "./api/data.js";
-import { GET as handleCatalogRequest, handleCatalogCommit, handleCatalogGet, handleCatalogVersion } from "./api/catalog-snapshot.js";
+import { GET as handleCatalogRequest, handleCatalogCommit, handleCatalogVersion } from "./api/catalog-snapshot.js";
 import { handleProductImage } from "./api/product-image.js";
 import { handleSpecMatch, handleSpecMatchStatus } from "./api/spec-match.js";
 import { handlePromoGet, handlePromoSave } from "./api/promo.js";
+import { handleCatalogGroupsGet, handleCatalogGroupsSave } from "./server/catalog-groups.js";
 
 const GA_MEASUREMENT_ID = "G-F89GE7J3CR";
 
@@ -94,15 +95,14 @@ function jsonPlugin() {
           return;
         }
         if (path === "/api/catalog" && req.method === "GET") {
-          const snapshot = await handleCatalogGet();
+          const request = new Request(`http://${req.headers.host || "localhost"}${req.url || ""}`, {
+            headers: { cookie: String(req.headers.cookie || "") },
+          });
+          const result = await handleCatalogRequest(request);
+          res.statusCode = result.status;
           res.setHeader("Content-Type", "application/json");
-          if (!snapshot) {
-            res.statusCode = 404;
-            res.end(JSON.stringify({ etag: "seed" }));
-            return;
-          }
-          res.statusCode = 200;
-          res.end(JSON.stringify(snapshot));
+          res.setHeader("Cache-Control", "no-store");
+          res.end(await result.text());
           return;
         }
         if (path === "/api/spec-match" && req.method === "GET") {
@@ -160,6 +160,31 @@ function jsonPlugin() {
         }
         if (path === "/api/promo" && req.method === "GET") {
           const result = await handlePromoGet();
+          res.statusCode = result.status || 200;
+          res.setHeader("Content-Type", "application/json");
+          res.setHeader("Cache-Control", "no-store");
+          res.end(JSON.stringify(result.body));
+          return;
+        }
+        if (path === "/api/catalog-groups" && req.method === "GET") {
+          const result = await handleCatalogGroupsGet();
+          res.statusCode = result.status || 200;
+          res.setHeader("Content-Type", "application/json");
+          res.setHeader("Cache-Control", "no-store");
+          res.end(JSON.stringify(result.body));
+          return;
+        }
+        if (path === "/api/catalog-groups" && req.method === "POST") {
+          let posted = {};
+          try {
+            ({ body: posted } = await readJsonBody(req));
+          } catch {
+            res.statusCode = 400;
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ ok: false, error: "invalid json" }));
+            return;
+          }
+          const result = await handleCatalogGroupsSave(posted, localRequest(req, path));
           res.statusCode = result.status || 200;
           res.setHeader("Content-Type", "application/json");
           res.setHeader("Cache-Control", "no-store");

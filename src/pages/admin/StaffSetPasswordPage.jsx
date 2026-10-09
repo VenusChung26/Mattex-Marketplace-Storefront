@@ -4,8 +4,12 @@ import { acceptStaffPasswordLink, getStaffPasswordLink } from "../../lib/store";
 import { useRevealFormIssue } from "../../lib/formFocus";
 import { PasswordChecklist, PasswordInput, passwordChecks } from "../../components/AccountForm";
 import { useAsyncValue } from "../../hooks/useAsyncValue";
+import { adminText } from "../../lib/adminCopy";
+import { useLanguage } from "../../i18n";
 
 export default function StaffSetPasswordPage() {
+  const { lang } = useLanguage();
+  const pt = (value) => adminText(lang, value);
   const [params] = useSearchParams();
   const token = String(params.get("token") || "").trim();
   const { loading, value: invite } = useAsyncValue(getStaffPasswordLink, token);
@@ -21,12 +25,12 @@ export default function StaffSetPasswordPage() {
     e.preventDefault();
     if (busy) return;
     if (!pwd.length || !pwd.letter || !pwd.number) {
-      setError("Password needs 8+ characters, a letter, and a number.");
+      setError(pt("Password needs 8+ characters, a letter, and a number."));
       revealIssue();
       return;
     }
     if (!pwd.match) {
-      setError("Passwords do not match.");
+      setError(pt("Passwords do not match."));
       revealIssue();
       return;
     }
@@ -38,8 +42,8 @@ export default function StaffSetPasswordPage() {
         result.error === "expired"
           ? "This link has expired. Request a new reset email."
           : result.error === "password"
-            ? "Password needs 8+ characters, a letter, and a number."
-            : "This link is not valid."
+            ? pt("Password needs 8+ characters, a letter, and a number.")
+            : pt("This link is not valid.")
       );
       revealIssue();
       return;
@@ -53,16 +57,16 @@ export default function StaffSetPasswordPage() {
         <div className="flex items-center gap-2.5">
           <img src="/assets/mattex-logo.webp" alt="" className="h-8 w-auto shrink-0" />
           <span className="text-[15px] sm:text-lg font-semibold leading-tight tracking-tight text-brand-900">
-            Mattex Marketplace Admin Portal
+            {pt("Mattex Marketplace Admin Portal")}
           </span>
         </div>
-        <h1 className="mt-5 font-display text-2xl text-brand-900">{reset ? "Reset your password" : "Set your password"}</h1>
+        <h1 className="mt-5 font-display text-2xl text-brand-900">{reset ? pt("Reset your password") : pt("Set your password")}</h1>
         {loading ? (
-          <p className="mt-3 text-sm text-mute">Checking link…</p>
+          <p className="mt-3 text-sm text-mute">{pt("Checking link…")}</p>
         ) : !invite ? (
-          <p className="mt-3 text-sm text-mute">This link is not valid. Ask a teammate to send a new invite or reset email.</p>
+          <p className="mt-3 text-sm text-mute">{pt("This link is not valid. Ask a teammate to send a new invite or reset email.")}</p>
         ) : invite.expired ? (
-          <p className="mt-3 text-sm text-mute">This link has expired. Request a new reset email from the sign-in page.</p>
+          <p className="mt-3 text-sm text-mute">{pt("This link has expired. Request a new reset email from the sign-in page.")}</p>
         ) : (
           <>
             <p className="mt-2 text-sm text-mute">
@@ -71,7 +75,7 @@ export default function StaffSetPasswordPage() {
             </p>
             <form ref={formRef} className="mt-5 space-y-3" onSubmit={onSubmit}>
               <label className="block text-sm font-medium">
-                New password
+                {pt("New password")}
                 <PasswordInput
                   className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm"
                   value={password}
@@ -85,7 +89,7 @@ export default function StaffSetPasswordPage() {
                 />
               </label>
               <label className="block text-sm font-medium">
-                Confirm password
+                {pt("Confirm password")}
                 <PasswordInput
                   className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm"
                   value={confirm}
@@ -105,13 +109,13 @@ export default function StaffSetPasswordPage() {
                 </p>
               ) : null}
               <button type="submit" disabled={busy} className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
-                {reset ? "Save password and enter portal" : "Save password and enter portal"}
+                {pt("Save password and enter portal")}
               </button>
             </form>
           </>
         )}
         <p className="mt-4 text-xs text-mute">
-          Already set a password? <Link to="/" className="font-semibold text-brand-700 hover:underline">Sign in</Link>
+          {pt("Already set a password?")} <Link to="/" className="font-semibold text-brand-700 hover:underline">{pt("Sign in")}</Link>
         </p>
       </div>
     </div>

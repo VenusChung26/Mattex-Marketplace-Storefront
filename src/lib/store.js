@@ -2,6 +2,7 @@ import { collectAttachmentUrls, collectProductImageUrls, fitWhatsappUrls, publis
 import { buildQuotePdf, canSharePdfFile, downloadBlob, sharePdfFile } from "./quotePdf.js";
 import { fetchCatalogState, fetchQuoteSnapshot, fetchRemoteKv, fetchRemoteRfqs, fetchRfqStamp, fetchSessionState, isSupabaseConfigured, persistCatalogTables, persistKv, persistKvNow, probeRemoteData, shouldUseLocalSharedStore } from "./supabasePersist.js";
 import { adminOrigin, marketplaceOrigin } from "./origins.js";
+import { activeOfferPrice } from "./offer.js";
 import { foldHan } from "./han.js";
 import { contactFormFromAccount, normalizeRoles } from "./phone.js";
 import {
@@ -234,12 +235,25 @@ function isOrderable(product) {
   return isBuyerVisible(product) && !isDiscontinued(product);
 }
 
+function readableCertLine(raw) {
+  const line = String(raw || "").replace(/^[\s\-–—]+/, "").replace(/(\S)\(/g, "$1 (").trim();
+  if (!line || line === "-") return "";
+  if (!/\?{2,}/.test(line)) return line;
+  const cleaned = line
+    .replace(/\([^)\n]*\?{2,}[^)\n]*\)/g, "")
+    .replace(/\?{2,}/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  if (!cleaned || /^[\s\-–—:()/]+$/.test(cleaned)) return "";
+  return cleaned;
+}
+
 function certificationLines(product) {
   const seen = new Set();
   const lines = [];
   for (const raw of String(product?.certifications || "").split(/\n+/)) {
-    const line = raw.replace(/^[\s\-–—]+/, "").replace(/(\S)\(/g, "$1 (").trim();
-    if (!line || line === "-" || seen.has(line)) continue;
+    const line = readableCertLine(raw);
+    if (!line || seen.has(line)) continue;
     seen.add(line);
     lines.push(line);
   }
@@ -308,7 +322,8 @@ function activeCatalog(list) {
 }
 
 function canDirectBuy(product) {
-  if (isDiscontinued(product)) return false;
+  if (!product || isDiscontinued(product)) return false;
+  if (activeOfferPrice(product.id) != null) return true;
   return getEffectivePrice(product).displayPrice != null;
 }
 
@@ -826,6 +841,37 @@ function searchProducts(query, category, options = {}) {
     const blob = productSearchText(p, options.fields);
     return tokens.every((token) => blob.includes(token));
   });
+}
+
+function recommendProducts(query, category, limit = 8) {
+  const tokens = foldHan(String(query || "").trim()).toLowerCase().split(/\s+/).filter(Boolean);
+  if (!tokens.length) return [];
+  const scored = [];
+  for (const product of getProductsByCategory(category)) {
+    const name = foldHan(product.name || "").toLowerCase();
+    const sku = foldHan([product.productNo, product.provisionalSku].filter(Boolean).join(" ")).toLowerCase();
+    const cat = foldHan(product.category || "").toLowerCase();
+    const words = name.split(/[^a-z0-9\u4e00-\u9fff]+/);
+    let score = 0;
+    let matched = true;
+    for (const token of tokens) {
+      const nameHit = name.includes(token);
+      const skuHit = sku.includes(token);
+      const catHit = cat.includes(token);
+      if (!nameHit && !skuHit && !catHit) {
+        matched = false;
+        break;
+      }
+      if (name.startsWith(token) || sku.startsWith(token)) score += 30;
+      else if (words.some((word) => word.startsWith(token))) score += 22;
+      else if (nameHit) score += 14;
+      else if (skuHit) score += 12;
+      else score += 8;
+    }
+    if (matched) scored.push({ product, score });
+  }
+  scored.sort((a, b) => b.score - a.score || String(a.product.name).localeCompare(String(b.product.name)));
+  return scored.slice(0, limit).map((row) => row.product);
 }
 
 function searchProductsUnion(queries, category, options = {}) {
@@ -1992,11 +2038,11 @@ function addToCart(productId, { intent, qty, silentInvite = false } = {}) {
   const draft = getDraft();
   const minQty = Math.max(1, Number(product.moq) || 1);
   const addQty = Math.max(minQty, Math.floor(Number(qty)) || minQty);
-  const nextIntent = intent || (getEffectivePrice(product).displayPrice != null ? "buy" : "quote");
+  const nextIntent = intent || (canDirectBuy(product) ? "buy" : "quote");
   const existing = draft.lines.find((l) => l.productId === productId && !l.custom);
   if (existing) {
-    existing.qty = (existing.qty || 0) + addQty;
-    existing.intent = nextIntent;
+    if (existing.intent !== nextIntent) existing.intent = nextIntent;
+    else existing.qty = (existing.qty || 0) + addQty;
   } else {
     draft.lines.push({ productId, qty: addQty, intent: nextIntent });
   }
@@ -2112,6 +2158,119 @@ function addSpecMatchLines({ lines, specFile } = {}) {
   return { ok: true };
 }
 
+function commitSpecMatch({ rows, mode, specFile } = {}) {
+  const decided = (Array.isArray(rows) ? rows : []).filter((row) =>
+    ["mm", "catalog", "tailor", "file"].includes(row?.choice)
+  );
+  if (!decided.length) return { ok: false, error: "empty" };
+  if (decided.some((row) => row.choice === "tailor" || row.choice === "file") && !isLoggedIn()) {
+    requireBuyerAuth({ custom: true });
+    return { ok: false, error: "not_logged_in" };
+  }
+  if (decided.some((row) => (row.choice === "tailor" || row.choice === "file") && !String(row.editName || row.buyerName || "").trim())) {
+    return { ok: false, error: "name" };
+  }
+  const draft = getDraft();
+  const bindings = [];
+  for (const row of decided) {
+    const previous = String(row.boundId || "");
+    if (previous) draft.lines = draft.lines.filter((line) => String(line.productId) !== previous);
+    const qty = Math.max(1, Math.floor(Number(row.qty)) || 1);
+    if (row.choice === "mm" || row.choice === "catalog") {
+      const product = getProduct(row.shownId || row.productId);
+      if (!product || isDiscontinued(product) || !isOrderable(product) || isProductOrderBlocked(product.id)) {
+        bindings.push({ key: row.key, boundId: "" });
+        continue;
+      }
+      const moq = Math.max(1, Number(product.moq) || 1);
+      const nextQty = Math.max(moq, qty);
+      const priced = getEffectivePrice(product).displayPrice != null;
+      const intent = mode === "quote" ? "quote" : priced ? "buy" : "quote";
+      const existing = draft.lines.find((line) => String(line.productId) === String(product.id) && !line.custom);
+      if (existing) {
+        existing.qty = nextQty;
+        existing.intent = intent;
+      } else {
+        draft.lines.push({ productId: product.id, qty: nextQty, intent });
+      }
+      bindings.push({ key: row.key, boundId: product.id });
+      continue;
+    }
+    const customId = previous.startsWith("custom_") ? previous : newCustomProductId();
+    const product = row.choice === "tailor" ? getProduct(row.shownId || row.productId) : null;
+    const name = String(row.editName || row.buyerName || "").trim();
+    if (!name) {
+      bindings.push({ key: row.key, boundId: "" });
+      continue;
+    }
+    const photos = (Array.isArray(row.editImages) ? row.editImages : []).map((src) => String(src || "").trim()).filter(Boolean).slice(0, 5);
+    draft.lines.push({
+      productId: customId,
+      qty,
+      custom: true,
+      intent: "quote",
+      name,
+      description: String(row.editSpec ?? row.buyerSpec ?? "").trim(),
+      category: "",
+      attachments: normalizeAttachments(row.attachments),
+      image: photos[0] || "",
+      images: photos.slice(1),
+      tailorMade: row.choice === "tailor",
+      baseProductId: row.choice === "tailor" ? String(product?.id || "") : "",
+      baseProductNo: row.choice === "tailor" ? String(product?.productNo || product?.provisionalSku || "").trim() : "",
+    });
+    bindings.push({ key: row.key, boundId: customId });
+  }
+  if (specFile?.url) {
+    draft.specFile = { name: String(specFile.name || "spec").slice(0, 180), url: String(specFile.url) };
+  }
+  setDraft(draft);
+  return { ok: true, bindings };
+}
+
+function catalogTokens(text) {
+  const stop = new Set(["the", "and", "for", "with", "from", "type", "item", "items", "qty", "quantity", "pcs", "size", "spec"]);
+  return `${text || ""}`
+    .toLowerCase()
+    .split(/[^a-z0-9\u4e00-\u9fff]+/)
+    .filter((word) => word.length >= 2 && !stop.has(word));
+}
+
+function matchSpecToCatalog(name, spec) {
+  const words = catalogTokens(`${name || ""} ${spec || ""}`);
+  if (!words.length) return [];
+  const ranked = PRODUCTS.filter(
+    (product) => product?.id && product.deleted !== true && product.published !== false && isOrderable(product) && !isDiscontinued(product)
+  )
+    .map((product) => {
+      const hayTokens = new Set(
+        catalogTokens(`${product.name || ""} ${product.productNo || ""} ${product.category || ""} ${product.primarySpec || ""} ${product.sizeDesc || ""}`)
+      );
+      const hayCjk = `${product.name || ""} ${product.primarySpec || ""} ${product.sizeDesc || ""}`;
+      const hits = words.filter((word) => (/[\u4e00-\u9fff]/.test(word) ? hayCjk.includes(word) : hayTokens.has(word))).length;
+      return { product, hits };
+    })
+    .filter((row) => row.hits > 0)
+    .sort((a, b) => b.hits - a.hits)
+    .slice(0, 5);
+  if (!ranked.length) return [];
+  const top = ranked[0].hits;
+  const second = ranked[1]?.hits || 0;
+  const confident = top >= 2 && top > second;
+  return ranked.map((row, index) => ({
+    productId: row.product.id,
+    name: row.product.name,
+    spec: String(row.product.primarySpec || row.product.sizeDesc || "").slice(0, 120),
+    unit: String(row.product.salesUnit || row.product.unit || ""),
+    moq: Math.max(1, Number(row.product.moq) || 1),
+    image: String(row.product.image || ""),
+    tailorMade: Boolean(row.product.tailorMade),
+    productNo: String(row.product.productNo || row.product.provisionalSku || "").trim(),
+    hits: row.hits,
+    confident: index === 0 && confident,
+  }));
+}
+
 function updateCustomLine(productId, patch = {}) {
   const draft = getDraft();
   const line = draft.lines.find((l) => String(l.productId) === String(productId));
@@ -2166,8 +2325,7 @@ function setLineIntent(productId, intent) {
   if (next === "buy") {
     if (line.custom) return { ok: false, reason: "unpriced" };
     const product = getProduct(line.productId);
-    const price = product ? getEffectivePrice(product).displayPrice : null;
-    if (price == null) return { ok: false, reason: "unpriced" };
+    if (!canDirectBuy(product)) return { ok: false, reason: "unpriced" };
   }
   line.intent = next;
   if (next === "buy") delete line.requestedUnitPrice;
@@ -2332,7 +2490,8 @@ function draftTotals(draft, productIds) {
       };
     }
     const product = getProduct(line.productId);
-    const unitPrice = product ? getEffectivePrice(product).displayPrice : null;
+    const offerPrice = product ? activeOfferPrice(product.id) : null;
+    const unitPrice = offerPrice != null ? offerPrice : product ? getEffectivePrice(product).displayPrice : null;
     if (unitPrice == null) unpricedCount += 1;
     else pricedSubtotal += unitPrice * line.qty;
     return {
@@ -2483,7 +2642,7 @@ function submitRfq(productIds, options = {}) {
   const allowGuest = Boolean(options.allowGuest);
   if (!user?.email && !allowGuest) return { ok: false, error: "not_logged_in" };
   const email = accountKey();
-  let draft = getDraft();
+  let draft = options.draft || getDraft();
   if (!draft.lines.length) return { ok: false, error: "empty" };
   const skipLogistics = Boolean(options.skipLogistics);
   if (!skipLogistics) {
@@ -3309,19 +3468,14 @@ function requireBuyerAuth(pending = {}) {
 }
 
 function addFromStorefront(productId, intent = "quote", qty, lang) {
-  if (intent === "quote-now") {
+  if (intent === "quote-now" || intent === "buy-now") {
     if (!isLoggedIn() && !isAuthInviteHidden()) {
-      setPendingCart(productId, "quote-now", qty);
+      setPendingCart(productId, intent, qty);
       openAuthModal("invite");
       return { ok: false, error: "auth_invite" };
     }
-    return whatsappNow(productId, { qty, kind: "quote", lang, skipCart: true });
-  }
-  if (intent === "buy-now") {
-    if (!requireBuyerAuth({ productId, intent, qty })) {
-      return { ok: false, error: "not_logged_in" };
-    }
-    return whatsappNow(productId, { qty, kind: "buy", lang });
+    const kind = intent === "buy-now" ? "buy" : "quote";
+    return whatsappNow(productId, { qty, kind, lang, skipCart: true });
   }
   addToCart(productId, { intent, qty });
   return { ok: true };
@@ -3348,8 +3502,12 @@ function consumePendingInviteContinue() {
   } catch {
     return;
   }
-  if (intent === "quote-now" && productId) {
-    whatsappNow(productId, { qty, kind: "quote", skipCart: true });
+  if ((intent === "quote-now" || intent === "buy-now") && productId) {
+    whatsappNow(productId, {
+      qty,
+      kind: intent === "buy-now" ? "buy" : "quote",
+      skipCart: true,
+    });
   }
 }
 
@@ -3385,12 +3543,13 @@ function consumePendingAfterAuth() {
     } catch {
       productId = pendingCart;
     }
-    if (intent === "quote-now") {
-      whatsappNow(productId, { qty, kind: "quote", skipCart: true });
+    if (intent === "quote-now" || intent === "buy-now") {
+      whatsappNow(productId, {
+        qty,
+        kind: intent === "buy-now" ? "buy" : "quote",
+        skipCart: true,
+      });
       stayPut = true;
-    } else if (intent === "buy-now") {
-      whatsappNow(productId, { qty, kind: "buy" });
-      wentToRfq = true;
     } else {
       addToCart(productId, { intent, qty, silentInvite: true });
     }
@@ -7570,6 +7729,7 @@ export {
   getSalesProducts,
   getProductsByCategory,
   searchProducts,
+  recommendProducts,
   searchProductsUnion,
   supplierSlug,
   supplierPath,
@@ -7616,6 +7776,8 @@ export {
   addToCart,
   addCustomLine,
   addSpecMatchLines,
+  commitSpecMatch,
+  matchSpecToCatalog,
   getCatalogEtag,
   fetchProductLive,
   blockProductOrders,
