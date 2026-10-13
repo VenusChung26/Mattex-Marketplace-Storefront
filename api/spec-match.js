@@ -434,7 +434,7 @@ async function pdfReading(buffer) {
 
 async function pdfImages(pdf) {
   const images = [];
-  for (let index = 0; index < pdf.count && images.length < 2; index += 1) {
+  for (let index = 0; index < pdf.count && images.length < 1; index += 1) {
     const png = Buffer.from(pdf.doc.loadPage(index).toPixmap(pdf.mupdf.Matrix.scale(1.3, 1.3), pdf.mupdf.ColorSpace.DeviceRGB, false).asPNG());
     if (png.length > 40_000) images.push(png);
   }
@@ -487,6 +487,11 @@ async function serverOcrText(body) {
     const sharpMod = await import("sharp");
     const sharp = sharpMod.default;
     const pages = await rasterPages(sharp, Buffer.from(base64, "base64"));
+    const sized = await sharp(pages[0]).metadata();
+    const width = sized.width || 0;
+    const height = sized.height || 0;
+    const table = width > height * 1.5 && height > 300 && height < 650;
+    if (table) return recognizeImages(pages, { tessedit_pageseg_mode: "3" });
     const first = await recognizeImages(pages);
     if (parseBuyerDocument(first).length) return first;
     resetOcrWorker();
@@ -508,7 +513,7 @@ async function visionText(body) {
 }
 
 function usefulSpec(text) {
-  return /sheet\s*pil|paving|角[钢鋼]|槽[钢鋼]|防火|channel|\bchs\b|stainless|鉛水|介子|水平爆|concrete\s*block/i.test(text);
+  return /sheet\s*p[iel]|paving|角[钢鋼]|槽[钢鋼]|防火|channel|\bchs\b|stainless|鉛水|介子|水平爆|concrete\s*block/i.test(text);
 }
 
 async function readDocument(body) {
@@ -682,7 +687,23 @@ async function askModel({ text, imageDataUrl, index }) {
   }
 }
 
+function warmOcr() {
+  if (ocrWorkerPromise || process.platform === "darwin") return;
+  import("tesseract.js").then(({ createWorker }) => {
+    if (ocrWorkerPromise) return;
+    ocrWorkerPromise = createWorker("eng+chi_tra", 1, {
+      langPath: TESS_DIR,
+      cachePath: path.join(tmpdir(), "tessdata"),
+      gzip: true,
+    }).catch((error) => {
+      ocrWorkerPromise = null;
+      throw error;
+    });
+  }).catch(() => {});
+}
+
 export async function handleSpecMatchStatus(request) {
+  warmOcr();
   const member = readSession(request, "buyer") || readSession(request, "staff");
   const guest = guestState(request);
   return {

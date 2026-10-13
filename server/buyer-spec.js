@@ -191,7 +191,7 @@ function parseFasteners(lines) {
 
 function parseDrawing(text) {
   const items = [];
-  if (/sheet\s*pil|LSP\s*3/i.test(text)) {
+  if (/sheet\s*p[iel]|LSP\s*3/i.test(text)) {
     const thick = text.match(/(\d+\s*mm)\s*thick|thickness\s*(\d+\s*mm)|LSP\s*3\w?[^\n]{0,48}?(\d+\s*mm)/i);
     const thickText = thick ? (thick[1] || thick[2] || thick[3] || "").replace(/\s+/g, "") : "";
     items.push({
