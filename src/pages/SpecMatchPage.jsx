@@ -33,6 +33,22 @@ import {
 
 const ACCEPT = ".pdf,.png,.jpg,.jpeg,.gif,.webp,.heic,.heif,.doc,.docx,.xls,.xlsx,image/*,application/pdf";
 const FILE_CAP = 8;
+
+function phaseKey(phase) {
+  if (phase === "upload") return "specMatchPhaseUpload";
+  if (phase === "read") return "specMatchPhaseRead";
+  if (phase === "save") return "specMatchPhaseSave";
+  return "specMatchPhaseExtract";
+}
+
+const PHASE_SHARE = { read: 0.28, upload: 0.42, extract: 0.74, save: 0.94 };
+
+function jobPercent(job) {
+  const total = Math.max(1, job?.total || 1);
+  const share = PHASE_SHARE[job?.phase] ?? 0.28;
+  return Math.max(8, Math.min(97, Math.round(((job.index + share) / total) * 100)));
+}
+
 const SAMPLE_FILE_NAME = SAMPLE_SPEC_NAME;
 const SAMPLE_LINES = [
   { buyerName: "Gypsum block", buyerSpec: "500 x 250 x 150 mm", qty: 20 },
@@ -95,6 +111,7 @@ function normalizeChoice(choice, match) {
   if (value === "catalog" && !match) return "";
   if (value === "tailor" && !match?.tailorMade) return "";
   if (value === "no") return "file";
+  if (value === "skip") return "skip";
   if (value === "catalog" || value === "tailor" || value === "file") return value;
   return "";
 }
@@ -129,8 +146,20 @@ function withLiveCatalog(rows) {
     const matches = matchSpecToCatalog(row.buyerName, row.buyerSpec);
     const shownId = matches.some((match) => match.productId === row.shownId) ? row.shownId : matches[0]?.productId || "";
     const match = matches.find((item) => item.productId === shownId) || null;
-    const choice = normalizeChoice(row.choice, match);
-    const next = { ...row, matches, shownId, choice };
+    let choice = normalizeChoice(row.choice, match);
+    let qty = row.qty;
+    let auto = row.auto === true;
+    if (!choice && match?.confident) {
+      choice = "catalog";
+      auto = true;
+      const moq = match.moq || 1;
+      if (qty == null || qty === "" || Number(qty) < moq) qty = Math.max(Number(qty) || 0, moq);
+    } else if (row.auto == null && (choice === "catalog" || choice === "mm") && match?.confident && !row.switched) {
+      auto = true;
+    } else if (choice !== "catalog" && choice !== "mm") {
+      auto = false;
+    }
+    const next = { ...row, matches, shownId, choice, qty, auto };
     if (row.choice === "no" && choice === "file" && !String(row.editName || "").trim()) {
       return {
         ...next,
@@ -259,6 +288,7 @@ export default function SpecMatchPage() {
   const [rows, setRows] = useState([]);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [job, setJob] = useState(null);
   const [error, setError] = useState("");
   const [failedNames, setFailedNames] = useState([]);
   const [dragOver, setDragOver] = useState(false);
@@ -266,7 +296,7 @@ export default function SpecMatchPage() {
   const [preview, setPreview] = useState(null);
   const [dialog, setDialog] = useState(null);
   const [headTop, setHeadTop] = useState(65);
-  const [openKeys, setOpenKeys] = useState(null);
+  const [openKeys, setOpenKeys] = useState(() => new Set());
   const [jumpKey, setJumpKey] = useState("");
   const [scrolled, setScrolled] = useState(false);
   const [fileEpoch, setFileEpoch] = useState(0);
@@ -358,7 +388,7 @@ export default function SpecMatchPage() {
       const same = next.every((row, index) => {
         const before = (prev[index]?.matches || []).map((match) => `${match.productId}:${match.moq}:${match.hits}:${match.spec || ""}:${match.confident ? 1 : 0}`).join(",");
         const after = (row.matches || []).map((match) => `${match.productId}:${match.moq}:${match.hits}:${match.spec || ""}:${match.confident ? 1 : 0}`).join(",");
-        return before === after && row.shownId === prev[index]?.shownId && row.choice === prev[index]?.choice;
+        return before === after && row.shownId === prev[index]?.shownId && row.choice === prev[index]?.choice && row.auto === prev[index]?.auto;
       });
       return same ? prev : next;
     });
@@ -411,20 +441,25 @@ export default function SpecMatchPage() {
   const limited = status?.member !== true && Number(status?.remaining) === 0;
   const decidedRows = rows.filter((row) => ["catalog", "mm", "tailor", "file"].includes(row.choice));
   const decided = decidedRows.length > 0;
+  const autoCount = rows.filter((row) => row.auto && usingCatalog(row)).length;
 
-  async function matchOne(file) {
+  async function matchOne(file, onPhase) {
     const payload = { name: file.name, mime: file.type || "" };
     if (file.size > 3_200_000) {
+      onPhase?.("upload");
       payload.url = await uploadSpecFile(file);
     } else {
+      onPhase?.("read");
       const dataUrl = await readFile(file);
       payload.base64 = dataUrl.split(",")[1] || "";
     }
+    onPhase?.("extract");
     const res = await postSpecMatch(payload);
     const data = res.data || {};
     if (data?.remaining != null) setStatus((prev) => ({ ...prev, remaining: data.remaining }));
     if (!data?.ok) return { ok: false, error: data?.error || "file" };
     if (data.unreadable || !Array.isArray(data.rows) || !data.rows.length) return { ok: true, unreadable: true };
+    onPhase?.("save");
     let url = "";
     try {
       url = await uploadSpecFile(file);
@@ -462,9 +497,12 @@ export default function SpecMatchPage() {
     const nextSources = keptSources.slice();
     const nextRows = keptRows.slice();
     try {
-      for (const file of batch) {
+      for (let index = 0; index < batch.length; index += 1) {
+        const file = batch[index];
+        const report = (phase) => setJob({ index, total: batch.length, name: file.name, phase, large: file.size > 3_200_000 });
+        report(file.size > 3_200_000 ? "upload" : "read");
         try {
-          const result = await matchOne(file);
+          const result = await matchOne(file, report);
           if (!result.ok) {
             setError(result.error === "limit" ? t("specMatchLimit") : result.error === "closed" ? t("specMatchClosed") : t("specMatchUnreadable"));
             break;
@@ -488,12 +526,14 @@ export default function SpecMatchPage() {
       }
       setSources(nextSources);
       setRows(withLiveCatalog(nextRows));
+      if (replacing) setOpenKeys(new Set());
       setFileName(nextSources[0]?.name || "");
       setSpecUrl(nextSources[0]?.url || "");
       setFailedNames(failed);
       if (skipped) setError(t("specMatchFileCap"));
       setReady(true);
     } finally {
+      setJob(null);
       setBusy(false);
     }
   }
@@ -559,9 +599,9 @@ export default function SpecMatchPage() {
         const match = shownMatch(row);
         if (choice === "catalog") {
           if (!match) return row;
-          return { ...row, choice, qty: Math.max(row.qty, match.moq || 1) };
+          return { ...row, choice, auto: false, qty: Math.max(row.qty, match.moq || 1) };
         }
-        return { ...row, choice: "" };
+        return { ...row, choice: "skip", auto: false };
       })
     );
   }
@@ -657,7 +697,7 @@ export default function SpecMatchPage() {
         if (i !== index) return row;
         const match = shownMatch(row);
         if (!match) return { ...row, choice: "" };
-        return { ...row, choice: "catalog", qty: Math.max(Number(row.qty) || 0, match.moq || 1) };
+        return { ...row, choice: "catalog", auto: false, qty: Math.max(Number(row.qty) || 0, match.moq || 1) };
       })
     );
   }
@@ -687,6 +727,7 @@ export default function SpecMatchPage() {
           ...row,
           shownId: productId,
           switched: true,
+          auto: false,
           choice: "catalog",
           qty: Math.max(Number(row.qty) || 0, match.moq || 1),
         };
@@ -876,25 +917,36 @@ export default function SpecMatchPage() {
             }}
           />
         </div>
-        {busy ? <p className="mt-4 text-sm text-ink">{t("specMatchWorking")}</p> : null}
+        {job ? (
+          <div className="sticky z-30 -mx-4 mt-4 bg-paper px-4 py-3" style={{ top: headTop }}>
+            <SpecWait job={job} t={t} />
+          </div>
+        ) : busy ? (
+          <p className="mt-4 text-sm text-ink">{t("specMatchWorking")}</p>
+        ) : null}
         {error ? <p className="mt-4 text-sm text-[#8a2b2b]">{error}</p> : null}
         {failedNames.length ? <p className="mt-4 text-sm font-semibold text-ink">{t("specMatchFailed", { name: failedNames.join("、") })}</p> : null}
         {rows.length ? (
           <div className="mt-8">
-              <div className="mb-3 flex justify-end gap-2">
-                <button type="button" className={decisionButton(openKeys != null && openKeys.size === 0)} onClick={collapseAll}>
-                  {t("specMatchCollapseAll")}
-                </button>
-                <button type="button" className={decisionButton(openKeys == null)} onClick={expandAll}>
-                  {t("specMatchExpandAll")}
-                </button>
+              <div className={`mb-3 flex flex-col gap-3 sm:flex-row sm:items-center ${autoCount ? "sm:justify-between" : "sm:justify-end"}`}>
+                {autoCount ? <p className="min-w-0 text-sm leading-6 text-ink">{t("specMatchAutoReview", { n: autoCount })}</p> : null}
+                <div className="flex shrink-0 justify-end gap-2">
+                  <button type="button" className={decisionButton(openKeys != null && openKeys.size === 0)} onClick={collapseAll}>
+                    <ChevronIcon up />
+                    {t("specMatchCollapseAll")}
+                  </button>
+                  <button type="button" className={decisionButton(openKeys == null)} onClick={expandAll}>
+                    <ChevronIcon />
+                    {t("specMatchExpandAll")}
+                  </button>
+                </div>
               </div>
-              <div className="border border-line bg-white">
-                <table className="spec-table w-full min-w-0 border-separate border-spacing-0 text-left text-sm md:min-w-[720px]">
+              <div className="min-w-0 border border-line bg-white">
+                <table className="spec-table w-full border-separate border-spacing-0 text-left text-sm">
                   <thead>
                     <tr className="text-xs font-semibold text-mute">
                       <th className="spec-match-head sticky z-20 w-12 border-b border-line bg-white px-3 py-2 font-semibold" style={{ top: headTop }}>#</th>
-                      <th className="spec-match-head sticky z-20 border-b border-line bg-white px-3 py-2 font-semibold" style={{ top: headTop }}>{t("specMatchColItem")}</th>
+                      <th className="spec-match-head sticky z-20 w-[24%] border-b border-line bg-white px-3 py-2 font-semibold" style={{ top: headTop }}>{t("specMatchColItem")}</th>
                       <th className="spec-match-head sticky z-20 border-b border-line bg-white px-3 py-2 font-semibold" style={{ top: headTop }}>{t("specMatchColProduct")}</th>
                       <th className="spec-match-head sticky z-20 w-20 border-b border-line bg-white px-3 py-2 font-semibold" style={{ top: headTop }}>{t("specMatchQty")}</th>
                       <th className="spec-match-head sticky z-20 w-52 border-b border-line bg-white px-3 py-2 font-semibold" style={{ top: headTop }}>{t("specMatchColPrice")}</th>
@@ -915,7 +967,7 @@ export default function SpecMatchPage() {
                             onClick={() => toggleRow(row.key)}
                           >
                             <td className={`${open ? "" : rule} px-3 py-3 align-top font-semibold tabular-nums text-brand-700`}>#{index + 1}</td>
-                            <td className={`${open ? "" : rule} max-w-[16rem] px-3 py-3 align-top`}>
+                            <td className={`${open ? "" : rule} px-3 py-3 align-top`}>
                               <span className="block truncate font-semibold text-ink">{row.buyerName}</span>
                               {row.buyerSpec ? <span className="mt-0.5 block truncate text-xs leading-5 text-mute">{row.buyerSpec}</span> : null}
                               {row.sourceName ? (
@@ -935,7 +987,7 @@ export default function SpecMatchPage() {
                                 )
                               ) : null}
                             </td>
-                            <td className={`${open ? "" : rule} max-w-[16rem] px-3 py-3 align-top text-ink`}>
+                            <td className={`${open ? "" : rule} px-3 py-3 align-top text-ink`}>
                               <span className="inline-flex max-w-full flex-wrap items-center gap-1.5">
                                 <span className="truncate">{listSubject(row, t)}</span>
                                 <StatusTag row={row} t={t} />
@@ -954,7 +1006,11 @@ export default function SpecMatchPage() {
                               </span>
                               {listSpec(row) ? <span className="mt-0.5 block truncate text-xs leading-5 text-mute">{listSpec(row)}</span> : null}
                             </td>
-                            <td className={`${open ? "" : rule} px-3 py-3 align-top tabular-nums text-ink`}>{row.qty || "—"}</td>
+                            <td className={`${open ? "" : rule} px-3 py-3 align-top tabular-nums text-ink`}>
+                              {row.qty ? row.qty : shownMatch(row)?.moq ? (
+                                <span className="text-mute" title={t("specMatchQtyLater")}>{t("specMatchQtyMin", { n: shownMatch(row).moq })}</span>
+                              ) : "—"}
+                            </td>
                             <td className={`${open ? "" : rule} px-3 py-3 align-top text-ink`}>
                               <div className="flex items-start justify-between gap-2">
                                 <span>{listPrice(row, promo, lang)}</span>
@@ -1142,8 +1198,45 @@ export default function SpecMatchPage() {
   );
 }
 
+function SpecWait({ job, t }) {
+  const label = t(phaseKey(job.phase));
+  const total = Math.max(1, job.total || 1);
+  const percent = jobPercent(job);
+  return (
+    <div role="status" aria-live="polite">
+      <div className="mb-2 flex items-baseline justify-between gap-3">
+        <p className="min-w-0 text-sm font-semibold text-ink">
+          {label}
+          <span className="mt-0.5 block truncate text-xs font-normal leading-5 text-mute" title={job.name}>{job.name}</span>
+        </p>
+        {total > 1 ? (
+          <p className="shrink-0 text-sm font-semibold tabular-nums text-mute">{t("specMatchPhaseCount", { n: job.index + 1, total })}</p>
+        ) : null}
+      </div>
+      <div
+        className="spec-bar"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={percent}
+        aria-label={label}
+      >
+        <div className="spec-bar-fill" style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  );
+}
+
 function decisionButton(on) {
-  return `border px-3 py-1.5 text-sm font-semibold ${on ? "border-brand-600 bg-white text-brand-800" : "border-line bg-white text-ink"}`;
+  return `inline-flex items-center gap-1 border px-3 py-1.5 text-sm font-semibold ${on ? "border-brand-600 bg-white text-brand-800" : "border-line bg-white text-ink"}`;
+}
+
+function ChevronIcon({ up = false }) {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+      <path d={up ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
 }
 
 function CustomThumb({ row, t }) {

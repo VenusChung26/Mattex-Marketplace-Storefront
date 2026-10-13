@@ -2322,7 +2322,10 @@ function matchSpecToCatalog(name, spec) {
   const second = ranked[1]?.hits || 0;
   const namedFamily = /角[钢鋼]|U槽|槽[钢鋼鐵铁]|channel|waling|waler|sheet\s*pile|板[樁桩]|\bchs\b|光砵|絲母|介子|螺絲|螺栓/i.test(text);
   const lead = ranked[0].product.name || "";
-  const confident = top >= 2 && top > second && (!namedFamily || (specFamilyScore(text, lead) > 0 && !/custom profile|fasteners/i.test(lead)));
+  const leadScore = specFamilyScore(text, lead);
+  const secondName = ranked[1]?.product.name || "";
+  const sameFamilyTie = Boolean(ranked[1]) && top === second && leadScore > 0 && leadScore === specFamilyScore(text, secondName);
+  const confident = top >= 2 && (top > second || sameFamilyTie) && (!namedFamily || (leadScore > 0 && !/custom profile|fasteners/i.test(lead)));
   return ranked.map((row, index) => ({
     productId: row.product.id,
     name: row.product.name,
