@@ -9,6 +9,8 @@ import * as XLSX from "xlsx";
 import { readSession } from "./auth.js";
 import { parseBuyerDocument } from "../server/buyer-spec.js";
 
+const TESS_DIR = path.join(process.cwd(), "server", "tessdata");
+
 const execFileAsync = promisify(execFile);
 
 const COOKIE = "mm_spec_uses";
@@ -359,7 +361,7 @@ async function visionBinary() {
   return bin;
 }
 
-async function visionText(body) {
+async function appleVisionText(body) {
   const base64 = String(body?.base64 || "");
   if (!base64 || process.platform !== "darwin") return "";
   const name = String(body?.name || "").toLowerCase();
@@ -378,6 +380,82 @@ async function visionText(body) {
   } finally {
     if (dir) await rm(dir, { recursive: true, force: true }).catch(() => {});
   }
+}
+
+function jpegImages(buffer) {
+  const images = [];
+  for (let i = 0; i < buffer.length - 1; i += 1) {
+    if (buffer[i] !== 0xff || buffer[i + 1] !== 0xd8) continue;
+    let end = i + 2;
+    while (end < buffer.length - 1 && !(buffer[end] === 0xff && buffer[end + 1] === 0xd9)) end += 1;
+    if (end >= buffer.length - 1) break;
+    const slice = buffer.subarray(i, end + 2);
+    if (slice.length >= 12_000) images.push(slice);
+    i = end + 1;
+  }
+  images.sort((a, b) => b.length - a.length);
+  return images.slice(0, 3);
+}
+
+let ocrWorkerPromise = null;
+
+function resetOcrWorker() {
+  const pending = ocrWorkerPromise;
+  ocrWorkerPromise = null;
+  if (pending) pending.then((worker) => worker.terminate()).catch(() => {});
+}
+
+async function serverOcrText(body) {
+  const base64 = String(body?.base64 || "");
+  if (!base64) return "";
+  const name = String(body?.name || "").toLowerCase();
+  const mime = String(body?.mime || "").toLowerCase();
+  const buffer = Buffer.from(base64, "base64");
+  const sources = name.endsWith(".pdf") || mime.includes("pdf") ? jpegImages(buffer) : [buffer];
+  if (!sources.length) return "";
+  try {
+    const [{ createWorker }, sharpMod] = await Promise.all([import("tesseract.js"), import("sharp")]);
+    const sharp = sharpMod.default;
+    const pages = [];
+    for (const source of sources) {
+      const image = await sharp(source, { failOn: "none" })
+        .rotate()
+        .resize({ width: 1400, height: 1400, fit: "inside", withoutEnlargement: true })
+        .png()
+        .toBuffer();
+      pages.push(image);
+    }
+    if (!ocrWorkerPromise) {
+      ocrWorkerPromise = createWorker("eng+chi_tra", 1, {
+        langPath: TESS_DIR,
+        cachePath: path.join(tmpdir(), "tessdata"),
+        gzip: true,
+      }).catch((error) => {
+        ocrWorkerPromise = null;
+        throw error;
+      });
+    }
+    const worker = await ocrWorkerPromise;
+    const parts = [];
+    for (const page of pages) {
+      const { data } = await worker.recognize(page);
+      if (data?.text) parts.push(data.text);
+    }
+    return parts.join("\n").slice(0, 20000);
+  } catch {
+    resetOcrWorker();
+    return "";
+  }
+}
+
+async function visionText(body) {
+  const base64 = String(body?.base64 || "");
+  if (!base64) return "";
+  if (process.env.SPEC_OCR !== "server" && process.platform === "darwin") {
+    const apple = await appleVisionText(body);
+    if (String(apple || "").trim()) return apple;
+  }
+  return serverOcrText(body);
 }
 
 async function readDocument(body) {

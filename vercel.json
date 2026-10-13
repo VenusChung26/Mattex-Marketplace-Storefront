@@ -1,4 +1,10 @@
 {
+  "functions": {
+    "api/spec-match.js": {
+      "maxDuration": 60,
+      "includeFiles": "server/tessdata/**"
+    }
+  },
   "redirects": [
     { "source": "/green", "destination": "/en/green", "statusCode": 301 },
     { "source": "/sales", "destination": "/en", "statusCode": 301 },
