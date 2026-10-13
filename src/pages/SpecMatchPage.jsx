@@ -87,6 +87,40 @@ function readFile(file) {
   });
 }
 
+function shrinkSpecImage(file) {
+  const name = String(file?.name || "");
+  const type = String(file?.type || "");
+  if (!(type.startsWith("image/") || /\.(png|jpe?g|gif|webp)$/i.test(name))) return Promise.resolve("");
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const longest = Math.max(img.width, img.height, 1);
+      const scale = Math.min(1, 1600 / longest);
+      if (scale === 1 && file.size < 900_000) {
+        resolve("");
+        return;
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve("");
+        return;
+      }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", 0.86));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve("");
+    };
+    img.src = url;
+  });
+}
+
 function shownMatch(row) {
   const matches = Array.isArray(row?.matches) ? row.matches : [];
   if (!matches.length) return null;
@@ -281,6 +315,9 @@ export default function SpecMatchPage() {
   const specFilesRef = useRef(new Map());
   const previewBlobRef = useRef("");
   const pickModeRef = useRef("start");
+  const extractEpochRef = useRef(0);
+  const dropModeRef = useRef("");
+  const pendingRef = useRef(null);
   const [status, setStatus] = useState(null);
   const [fileName, setFileName] = useState("");
   const [specUrl, setSpecUrl] = useState("");
@@ -289,6 +326,7 @@ export default function SpecMatchPage() {
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [job, setJob] = useState(null);
+  const [dropMode, setDropMode] = useState("");
   const [error, setError] = useState("");
   const [failedNames, setFailedNames] = useState([]);
   const [dragOver, setDragOver] = useState(false);
@@ -427,6 +465,10 @@ export default function SpecMatchPage() {
     if (!preview && !dialog) return undefined;
     function onKey(event) {
       if (event.key !== "Escape") return;
+      if (job || dialog?.type === "files") {
+        cancelExtract();
+        return;
+      }
       if (dialog?.type === "custom") cancelCustom();
       else {
         closePreview();
@@ -435,7 +477,7 @@ export default function SpecMatchPage() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [preview, dialog]);
+  }, [preview, dialog, job]);
 
   const closed = status != null && status.open === false;
   const limited = status?.member !== true && Number(status?.remaining) === 0;
@@ -445,7 +487,11 @@ export default function SpecMatchPage() {
 
   async function matchOne(file, onPhase) {
     const payload = { name: file.name, mime: file.type || "" };
-    if (file.size > 3_200_000) {
+    const shrunk = await shrinkSpecImage(file);
+    if (shrunk) {
+      payload.base64 = shrunk.split(",")[1] || "";
+      payload.mime = "image/jpeg";
+    } else if (file.size > 3_200_000) {
       onPhase?.("upload");
       payload.url = await uploadSpecFile(file);
     } else {
@@ -459,36 +505,72 @@ export default function SpecMatchPage() {
     if (data?.remaining != null) setStatus((prev) => ({ ...prev, remaining: data.remaining }));
     if (!data?.ok) return { ok: false, error: data?.error || "file" };
     if (data.unreadable || !Array.isArray(data.rows) || !data.rows.length) return { ok: true, unreadable: true };
-    onPhase?.("save");
-    let url = "";
-    try {
-      url = await uploadSpecFile(file);
-    } catch {
-      url = "";
+    return { ok: true, rows: data.rows };
+  }
+
+  function cancelExtract() {
+    extractEpochRef.current += 1;
+    dropModeRef.current = "";
+    pendingRef.current = null;
+    setDropMode("");
+    setJob(null);
+    setBusy(false);
+    setDialog((current) => (current?.type === "files" ? null : current));
+  }
+
+  function storeHeldFiles(held) {
+    held.files.forEach((file, id) => {
+      specFilesRef.current.set(id, file);
+      saveSpecFile(owner, id, file).catch(() => {});
+      uploadSpecFile(file).then((url) => {
+        if (!url) return;
+        setSources((prev) => prev.map((item) => (item.id === id ? { ...item, url } : item)));
+      }).catch(() => {});
+    });
+  }
+
+  function applyHeld(mode, held) {
+    if (mode === "replace" || mode === "start") {
+      specFilesRef.current = new Map();
+      clearSpecFiles(owner).catch(() => {});
+      storeHeldFiles(held);
+      setSources(held.sources);
+      setRows(withLiveCatalog(held.rows));
+      setOpenKeys(new Set());
+    } else {
+      storeHeldFiles(held);
+      setSources((prev) => [...prev, ...held.sources]);
+      setRows((prev) => withLiveCatalog([...prev, ...held.rows]));
     }
-    return { ok: true, rows: data.rows, url };
+    setFileName(mode === "replace" || mode === "start" ? held.sources[0]?.name || "" : (current) => current || held.sources[0]?.name || "");
+    setSpecUrl("");
+    setFailedNames(held.failed);
+    if (held.skipped) setError(t("specMatchFileCap"));
+    setReady(true);
+    dropModeRef.current = "";
+    pendingRef.current = null;
+    setDropMode("");
+    setJob(null);
+    setBusy(false);
+    setDialog(null);
   }
 
   async function runFiles(fileList, mode) {
     const incoming = Array.from(fileList || []).filter(Boolean);
     if (!incoming.length || closed || limited) return;
-    const replacing = mode === "replace" || mode === "start" || !rows.length;
-    const keptSources = replacing ? [] : sources.slice();
-    const keptRows = replacing ? [] : rows.slice();
-    const room = FILE_CAP - keptSources.length;
+    const epoch = extractEpochRef.current + 1;
+    extractEpochRef.current = epoch;
+    const alive = () => extractEpochRef.current === epoch;
+    const replacing = mode === "replace" || mode === "start";
+    const keptSources = mode === "hold" || replacing ? [] : sources.slice();
+    const keptRows = mode === "hold" || replacing ? [] : rows.slice();
+    const room = FILE_CAP - (mode === "hold" ? sources.length : keptSources.length);
     const batch = incoming.slice(0, Math.max(0, room));
     const skipped = incoming.length - batch.length;
     if (!batch.length) {
       setError(t("specMatchFileCap"));
+      setDialog((current) => (current?.type === "files" ? null : current));
       return;
-    }
-    if (replacing) {
-      specFilesRef.current = new Map();
-      try {
-        await clearSpecFiles(owner);
-      } catch {
-        /* the new files still preview in this tab */
-      }
     }
     setBusy(true);
     setError("");
@@ -496,13 +578,18 @@ export default function SpecMatchPage() {
     const failed = [];
     const nextSources = keptSources.slice();
     const nextRows = keptRows.slice();
+    const heldFiles = new Map();
     try {
       for (let index = 0; index < batch.length; index += 1) {
+        if (!alive()) return;
         const file = batch[index];
-        const report = (phase) => setJob({ index, total: batch.length, name: file.name, phase, large: file.size > 3_200_000 });
+        const report = (phase) => {
+          if (alive()) setJob({ index, total: batch.length, name: file.name, phase, large: file.size > 3_200_000 });
+        };
         report(file.size > 3_200_000 ? "upload" : "read");
         try {
           const result = await matchOne(file, report);
+          if (!alive()) return;
           if (!result.ok) {
             setError(result.error === "limit" ? t("specMatchLimit") : result.error === "closed" ? t("specMatchClosed") : t("specMatchUnreadable"));
             break;
@@ -511,30 +598,41 @@ export default function SpecMatchPage() {
             failed.push(file.name);
             continue;
           }
-          const source = { id: `src-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, name: file.name, kind: sourceKind(file), url: result.url || "" };
-          specFilesRef.current.set(source.id, file);
-          try {
-            await saveSpecFile(owner, source.id, file);
-          } catch {
-            /* this tab can still preview the file */
-          }
+          const source = { id: `src-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, name: file.name, kind: sourceKind(file), url: "" };
+          heldFiles.set(source.id, file);
           nextSources.push(source);
           nextRows.push(...toRows(result.rows, source));
         } catch {
           failed.push(file.name);
         }
       }
-      setSources(nextSources);
-      setRows(withLiveCatalog(nextRows));
-      if (replacing) setOpenKeys(new Set());
-      setFileName(nextSources[0]?.name || "");
-      setSpecUrl(nextSources[0]?.url || "");
-      setFailedNames(failed);
-      if (skipped) setError(t("specMatchFileCap"));
-      setReady(true);
+      if (!alive()) return;
+      const addedSources = nextSources.slice(keptSources.length);
+      const addedRows = nextRows.slice(keptRows.length);
+      const held = {
+        sources: mode === "append" || mode === "hold" ? addedSources : nextSources,
+        rows: mode === "append" || mode === "hold" ? addedRows : nextRows,
+        failed,
+        skipped,
+        files: heldFiles,
+      };
+      if (!addedRows.length) {
+        setFailedNames(failed);
+        if (skipped) setError(t("specMatchFileCap"));
+        setDialog((current) => (current?.type === "files" ? null : current));
+        return;
+      }
+      if (mode === "hold" && !dropModeRef.current) {
+        pendingRef.current = held;
+        setJob({ index: Math.max(0, batch.length - 1), total: batch.length, name: batch[batch.length - 1]?.name || "", phase: "ready", readyCount: addedRows.length });
+        return;
+      }
+      applyHeld(mode === "hold" ? dropModeRef.current : mode, held);
     } finally {
-      setJob(null);
-      setBusy(false);
+      if (alive() && !(mode === "hold" && pendingRef.current)) {
+        setJob(null);
+        setBusy(false);
+      }
     }
   }
 
@@ -555,10 +653,22 @@ export default function SpecMatchPage() {
     if (!files.length || closed || limited || busy) return;
     if (rows.length && fileName !== SAMPLE_FILE_NAME) {
       setPreview(null);
+      dropModeRef.current = "";
+      pendingRef.current = null;
+      setDropMode("");
       setDialog({ type: "files", files });
+      runFiles(files, "hold");
       return;
     }
     runFiles(files, "start");
+  }
+
+  function chooseDropped(mode) {
+    dropModeRef.current = mode;
+    setDropMode(mode);
+    const held = pendingRef.current;
+    if (!held) return;
+    applyHeld(mode, held);
   }
 
   function trySample() {
@@ -917,13 +1027,6 @@ export default function SpecMatchPage() {
             }}
           />
         </div>
-        {job ? (
-          <div className="sticky z-30 -mx-4 mt-4 bg-paper px-4 py-3" style={{ top: headTop }}>
-            <SpecWait job={job} t={t} />
-          </div>
-        ) : busy ? (
-          <p className="mt-4 text-sm text-ink">{t("specMatchWorking")}</p>
-        ) : null}
         {error ? <p className="mt-4 text-sm text-[#8a2b2b]">{error}</p> : null}
         {failedNames.length ? <p className="mt-4 text-sm font-semibold text-ink">{t("specMatchFailed", { name: failedNames.join("、") })}</p> : null}
         {rows.length ? (
@@ -1099,6 +1202,29 @@ export default function SpecMatchPage() {
           </div>
         </div>
       </div>
+      {job || dialog?.type === "files" ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" role="presentation">
+          <button type="button" className="absolute inset-0 bg-charcoal/50" aria-label={t("specMatchClose")} onClick={cancelExtract} />
+          <div className="relative w-full max-w-md bg-white p-5 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="spec-extract-title">
+            <h2 id="spec-extract-title" className="font-display text-xl font-semibold text-brand-800">{t("specMatchExtractTitle")}</h2>
+            {job?.phase === "ready" ? (
+              <p className="mt-3 text-sm leading-6 text-ink">{t("specMatchExtractReady", { n: job.readyCount || 0 })}</p>
+            ) : job ? (
+              <div className="mt-4">
+                <SpecWait job={job} t={t} />
+              </div>
+            ) : (
+              <p className="mt-3 text-sm leading-6 text-ink">{t("specMatchDropAsk")}</p>
+            )}
+            {dialog?.type === "files" ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button type="button" className="btn-primary !px-4 !py-2" onClick={() => chooseDropped("append")}>{t("specMatchAddFile")}</button>
+                <button type="button" className={decisionButton(dropMode === "replace")} onClick={() => chooseDropped("replace")}>{t("specMatchChangeFile")}</button>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
       {dialog?.type === "delete-row" ? (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" role="presentation">
           <button type="button" className="absolute inset-0 bg-charcoal/50" aria-label={t("specMatchClose")} onClick={() => setDialog(null)} />
@@ -1108,18 +1234,6 @@ export default function SpecMatchPage() {
             <div className="mt-4 flex flex-wrap gap-2">
               <button type="button" className="rounded-none border border-[#E7C1C1] bg-[#F8E8E8] px-4 py-2 text-sm font-semibold text-[#8a2b2b]" onClick={() => confirmDeleteRow(dialog.key)}>{t("specMatchDeleteCustom")}</button>
               <button type="button" className="btn-soft !px-4 !py-2" onClick={() => setDialog(null)}>{t("cancel")}</button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-      {dialog?.type === "files" ? (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" role="presentation">
-          <button type="button" className="absolute inset-0 bg-charcoal/50" aria-label={t("specMatchClose")} onClick={() => setDialog(null)} />
-          <div className="relative w-full max-w-md bg-white p-5 shadow-xl" role="dialog" aria-modal="true">
-            <p className="text-sm leading-6 text-ink">{t("specMatchDropAsk")}</p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <button type="button" className="btn-primary !px-4 !py-2" onClick={() => { const files = dialog.files; setDialog(null); runFiles(files, "append"); }}>{t("specMatchAddFile")}</button>
-              <button type="button" className="btn-soft !px-4 !py-2" onClick={() => { const files = dialog.files; setDialog(null); runFiles(files, "replace"); }}>{t("specMatchChangeFile")}</button>
             </div>
           </div>
         </div>
