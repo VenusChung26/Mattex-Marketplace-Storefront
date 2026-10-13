@@ -382,19 +382,63 @@ async function appleVisionText(body) {
   }
 }
 
-function jpegImages(buffer) {
-  const images = [];
-  for (let i = 0; i < buffer.length - 1; i += 1) {
-    if (buffer[i] !== 0xff || buffer[i + 1] !== 0xd8) continue;
-    let end = i + 2;
-    while (end < buffer.length - 1 && !(buffer[end] === 0xff && buffer[end + 1] === 0xd9)) end += 1;
-    if (end >= buffer.length - 1) break;
-    const slice = buffer.subarray(i, end + 2);
-    if (slice.length >= 12_000) images.push(slice);
-    i = end + 1;
+function isPdf(body) {
+  const mime = String(body?.mime || "").toLowerCase();
+  const name = String(body?.name || "").toLowerCase();
+  return mime.includes("pdf") || name.endsWith(".pdf");
+}
+
+function fileHint(body) {
+  return String(body?.name || "").replace(/\.[^.]+$/, " ").replace(/[_()]+/g, " ");
+}
+
+async function rasterPages(sharp, buffer) {
+  const meta = await sharp(buffer, { failOn: "none" }).rotate().metadata();
+  const width = meta.width || 0;
+  const height = meta.height || 0;
+  let pipeline = sharp(buffer, { failOn: "none" }).rotate();
+  if (width && height && Math.min(width, height) < 260) {
+    pipeline = pipeline.resize({ width: Math.min(1600, Math.round(width * 2)), withoutEnlargement: false });
+  } else if (width > 1400) {
+    pipeline = pipeline.resize({ width: 1400, withoutEnlargement: true });
   }
-  images.sort((a, b) => b.length - a.length);
-  return images.slice(0, 3);
+  const base = await pipeline.png().toBuffer();
+  const sized = await sharp(base).metadata();
+  const pageWidth = sized.width || 0;
+  const pageHeight = sized.height || 0;
+  if (!pageWidth || !pageHeight || pageHeight <= 1700) return [base];
+  const pages = [];
+  const window = 1500;
+  for (let top = 0; top < pageHeight && pages.length < 4; top += 1200) {
+    pages.push(await sharp(base).extract({
+      left: 0,
+      top,
+      width: pageWidth,
+      height: Math.min(window, pageHeight - top),
+    }).png().toBuffer());
+    if (top + window >= pageHeight) break;
+  }
+  return pages;
+}
+
+async function pdfReading(buffer) {
+  const mupdf = await import("mupdf");
+  const doc = mupdf.Document.openDocument(buffer, "application/pdf");
+  const texts = [];
+  const count = Math.min(doc.countPages(), 8);
+  for (let index = 0; index < count; index += 1) {
+    texts.push(doc.loadPage(index).toStructuredText("preserve-whitespace").asText());
+  }
+  return { text: texts.join("\n"), doc, count, mupdf };
+}
+
+async function pdfImages(pdf) {
+  const images = [];
+  for (let index = 0; index < pdf.count && images.length < 2; index += 1) {
+    const png = Buffer.from(pdf.doc.loadPage(index).toPixmap(pdf.mupdf.Matrix.scale(1.3, 1.3), pdf.mupdf.ColorSpace.DeviceRGB, false).asPNG());
+    if (png.length > 40_000) images.push(png);
+  }
+  return images;
 }
 
 let ocrWorkerPromise = null;
@@ -405,27 +449,14 @@ function resetOcrWorker() {
   if (pending) pending.then((worker) => worker.terminate()).catch(() => {});
 }
 
-async function serverOcrText(body) {
-  const base64 = String(body?.base64 || "");
-  if (!base64) return "";
-  const name = String(body?.name || "").toLowerCase();
-  const mime = String(body?.mime || "").toLowerCase();
-  const buffer = Buffer.from(base64, "base64");
-  const sources = name.endsWith(".pdf") || mime.includes("pdf") ? jpegImages(buffer) : [buffer];
-  if (!sources.length) return "";
-  try {
-    const [{ createWorker }, sharpMod] = await Promise.all([import("tesseract.js"), import("sharp")]);
-    const sharp = sharpMod.default;
-    const pages = [];
-    for (const source of sources) {
-      const image = await sharp(source, { failOn: "none" })
-        .rotate()
-        .resize({ width: 1400, height: 1400, fit: "inside", withoutEnlargement: true })
-        .png()
-        .toBuffer();
-      pages.push(image);
-    }
-    if (!ocrWorkerPromise) {
+function normalizeOcr(text) {
+  return String(text || "").replace(/(\d)\s*%\s*(?=\d)/g, "$1*");
+}
+
+async function recognizeImages(pages, params) {
+  if (!pages.length) return "";
+  const { createWorker } = await import("tesseract.js");
+  if (!ocrWorkerPromise) {
       ocrWorkerPromise = createWorker("eng+chi_tra", 1, {
         langPath: TESS_DIR,
         cachePath: path.join(tmpdir(), "tessdata"),
@@ -439,12 +470,27 @@ async function serverOcrText(body) {
       ocrWorkerPromise,
       new Promise((_, reject) => { setTimeout(() => reject(new Error("ocr-timeout")), 20000); }),
     ]);
+    if (params) await worker.setParameters(params);
     const parts = [];
     for (const page of pages) {
       const { data } = await worker.recognize(page);
       if (data?.text) parts.push(data.text);
     }
-    return parts.join("\n").slice(0, 20000);
+    if (params) resetOcrWorker();
+    return normalizeOcr(parts.join("\n")).slice(0, 20000);
+}
+
+async function serverOcrText(body) {
+  const base64 = String(body?.base64 || "");
+  if (!base64 || isPdf(body)) return "";
+  try {
+    const sharpMod = await import("sharp");
+    const sharp = sharpMod.default;
+    const pages = await rasterPages(sharp, Buffer.from(base64, "base64"));
+    const first = await recognizeImages(pages);
+    if (parseBuyerDocument(first).length) return first;
+    resetOcrWorker();
+    return recognizeImages(pages, { tessedit_pageseg_mode: "3" });
   } catch {
     resetOcrWorker();
     return "";
@@ -453,7 +499,7 @@ async function serverOcrText(body) {
 
 async function visionText(body) {
   const base64 = String(body?.base64 || "");
-  if (!base64) return "";
+  if (!base64 || isPdf(body)) return "";
   if (process.env.SPEC_OCR !== "server" && process.platform === "darwin") {
     const apple = await appleVisionText(body);
     if (String(apple || "").trim()) return apple;
@@ -461,13 +507,35 @@ async function visionText(body) {
   return serverOcrText(body);
 }
 
+function usefulSpec(text) {
+  return /sheet\s*pil|paving|角[钢鋼]|槽[钢鋼]|防火|channel|\bchs\b|stainless|鉛水|介子|水平爆|concrete\s*block/i.test(text);
+}
+
 async function readDocument(body) {
-  const plain = sourceText(body);
-  if (parseBuyerDocument(plain).length) return { text: plain, pictured: false };
-  if (!isPicture(body)) return { text: plain, pictured: false };
+  const hint = fileHint(body);
+  let plain = isPdf(body) ? "" : sourceText(body);
+  if (isPdf(body) && body?.base64) {
+    try {
+      const pdf = await pdfReading(Buffer.from(String(body.base64), "base64"));
+      plain = pdf.text || "";
+      if (!parseBuyerDocument([hint, plain].filter(Boolean).join("\n")).length) {
+        const sharpMod = await import("sharp");
+        const pages = [];
+        for (const image of await pdfImages(pdf)) pages.push(...await rasterPages(sharpMod.default, image));
+        const ocr = await recognizeImages(pages.slice(0, 3));
+        if (usefulSpec(ocr)) plain = [plain, ocr].filter(Boolean).join("\n");
+      }
+    } catch {
+      /* the picture reader still runs for a scan the text engine cannot open */
+    }
+  }
+  const seeded = [hint, plain].filter(Boolean).join("\n");
+  if (parseBuyerDocument(seeded).length) return { text: seeded, pictured: false };
+  if (!isPicture(body)) return { text: seeded, pictured: false };
   const ocr = await visionText(body);
-  if (parseBuyerDocument(ocr).length) return { text: ocr, pictured: true };
-  if (plain && extractBuyerLines(plain).length) return { text: plain, pictured: false };
+  const merged = [seeded, ocr].filter(Boolean).join("\n");
+  if (parseBuyerDocument(merged).length) return { text: merged, pictured: true };
+  if (!isPicture(body) && plain && extractBuyerLines(plain).length) return { text: plain, pictured: false };
   return { text: "", pictured: true };
 }
 
@@ -628,7 +696,25 @@ export async function handleSpecMatchStatus(request) {
   };
 }
 
+async function withFile(body) {
+  if (body?.base64) return body;
+  const url = String(body?.url || "");
+  let host = "";
+  try {
+    host = new URL(url).hostname;
+  } catch {
+    host = "";
+  }
+  if (!host.endsWith("blob.vercel-storage.com")) return body;
+  const res = await fetch(url);
+  if (!res.ok) return body;
+  const bytes = Buffer.from(await res.arrayBuffer());
+  if (!bytes.length || bytes.length > 20 * 1024 * 1024) return body;
+  return { ...body, base64: bytes.toString("base64") };
+}
+
 export async function handleSpecMatch(body, request) {
+  body = await withFile(body);
   const member = readSession(request, "buyer") || readSession(request, "staff");
   const guest = guestState(request);
   if (!member && guest.count >= DAILY_LIMIT) {

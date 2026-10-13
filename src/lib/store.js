@@ -2221,7 +2221,9 @@ function specQueryTokens(name, spec) {
   if (/角[钢鋼]|\bangle\b/i.test(text)) extra.push("angle");
   if (/sheet\s*pile|板[樁桩]|lsp\s*\d/i.test(text)) extra.push("sheet", "piles");
   if (/\bchs\b|circular hollow/i.test(text)) extra.push("circular", "hollow", "sections");
-  if (/螺絲|螺栓|光砵|絲母|介子/.test(text)) extra.push("fasteners");
+  if (/螺絲|螺栓|光砵|絲母|介子|鉛水|水平爆/.test(text)) extra.push("fasteners");
+  if (/防火板|fire\s*board|h-?\s*tec/i.test(text)) extra.push("fire", "gypsum", "board");
+  if (/stainless\s*steel\s*plate|不銹鋼板|不锈钢板/i.test(text)) extra.push("stainless", "plate");
   if (/不銹鋼|不锈钢|stainless/i.test(text)) extra.push("stainless");
   if (/316/.test(text)) extra.push("316");
   if (/304/.test(text)) extra.push("304");
@@ -2263,10 +2265,15 @@ function specFamilyScore(text, productName) {
     if (/circular hollow/i.test(name)) score += 4;
     if (/pipe & fittings|concrete pipe|copper|upvc|hdpe/i.test(name)) score -= 3;
   }
-  if (/螺絲|螺栓|光砵|絲母|介子/.test(text)) {
-    if (/fastener|\bbolt\b/i.test(name)) score += 3;
-    if (/manhole/i.test(name)) score -= 4;
+  if (/螺絲|螺栓|光砵|絲母|介子|鉛水|水平爆/.test(text)) {
+    if (/fastener/i.test(name)) score += 4;
+    if (/\bbolt\b/i.test(name)) score += 2;
+    if (/manhole|railing|barrier/i.test(name)) score -= 4;
   }
+  if (/防火板|fire\s*board|h-?\s*tec/i.test(text)) {
+    if (/fire-resistant|gypsum board|partition board/i.test(name)) score += 4;
+  }
+  if (/stainless\s*steel\s*plate|不銹鋼板|不锈钢板/i.test(text) && /stainless steel plate/i.test(name)) score += 5;
   return score;
 }
 

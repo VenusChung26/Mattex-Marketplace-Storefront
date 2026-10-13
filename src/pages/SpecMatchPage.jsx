@@ -31,7 +31,7 @@ import {
   takePendingSpecFile,
 } from "../lib/specMatchSession";
 
-const ACCEPT = ".pdf,.doc,.docx,.xls,.xlsx,.webp,image/png,image/jpeg,image/webp,image/gif";
+const ACCEPT = ".pdf,.png,.jpg,.jpeg,.gif,.webp,.heic,.heif,.doc,.docx,.xls,.xlsx,image/*,application/pdf";
 const FILE_CAP = 8;
 const SAMPLE_FILE_NAME = SAMPLE_SPEC_NAME;
 const SAMPLE_LINES = [
@@ -413,9 +413,14 @@ export default function SpecMatchPage() {
   const decided = decidedRows.length > 0;
 
   async function matchOne(file) {
-    const dataUrl = await readFile(file);
-    const base64 = dataUrl.split(",")[1] || "";
-    const res = await postSpecMatch({ name: file.name, mime: file.type, dataUrl, base64 });
+    const payload = { name: file.name, mime: file.type || "" };
+    if (file.size > 3_200_000) {
+      payload.url = await uploadSpecFile(file);
+    } else {
+      const dataUrl = await readFile(file);
+      payload.base64 = dataUrl.split(",")[1] || "";
+    }
+    const res = await postSpecMatch(payload);
     const data = res.data || {};
     if (data?.remaining != null) setStatus((prev) => ({ ...prev, remaining: data.remaining }));
     if (!data?.ok) return { ok: false, error: data?.error || "file" };
@@ -885,7 +890,7 @@ export default function SpecMatchPage() {
                 </button>
               </div>
               <div className="border border-line bg-white">
-                <table className="w-full min-w-[720px] border-separate border-spacing-0 text-left text-sm">
+                <table className="spec-table w-full min-w-0 border-separate border-spacing-0 text-left text-sm md:min-w-[720px]">
                   <thead>
                     <tr className="text-xs font-semibold text-mute">
                       <th className="spec-match-head sticky z-20 w-12 border-b border-line bg-white px-3 py-2 font-semibold" style={{ top: headTop }}>#</th>

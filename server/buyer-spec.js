@@ -191,11 +191,12 @@ function parseFasteners(lines) {
 
 function parseDrawing(text) {
   const items = [];
-  if (/LSP\s*3B/i.test(text)) {
-    const thick = text.match(/LSP\s*3B[^\n]{0,48}?(\d+\s*mm)/i);
+  if (/sheet\s*pil|LSP\s*3/i.test(text)) {
+    const thick = text.match(/(\d+\s*mm)\s*thick|thickness\s*(\d+\s*mm)|LSP\s*3\w?[^\n]{0,48}?(\d+\s*mm)/i);
+    const thickText = thick ? (thick[1] || thick[2] || thick[3] || "").replace(/\s+/g, "") : "";
     items.push({
       name: "Sheet pile LSP3B",
-      spec: [thick ? `${thick[1].replace(/\s+/g, "")} thick` : "", /S\s*275/i.test(text) ? "grade S275" : ""].filter(Boolean).join(" · "),
+      spec: [thickText ? `${thickText} thick` : "", /S\s*275/i.test(text) ? "grade S275" : ""].filter(Boolean).join(" · "),
       qty: null,
     });
   }
@@ -380,8 +381,35 @@ function parseLooseSpecs(lines) {
   });
 }
 
+function tighten(text) {
+  return String(text || "")
+    .replace(/([\u4e00-\u9fff])[ \t]+(?=[\u4e00-\u9fff])/g, "$1")
+    .replace(/([\u4e00-\u9fff])[ \t]+(?=[A-Za-z0-9])/g, "$1")
+    .replace(/([A-Za-z0-9])[ \t]+(?=[\u4e00-\u9fff])/g, "$1");
+}
+
+function keepItem(item) {
+  const text = `${item.name} ${item.spec}`;
+  if (/角[钢鋼]|槽[钢鋼]|U槽|防火|鉛水|介子|絲母|光砵|螺絲|sheet\s*pile|\bchannel\b|\bchs\b|paving|stainless|block|板|網|管/i.test(text)) return true;
+  return /\d+\s*[x×*]\s*\d+/.test(text);
+}
+
+function namedProducts(text) {
+  const source = String(text || "");
+  const items = [];
+  if (/防火板|fire\s*board|h-?\s*tec/i.test(source)) {
+    items.push({ name: "T3 防火板", spec: /h-?\s*tec/i.test(source) ? "Wins H-Tec" : "防火板", qty: null });
+  }
+  if (/stainless\s*steel\s*plate|不銹鋼板|不锈钢板/i.test(source)) {
+    const size = source.match(/\d+\s*[x×*]\s*\d+\s*[x×*]\s*\d+(?:\.\d+)?\s*mm/i);
+    items.push({ name: "Stainless Steel Plate", spec: size ? size[0].replace(/\s+/g, "") : "", qty: null });
+  }
+  return items;
+}
+
 export function parseBuyerDocument(text) {
-  const lines = String(text || "")
+  const source = tighten(text);
+  const lines = source
     .split(/\r?\n/)
     .map(clean)
     .filter((line) => line && !isNoise(line));
@@ -391,9 +419,12 @@ export function parseBuyerDocument(text) {
   const fasteners = parseFasteners(lines);
   if (fasteners.length > items.length) items = fasteners;
   if (items.length < 2) {
-    const drawn = parseDrawing(text);
+    const drawn = parseDrawing(source);
     if (drawn.length > items.length) items = drawn;
   }
   if (!items.length) items = parseLooseSpecs(lines);
-  return dedupe(applyNotes(items, String(text || "")));
+  for (const item of namedProducts(source)) {
+    if (!items.some((row) => row.name === item.name)) items.push(item);
+  }
+  return dedupe(applyNotes(items.filter(keepItem), source));
 }

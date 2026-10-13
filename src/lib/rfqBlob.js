@@ -42,7 +42,7 @@ async function uploadRfqFile(pathname, file) {
 
 export async function uploadSpecFile(file) {
   const name = file?.name || "spec";
-  return uploadRfqFile(`specs/${safeSegment(name)}/${Date.now()}-${safeSegment(name)}`, file);
+  return uploadRfqFile(`rfq/specs/${safeSegment(name)}/${Date.now()}-${safeSegment(name)}`, file);
 }
 
 export async function uploadProductImage(dataUrl, productKey) {

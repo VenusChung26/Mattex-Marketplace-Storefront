@@ -494,3 +494,25 @@ body {
 .metric-ring {
   animation: metric-ring 1s ease-out forwards;
 }
+
+@media (max-width: 767px) {
+  .spec-table,
+  .spec-table thead,
+  .spec-table tbody,
+  .spec-table tr,
+  .spec-table td,
+  .spec-table th {
+    display: block;
+    width: auto;
+    max-width: none;
+  }
+  .spec-table thead,
+  .spec-table td:empty {
+    display: none;
+  }
+  .spec-table .truncate {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+}
