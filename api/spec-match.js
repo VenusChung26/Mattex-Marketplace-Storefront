@@ -435,7 +435,10 @@ async function serverOcrText(body) {
         throw error;
       });
     }
-    const worker = await ocrWorkerPromise;
+    const worker = await Promise.race([
+      ocrWorkerPromise,
+      new Promise((_, reject) => { setTimeout(() => reject(new Error("ocr-timeout")), 20000); }),
+    ]);
     const parts = [];
     for (const page of pages) {
       const { data } = await worker.recognize(page);

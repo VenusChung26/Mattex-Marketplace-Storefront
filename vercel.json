@@ -2,7 +2,7 @@
   "functions": {
     "api/spec-match.js": {
       "maxDuration": 60,
-      "includeFiles": "server/tessdata/**"
+      "includeFiles": "{server/tessdata/**,node_modules/tesseract.js-core/*.wasm}"
     }
   },
   "redirects": [
