@@ -5,6 +5,8 @@ import ProductCard, { FallbackImage, ProductCardSkeleton, ProductListRow } from 
 import SupplierLogo from "../components/SupplierLogo";
 import CustomProductModal from "../components/CustomProductModal";
 import CatalogViewToggle from "../components/CatalogViewToggle";
+import SpecMatchLaunch from "../components/SpecMatchLaunch";
+import { SHOW_SPEC_MATCH } from "../lib/flags";
 import SearchFieldsSelect from "../components/SearchFieldsSelect";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
@@ -471,6 +473,9 @@ export default function HomePage() {
               <Link to={withLocale(lang, "/rfq")} className="btn-ghost !px-6 !py-3.5">
                 {t("openRfqDraft")}
               </Link>
+              {SHOW_SPEC_MATCH ? (
+                <SpecMatchLaunch className="btn-ghost !px-6 !py-3.5">{t("uploadSpecMatch")}</SpecMatchLaunch>
+              ) : null}
             </div>
           </div>
         </section>
@@ -886,6 +891,11 @@ export default function HomePage() {
                   >
                     {t("priceFilterHot")}
                   </button>
+                  {SHOW_SPEC_MATCH ? (
+                    <SpecMatchLaunch className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide bg-white text-charcoal rounded-full">
+                      {t("uploadSpecMatch")}
+                    </SpecMatchLaunch>
+                  ) : null}
                 </div>
               </div>
             </div>

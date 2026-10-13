@@ -4,7 +4,8 @@ import { fetchQuoteSnapshot, fetchRemoteKv, fetchRemoteRfqs, fetchRfqStamp, fetc
 import { adminOrigin, marketplaceOrigin } from "./origins.js";
 import { activeOfferPrice } from "./offer.js";
 import { foldHan } from "./han.js";
-import { sellingAmount } from "./productFields.js";
+import { adoptGuestSpecMatch } from "./specMatchSession.js";
+import { isTailorMade, orderMinimum, productImageUrl, sellingAmount } from "./productFields.js";
 import { contactFormFromAccount, normalizeRoles } from "./phone.js";
 import {
   accountCreatedEmailHtml,
@@ -2135,6 +2136,200 @@ function addSpecMatchLines({ lines, specFile } = {}) {
   return { ok: true };
 }
 
+function commitSpecMatch({ rows, mode, specFile } = {}) {
+  const decided = (Array.isArray(rows) ? rows : []).filter((row) =>
+    ["mm", "catalog", "tailor", "file"].includes(row?.choice)
+  );
+  if (!decided.length) return { ok: false, error: "empty" };
+  if (decided.some((row) => row.choice === "tailor" || row.choice === "file") && !isLoggedIn()) {
+    requireBuyerAuth({ custom: true });
+    return { ok: false, error: "not_logged_in" };
+  }
+  if (decided.some((row) => (row.choice === "tailor" || row.choice === "file") && !String(row.editName || row.buyerName || "").trim())) {
+    return { ok: false, error: "name" };
+  }
+  const draft = getDraft();
+  const bindings = [];
+  for (const row of decided) {
+    const previous = String(row.boundId || "");
+    if (previous) draft.lines = draft.lines.filter((line) => String(line.productId) !== previous);
+    const qty = Math.max(1, Math.floor(Number(row.qty)) || 1);
+    if (row.choice === "mm" || row.choice === "catalog") {
+      const product = getProduct(row.shownId || row.productId);
+      if (!product || isDiscontinued(product) || !isOrderable(product) || isProductOrderBlocked(product.id)) {
+        bindings.push({ key: row.key, boundId: "" });
+        continue;
+      }
+      const moq = Math.max(1, Number(product.moq) || 1);
+      const nextQty = Math.max(moq, qty);
+      const priced = getEffectivePrice(product).displayPrice != null;
+      const intent = mode === "quote" ? "quote" : priced ? "buy" : "quote";
+      const existing = draft.lines.find((line) => String(line.productId) === String(product.id) && !line.custom);
+      if (existing) {
+        existing.qty = nextQty;
+        existing.intent = intent;
+      } else {
+        draft.lines.push({ productId: product.id, qty: nextQty, intent });
+      }
+      bindings.push({ key: row.key, boundId: product.id });
+      continue;
+    }
+    const customId = previous.startsWith("custom_") ? previous : newCustomProductId();
+    const product = row.choice === "tailor" ? getProduct(row.shownId || row.productId) : null;
+    const name = String(row.editName || row.buyerName || "").trim();
+    if (!name) {
+      bindings.push({ key: row.key, boundId: "" });
+      continue;
+    }
+    const photos = (Array.isArray(row.editImages) ? row.editImages : []).map((src) => String(src || "").trim()).filter(Boolean).slice(0, 5);
+    draft.lines.push({
+      productId: customId,
+      qty,
+      custom: true,
+      intent: "quote",
+      name,
+      description: String(row.editSpec ?? row.buyerSpec ?? "").trim(),
+      category: "",
+      attachments: normalizeAttachments(row.attachments),
+      image: photos[0] || "",
+      images: photos.slice(1),
+      tailorMade: row.choice === "tailor",
+      baseProductId: row.choice === "tailor" ? String(product?.id || "") : "",
+      baseProductNo: row.choice === "tailor" ? String(product?.productNo || product?.provisionalSku || "").trim() : "",
+    });
+    bindings.push({ key: row.key, boundId: customId });
+  }
+  if (specFile?.url) {
+    draft.specFile = { name: String(specFile.name || "spec").slice(0, 180), url: String(specFile.url) };
+  }
+  setDraft(draft);
+  return { ok: true, bindings };
+}
+
+function catalogTokens(text) {
+  const stop = new Set(["the", "and", "for", "with", "from", "type", "item", "items", "qty", "quantity", "pcs", "size", "spec"]);
+  return `${text || ""}`
+    .toLowerCase()
+    .split(/[^a-z0-9\u4e00-\u9fff]+/)
+    .filter((word) => word.length >= 2 && !stop.has(word));
+}
+
+function specQueryTokens(name, spec) {
+  const text = `${name || ""} ${spec || ""}`;
+  const words = catalogTokens(text).filter((word) => !/^\d+$/.test(word) || /^(201|270|275|304|316|355|500)$/.test(word));
+  const extra = [];
+  if (/角[钢鋼]|\bangle\b/i.test(text)) extra.push("angle");
+  if (/sheet\s*pile|板[樁桩]|lsp\s*\d/i.test(text)) extra.push("sheet", "piles");
+  if (/\bchs\b|circular hollow/i.test(text)) extra.push("circular", "hollow", "sections");
+  if (/螺絲|螺栓|光砵|絲母|介子/.test(text)) extra.push("fasteners");
+  if (/不銹鋼|不锈钢|stainless/i.test(text)) extra.push("stainless");
+  if (/316/.test(text)) extra.push("316");
+  if (/304/.test(text)) extra.push("304");
+  if (/熱浸|热浸|鍍鋅|镀锌|\bhdg\b/i.test(text)) extra.push("hdg");
+  if (/s\s*275/i.test(text)) extra.push("s275j0");
+  return [...new Set([...words, ...extra])];
+}
+
+function specTokenHit(word, hayTokens, hayText) {
+  if (/[\u4e00-\u9fff]/.test(word)) return hayText.includes(word);
+  if (hayTokens.has(word)) return true;
+  if (word.length < 4) return false;
+  for (const token of hayTokens) {
+    if (token.startsWith(word)) return true;
+  }
+  return false;
+}
+
+function specFamilyScore(text, productName) {
+  const name = productName || "";
+  let score = 0;
+  const hotDip = /熱浸|热浸|鍍鋅|镀锌|\bhdg\b/i.test(text);
+  const stainless = /不銹|不锈钢|stainless|\b316\b|\b304\b/i.test(text);
+  if (/角[钢鋼]|\bangle\b/i.test(text)) {
+    if (/angle/i.test(name)) score += 3;
+    if (hotDip && !stainless && /stainless/i.test(name)) score -= 4;
+    if (stainless && /stainless/i.test(name)) score += 3;
+    if (/manhole|mesh|pipe/i.test(name)) score -= 3;
+  }
+  if (/U槽|槽[钢鋼鐵铁]|channel|waling|waler/i.test(text)) {
+    if (/custom profile/i.test(name)) score += 3;
+    if (/manhole|cable|tile|瓷磚|瓷砖/i.test(name)) score -= 4;
+  }
+  if (/sheet\s*pile|板[樁桩]|lsp/i.test(text)) {
+    if (/sheet pile/i.test(name)) score += 4;
+    if (/mesh/i.test(name)) score -= 3;
+  }
+  if (/\bchs\b/i.test(text)) {
+    if (/circular hollow/i.test(name)) score += 4;
+    if (/pipe & fittings|concrete pipe|copper|upvc|hdpe/i.test(name)) score -= 3;
+  }
+  if (/螺絲|螺栓|光砵|絲母|介子/.test(text)) {
+    if (/fastener|\bbolt\b/i.test(name)) score += 3;
+    if (/manhole/i.test(name)) score -= 4;
+  }
+  return score;
+}
+
+function catalogSpecLine(product) {
+  const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
+  const texts = [product?.sizeDesc, product?.description, product?.primarySpec].map(clean).filter(Boolean);
+  const plain = texts.find((text) => !/^grading\s*\/\s*option/i.test(text));
+  if (plain) return plain.slice(0, 160);
+  const grade = texts.map((text) => text.replace(/^grading\s*\/\s*option:\s*/i, "")).find(Boolean);
+  return grade ? grade.slice(0, 160) : "";
+}
+
+function specLineForMatch(product) {
+  const own = catalogSpecLine(product);
+  if (own) return own;
+  const token = String(product?.variant || product?.parentProduct || "").trim();
+  if (token.length < 2) return "";
+  const sibling = PRODUCTS.find((item) => {
+    if (!item || item.id === product.id) return false;
+    if (!String(item.name || "").includes(token)) return false;
+    return Boolean(catalogSpecLine(item));
+  });
+  return sibling ? catalogSpecLine(sibling) : "";
+}
+
+function matchSpecToCatalog(name, spec) {
+  const text = `${name || ""} ${spec || ""}`;
+  const words = specQueryTokens(name, spec);
+  if (!words.length) return [];
+  const ranked = PRODUCTS.filter(
+    (product) => product?.id && product.deleted !== true && product.published !== false && isOrderable(product) && !isDiscontinued(product)
+  )
+    .map((product) => {
+      const hayTokens = new Set(
+        catalogTokens(`${product.name || ""} ${product.productNo || ""} ${product.category || ""} ${product.primarySpec || ""} ${product.sizeDesc || ""}`)
+      );
+      const hayText = `${product.name || ""} ${product.primarySpec || ""} ${product.sizeDesc || ""}`;
+      const hits = words.filter((word) => specTokenHit(word, hayTokens, hayText)).length + specFamilyScore(text, product.name);
+      return { product, hits };
+    })
+    .filter((row) => row.hits > 0)
+    .sort((a, b) => b.hits - a.hits)
+    .slice(0, 5);
+  if (!ranked.length) return [];
+  const top = ranked[0].hits;
+  const second = ranked[1]?.hits || 0;
+  const namedFamily = /角[钢鋼]|U槽|槽[钢鋼鐵铁]|channel|waling|waler|sheet\s*pile|板[樁桩]|\bchs\b|光砵|絲母|介子|螺絲|螺栓/i.test(text);
+  const lead = ranked[0].product.name || "";
+  const confident = top >= 2 && top > second && (!namedFamily || (specFamilyScore(text, lead) > 0 && !/custom profile|fasteners/i.test(lead)));
+  return ranked.map((row, index) => ({
+    productId: row.product.id,
+    name: row.product.name,
+    spec: specLineForMatch(row.product),
+    unit: String(row.product.salesUnit || row.product.unit || ""),
+    moq: Math.max(1, Number(orderMinimum(row.product)) || 1),
+    image: productImageUrl(row.product),
+    tailorMade: isTailorMade(row.product),
+    productNo: String(row.product.productNo || row.product.provisionalSku || "").trim(),
+    hits: row.hits,
+    confident: index === 0 && confident,
+  }));
+}
+
 function updateCustomLine(productId, patch = {}) {
   const draft = getDraft();
   const line = draft.lines.find((l) => String(l.productId) === String(productId));
@@ -2907,6 +3102,7 @@ function setSessionUser(user) {
     sessionStorage.removeItem(PENDING_CART_KEY);
     sessionStorage.removeItem(PENDING_WA_RFQ_KEY);
   }
+  if (!prevEmail && nextEmail) adoptGuestSpecMatch(nextEmail);
 
   localStorage.setItem(AUTH_KEY, JSON.stringify(user));
   emitStoreChange();
@@ -7672,6 +7868,8 @@ export {
   addToCart,
   addCustomLine,
   addSpecMatchLines,
+  commitSpecMatch,
+  matchSpecToCatalog,
   getCatalogEtag,
   fetchProductLive,
   blockProductOrders,
