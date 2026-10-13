@@ -2,7 +2,9 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { ProductSearchBox } from "../../components/SearchSuggestions";
 import { compressImageFile } from "../../lib/compressImage";
 import { adminText } from "../../lib/adminCopy";
-import { OFFER_SECTION_HERO } from "../../lib/promo";
+import { offerStillOn } from "../../lib/offer";
+import { OFFER_SECTION_HERO, loadPromo } from "../../lib/promo";
+import { savePromo } from "../../lib/remote";
 import { useStore } from "../../hooks/useStore";
 import { useLanguage } from "../../i18n";
 import { listAdminProducts } from "../../lib/store";
@@ -115,13 +117,13 @@ export default function BannersPanel({ note }) {
   const [thumbOver, setThumbOver] = useState("");
   const [zoneOver, setZoneOver] = useState(false);
   const [previewLang, setPreviewLang] = useState("zh");
+  const [bulkEndsOn, setBulkEndsOn] = useState({});
   const replaceInputRef = useRef(null);
   const replaceIdRef = useRef("");
 
   useEffect(() => {
     let cancel = false;
-    fetch("/api/promo", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : null))
+    loadPromo()
       .then((data) => {
         if (cancel || !data) return;
         setForm({
@@ -256,14 +258,9 @@ export default function BannersPanel({ note }) {
           })),
         })),
       };
-      const response = await fetch("/api/promo", {
-        method: "POST",
-        credentials: "include",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const result = await response.json().catch(() => ({ ok: false, error: "Unable to save" }));
-      if (!response.ok || !result.ok) {
+      const response = await savePromo(payload);
+      const result = response.data || { ok: false, error: "Unable to save" };
+      if (!response.res.ok || !result.ok) {
         note?.({ ok: false, error: result.error || "Unable to save" });
         return;
       }
@@ -549,6 +546,31 @@ export default function BannersPanel({ note }) {
                     <p className="text-xs font-semibold text-ink">{pt("Products on this banner")}</p>
                     <p className="mt-0.5 text-xs text-mute">{pt("No limit. Each product needs a promo price and an end date, and can belong to only one banner.")}</p>
                     {products.length ? (
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <input
+                          type="date"
+                          value={bulkEndsOn[banner.id] || ""}
+                          aria-label={pt("End date")}
+                          className="rounded-lg border border-line px-2 py-1.5 text-sm"
+                          onChange={(event) =>
+                            setBulkEndsOn((current) => ({ ...current, [banner.id]: event.target.value }))
+                          }
+                        />
+                        <button
+                          type="button"
+                          disabled={!/^\d{4}-\d{2}-\d{2}$/.test(String(bulkEndsOn[banner.id] || ""))}
+                          className="rounded-lg bg-brand-800 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                          onClick={() =>
+                            patchBanner(banner.id, {
+                              products: products.map((item) => ({ ...item, endsOn: bulkEndsOn[banner.id] })),
+                            })
+                          }
+                        >
+                          {pt("Apply to all products on this banner")}
+                        </button>
+                      </div>
+                    ) : null}
+                    {products.length ? (
                       <div className="mt-3 grid grid-cols-[minmax(0,1fr)_7rem_10.5rem_4.5rem] gap-2 text-[11px] font-semibold uppercase tracking-wide text-mute">
                         <span>{pt("Product")}</span>
                         <span>{pt("Promo price")}</span>
@@ -578,19 +600,24 @@ export default function BannersPanel({ note }) {
                                 })
                               }
                             />
-                            <input
-                              type="date"
-                              value={row.endsOn || ""}
-                              aria-label={pt("End date")}
-                              className="w-full rounded-lg border border-line px-2 py-1.5 text-sm"
-                              onChange={(event) =>
-                                patchBanner(banner.id, {
-                                  products: products.map((item) =>
-                                    item.productId === row.productId ? { ...item, endsOn: event.target.value } : item
-                                  ),
-                                })
-                              }
-                            />
+                            <div className="min-w-0">
+                              <input
+                                type="date"
+                                value={row.endsOn || ""}
+                                aria-label={pt("End date")}
+                                className="w-full rounded-lg border border-line px-2 py-1.5 text-sm"
+                                onChange={(event) =>
+                                  patchBanner(banner.id, {
+                                    products: products.map((item) =>
+                                      item.productId === row.productId ? { ...item, endsOn: event.target.value } : item
+                                    ),
+                                  })
+                                }
+                              />
+                              {/^\d{4}-\d{2}-\d{2}$/.test(String(row.endsOn || "")) && !offerStillOn(row.endsOn) ? (
+                                <p className="mt-0.5 text-[10px] font-semibold text-amber-800">{pt("Expired")}</p>
+                              ) : null}
+                            </div>
                             <button
                               type="button"
                               className="text-xs font-semibold text-mute"

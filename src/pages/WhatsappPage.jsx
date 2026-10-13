@@ -81,7 +81,7 @@ export default function WhatsappPage() {
             {product
               ? t("whatsappProductLine", {
                   name: product.name,
-                  price: formatPrice(product.price),
+                  price: formatPrice(getEffectivePrice(product).displayPrice),
                 })
               : t("whatsappGeneral")}
           </p>

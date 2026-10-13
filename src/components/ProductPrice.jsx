@@ -1,5 +1,6 @@
+import { formatUnitPrice } from "../lib/productFields";
 import { formatPrice, formatQuoteDate, formatQuoteDateShort, getEffectivePrice } from "../lib/store";
-import { findProductOffer } from "../lib/offer";
+import { findEndedProductOffer, findProductOffer } from "../lib/offer";
 import { usePromo } from "../lib/promo";
 import { useLanguage } from "../i18n";
 
@@ -28,10 +29,11 @@ const URGENCY_SUB = {
   urgent: "font-medium text-red-800/90",
 };
 
-export default function ProductPrice({ product, size = "card", className = "", suppressOffer = false }) {
+export default function ProductPrice({ product, size = "card", className = "", suppressOffer = false, showOfferEnded = false }) {
   const { t, lang } = useLanguage();
   const { promo } = usePromo();
   const offer = suppressOffer ? null : findProductOffer(product?.id, promo);
+  const endedOffer = showOfferEnded && !offer && !suppressOffer ? findEndedProductOffer(product?.id, promo) : null;
   const { displayPrice, status, quote } = getEffectivePrice(product);
   const shownPrice = offer ? offer.price : displayPrice;
   const large = size === "detail";
@@ -53,7 +55,7 @@ export default function ProductPrice({ product, size = "card", className = "", s
               : "text-2xl font-bold text-brand-700 tracking-tight"
           }
         >
-          {formatPrice(shownPrice)}
+          {formatUnitPrice(shownPrice, lang)}
         </p>
         {status === "quoted" ? (
           <span
@@ -72,6 +74,10 @@ export default function ProductPrice({ product, size = "card", className = "", s
       {offer ? (
         <p className={`${chip} inline-block w-fit max-w-full leading-snug font-semibold border ${URGENCY_CHIP.soon}`}>
           {t("offerEnds", { date: formatQuoteDate(offer.endsOn, lang) })}
+        </p>
+      ) : endedOffer ? (
+        <p className={`${chip} inline-block w-fit max-w-full leading-snug font-semibold border text-amber-950 bg-amber-50 border-amber-300`}>
+          {t("offerEnded")}
         </p>
       ) : status === "quoted" && (large ? date : shortDate) ? (
         <p

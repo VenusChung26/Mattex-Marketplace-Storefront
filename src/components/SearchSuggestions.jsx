@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useLanguage } from "../i18n";
 import { foldHan } from "../lib/han";
 import { flattenSuggestOptions, productSku, searchSuggestOptions } from "../lib/searchOptions";
+import { scrollNodeIntoView } from "../lib/scrollInto";
 
 function highlightMatch(text, query) {
   const raw = String(text || "");
@@ -68,7 +69,7 @@ function SuggestMenu({ anchorRef, query, options, activeIndex, onPick, labels })
 
   useEffect(() => {
     const node = menuRef.current?.querySelector(`[data-suggest-index="${activeIndex}"]`);
-    node?.scrollIntoView({ block: "nearest" });
+    if (node) scrollNodeIntoView(node, { block: "nearest" });
   }, [activeIndex]);
 
   useEffect(() => {

@@ -1,9 +1,10 @@
 import { collectAttachmentUrls, collectProductImageUrls, fitWhatsappUrls, publishCustomLineMedia, uploadRfqPdf } from "./rfqBlob.js";
 import { buildQuotePdf, canSharePdfFile, downloadBlob, sharePdfFile } from "./quotePdf.js";
-import { fetchCatalogState, fetchQuoteSnapshot, fetchRemoteKv, fetchRemoteRfqs, fetchRfqStamp, fetchSessionState, isSupabaseConfigured, persistCatalogTables, persistKv, persistKvNow, probeRemoteData, shouldUseLocalSharedStore } from "./supabasePersist.js";
+import { fetchQuoteSnapshot, fetchRemoteKv, fetchRemoteRfqs, fetchRfqStamp, fetchSessionState, isSupabaseConfigured, persistCatalogTables, persistKv, persistKvNow, probeRemoteData, shouldUseLocalSharedStore } from "./supabasePersist.js";
 import { adminOrigin, marketplaceOrigin } from "./origins.js";
 import { activeOfferPrice } from "./offer.js";
 import { foldHan } from "./han.js";
+import { sellingAmount } from "./productFields.js";
 import { contactFormFromAccount, normalizeRoles } from "./phone.js";
 import {
   accountCreatedEmailHtml,
@@ -392,9 +393,9 @@ function isQuoteActive(quote) {
 }
 
 function getEffectivePrice(product) {
-  if (!product || product.priceUponRequest) return { displayPrice: null, status: "none", quote: null };
-  const amount = Number(product.price);
-  if (!Number.isFinite(amount) || amount <= 0) return { displayPrice: null, status: "none", quote: null };
+  if (!product) return { displayPrice: null, status: "none", quote: null };
+  const amount = sellingAmount(product);
+  if (amount == null || amount <= 0) return { displayPrice: null, status: "none", quote: null };
   return { displayPrice: amount, status: "list", quote: null };
 }
 
@@ -1202,14 +1203,46 @@ function getCatalogSyncError(id) {
   return catalogSyncErrors[String(id)] || "";
 }
 
+function catalogBodyStorageKey() {
+  return isPortalSurface() ? "mm_catalog_body_v1:staff" : "mm_catalog_body_v1:shop";
+}
+
+function readCachedCatalog() {
+  if (typeof sessionStorage === "undefined") return null;
+  try {
+    const data = JSON.parse(sessionStorage.getItem(catalogBodyStorageKey()) || "null");
+    if (!data?.etag || data.etag === "seed" || !Array.isArray(data.products) || !data.products.length) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedCatalog(data) {
+  if (typeof sessionStorage === "undefined" || !data?.etag) return;
+  try {
+    sessionStorage.setItem(catalogBodyStorageKey(), JSON.stringify(data));
+  } catch {
+    try { sessionStorage.removeItem(catalogBodyStorageKey()); } catch { /* quota */ }
+  }
+}
+
 async function fetchSharedCatalog() {
   if (typeof window === "undefined" || typeof fetch !== "function") return null;
   try {
-    const res = await fetch("/api/catalog", { cache: "no-store" });
+    const cached = readCachedCatalog();
+    const headers = {};
+    if (cached?.etag) headers["If-None-Match"] = cached.etag;
+    const res = await fetch("/api/catalog", { headers, cache: "no-store" });
+    if (res.status === 304 && cached) {
+      catalogEtag = cached.etag;
+      return cached;
+    }
     if (!res.ok) return null;
     const data = await res.json();
     if (!Array.isArray(data?.products) || !data.products.length) return null;
     catalogEtag = data.etag || "seed";
+    writeCachedCatalog(data);
     return data;
   } catch {
     return null;
@@ -1406,68 +1439,12 @@ async function hydrateStore() {
       return true;
     }
 
-    const remote = await fetchCatalogState(CATALOG_KV_KEYS, { withPrivate: hasLocalSession() });
-    if (!remote) {
-      catalogLoading = false;
-      catalogReady = true;
-      catalogBootReady = true;
-      bumpCatalog();
-      emitStoreChange();
-      return false;
-    }
-
-    await yieldToBrowser();
-    const list = Array.isArray(remote.products) ? remote.products : [];
-    PRODUCTS.splice(0, PRODUCTS.length);
-    const CHUNK = 64;
-    let releasedBoot = false;
-    const releaseBoot = () => {
-      if (releasedBoot) return;
-      releasedBoot = true;
-      applySavedProductPatches();
-      catalogBootReady = true;
-      bumpCatalog();
-      emitStoreChange();
-    };
-    for (let i = 0; i < list.length; i += CHUNK) {
-      const slice = list.slice(i, i + CHUNK);
-      for (const row of slice) {
-        PRODUCTS.push(
-          normalizeProductRecord({
-            ...row,
-            imageUrl: row.imageUrl || row.image_url || "",
-          })
-        );
-      }
-      if (i === 0) releaseBoot();
-      else {
-        bumpCatalog();
-        emitStoreChange();
-      }
-      if (i + CHUNK < list.length) await yieldToBrowser();
-    }
-    if (!releasedBoot) releaseBoot();
-    supplierMetricsBySlug.clear();
-    Object.entries(remote.metrics || {}).forEach(([slug, metrics]) => {
-      supplierMetricsBySlug.set(slug, metrics);
-    });
-    applyCatalogKv(remote.kv);
-    applySavedProductPatches();
     catalogLoading = false;
     catalogReady = true;
     catalogBootReady = true;
     bumpCatalog();
     emitStoreChange();
-
-    if (isPortalSurface()) {
-      const [stamp, session] = await Promise.all([
-        fetchRfqStamp(),
-        fetchSessionState({ includeRfqs: false }),
-      ]);
-      if (session) rfqStamp = stamp;
-      if (applySessionState(session)) emitStoreChange();
-    }
-    return true;
+    return false;
   } catch (error) {
     console.warn("supabase hydrate", error?.message || error);
     catalogLoading = false;
@@ -7476,10 +7453,12 @@ async function pullSupabaseSharedStore() {
 }
 
 async function pullSharedStore({ bootstrap = false } = {}) {
+  let ok = true;
   try {
     if (shouldUseLocalSharedStore()) {
       const res = await fetch("/api/shared-store");
-      if (res.ok) {
+      if (!res.ok) ok = false;
+      else {
         const data = await res.json();
         const rev = Number(data?.rev) || 0;
         if (bootstrap) {
@@ -7500,9 +7479,16 @@ async function pullSharedStore({ bootstrap = false } = {}) {
       }
     }
   } catch {
-    /* ignore */
+    ok = false;
   }
-  if (!shouldUseLocalSharedStore()) await pullSupabaseSharedStore();
+  if (!shouldUseLocalSharedStore()) {
+    try {
+      await pullSupabaseSharedStore();
+    } catch {
+      ok = false;
+    }
+  }
+  return ok;
 }
 
 const CATALOG_KV_KEYS = [
@@ -7576,8 +7562,31 @@ function ensureBuyerSession() {
 }
 
 function beginLocalSharedSync() {
-  pullSharedStore({ bootstrap: true });
-  sharedStoreTimer = window.setInterval(() => pullSharedStore(), 1000);
+  window.clearInterval(sharedStoreTimer);
+  window.clearTimeout(sharedStoreTimer);
+  let delay = 15000;
+  const schedule = (ms) => {
+    window.clearTimeout(sharedStoreTimer);
+    sharedStoreTimer = window.setTimeout(tick, ms);
+  };
+  const tick = async () => {
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+      schedule(15000);
+      return;
+    }
+    const ok = await pullSharedStore();
+    delay = ok ? 15000 : Math.min(120000, delay * 2);
+    schedule(delay);
+  };
+  pullSharedStore({ bootstrap: true }).finally(() => schedule(15000));
+  if (!beginLocalSharedSync.listening && typeof document !== "undefined") {
+    beginLocalSharedSync.listening = true;
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState !== "visible") return;
+      delay = 15000;
+      pullSharedStore().finally(() => schedule(delay));
+    });
+  }
 }
 
 function startSharedStoreSync() {

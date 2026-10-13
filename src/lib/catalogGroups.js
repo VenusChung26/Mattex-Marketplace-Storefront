@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useStore } from "../hooks/useStore";
 import { searchProducts } from "./store";
 import { assignProducts, buildAutoGroups, collapseCatalog, indexGroups, releaseProducts } from "./catalogGroup";
+import { getCatalogGroups as loadRemoteCatalogGroups, saveCatalogGroups as saveCatalogGroupsRemote } from "./remote.js";
 
 export { collapseCatalog };
 
@@ -46,8 +47,7 @@ export function useCatalogGroups() {
 
   useEffect(() => {
     let cancel = false;
-    fetch("/api/catalog-groups", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : null))
+    loadRemoteCatalogGroups()
       .then((data) => {
         if (cancel || !Array.isArray(data?.groups)) return;
         publish(data.groups, "saved");
@@ -62,14 +62,9 @@ export function useCatalogGroups() {
 }
 
 export async function saveCatalogGroups(next) {
-  const response = await fetch("/api/catalog-groups", {
-    method: "POST",
-    credentials: "include",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ groups: next }),
-  });
-  const data = await response.json().catch(() => ({ ok: false, error: "Unable to save groups" }));
-  if (!response.ok || data?.ok === false) return { ok: false, error: data?.error || "Unable to save groups" };
+  const response = await saveCatalogGroupsRemote(next);
+  const data = response.data || { ok: false, error: "Unable to save groups" };
+  if (!response.res.ok || data?.ok === false) return { ok: false, error: data?.error || "Unable to save groups" };
   publish(data.groups || next, "saved");
   return { ok: true, groups: data.groups || next };
 }

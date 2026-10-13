@@ -1,7 +1,9 @@
 import { upload } from "@vercel/blob/client";
 import { absUrl, publicOrigin } from "./locale.js";
 
-const HANDLE_URL = "/api/blob-upload";
+import { BLOB_UPLOAD_PATH } from "./remote.js";
+
+const HANDLE_URL = BLOB_UPLOAD_PATH;
 export const WA_TEXT_MAX = 1400;
 
 function safeSegment(value) {

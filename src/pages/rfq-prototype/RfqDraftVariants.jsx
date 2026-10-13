@@ -162,6 +162,9 @@ function LineMoney({ line, t, compact = false }) {
       {t("quotedPriceLabel")}
     </span>
   ) : null;
+  if (line.custom && line.quotedUnitPrice == null) {
+    return compact ? formatPrice(null) : <span className="text-mute">{formatPrice(null)}</span>;
+  }
   if (line.unitPrice == null) return compact ? formatPrice(null) : <span className="text-mute">{formatPrice(null)}</span>;
   if (hasLowerAsk(line)) {
     return (

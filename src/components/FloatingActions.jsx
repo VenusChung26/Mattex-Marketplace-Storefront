@@ -26,7 +26,7 @@ export default function FloatingActions() {
       </a>
       <button
         type="button"
-        onClick={() => window.scrollTo({ top: 0, behavior: "auto" })}
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         className="flex h-12 w-12 items-center justify-center rounded-full bg-charcoal text-white shadow-[0_8px_20px_rgba(16,21,19,0.28)] hover:bg-brand-800 transition-colors"
         aria-label={t("backToTop")}
       >

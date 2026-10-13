@@ -375,12 +375,12 @@ export default function RfqPage() {
       setDraftAcceptSubstitutes(acceptSubstitutes);
       setConfirmChannel(viaWhatsapp ? "whatsapp" : "rfq");
       setConfirmKind(kind);
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
       return;
     }
     setConfirmChannel(viaWhatsapp ? "whatsapp" : "rfq");
     setConfirmKind(kind);
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }
 
   function linesBelowMoq(ids) {

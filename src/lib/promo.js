@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { setOfferPromo } from "./offer";
+import { getPromo } from "./remote.js";
 
 export function promoBanners(promo) {
   return (Array.isArray(promo?.banners) ? promo.banners : []).filter((banner) => banner?.id && banner?.src);
@@ -55,9 +56,7 @@ let pending = null;
 
 export function loadPromo() {
   if (!pending) {
-    pending = fetch("/api/promo", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : null))
-      .catch(() => null)
+    pending = getPromo().catch(() => null)
       .finally(() => {
         pending = null;
       });

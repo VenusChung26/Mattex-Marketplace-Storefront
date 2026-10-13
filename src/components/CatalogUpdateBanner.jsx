@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { blockProductOrders, fetchProductLive, getCatalogEtag, getStoreSnapshot, subscribeStore } from "../lib/store";
+import { getCatalogVersion } from "../lib/remote";
 import { useLanguage } from "../i18n";
 
 function productIdFromPath(pathname) {
@@ -20,9 +21,9 @@ export default function CatalogUpdateBanner() {
       const current = String(getCatalogEtag() || "seed");
       if (current === "seed") return;
       try {
-        const res = await fetch("/api/catalog-version", { cache: "no-store" });
-        if (!res.ok || stop) return;
-        const data = await res.json();
+        const res = await getCatalogVersion();
+        if (!res.res.ok || stop) return;
+        const data = res.data || {};
         const next = String(data?.etag || "seed");
         const changed = next !== "seed" && next !== current;
         const productId = productIdFromPath(location.pathname);
@@ -42,7 +43,10 @@ export default function CatalogUpdateBanner() {
     }
     check();
     const unsub = subscribeStore(check);
-    const timer = window.setInterval(check, 30000);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      check();
+    }, 30000);
     const onVisible = () => {
       if (document.visibilityState === "visible") check();
     };

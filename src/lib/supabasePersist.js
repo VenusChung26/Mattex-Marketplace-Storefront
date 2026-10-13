@@ -1,40 +1,10 @@
-import { createClient } from "@supabase/supabase-js";
 import { isPublicKvKey } from "./kvKeys.js";
+import { postData } from "./remote.js";
 
 const timers = new Map();
 
-function readEnv(name) {
-  if (typeof import.meta !== "undefined" && import.meta.env) {
-    const meta = import.meta.env;
-    if (name === "VITE_SUPABASE_URL" && meta.VITE_SUPABASE_URL) {
-      return String(meta.VITE_SUPABASE_URL || "").trim();
-    }
-    if (name === "VITE_SUPABASE_ANON_KEY" && meta.VITE_SUPABASE_ANON_KEY) {
-      return String(meta.VITE_SUPABASE_ANON_KEY || "").trim();
-    }
-    if (
-      (name === "VITE_SUPABASE_PUBLISHABLE_KEY" || name === "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") &&
-      (meta.VITE_SUPABASE_PUBLISHABLE_KEY || meta.VITE_SUPABASE_ANON_KEY)
-    ) {
-      return String(meta.VITE_SUPABASE_PUBLISHABLE_KEY || meta.VITE_SUPABASE_ANON_KEY || "").trim();
-    }
-  }
-  return "";
-}
-
-export function supabaseConfig() {
-  const url = readEnv("VITE_SUPABASE_URL") || readEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const anon =
-    readEnv("VITE_SUPABASE_PUBLISHABLE_KEY") ||
-    readEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") ||
-    readEnv("VITE_SUPABASE_ANON_KEY") ||
-    readEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
-  return { url, anon };
-}
-
 export function isSupabaseConfigured() {
-  const { url, anon } = supabaseConfig();
-  return Boolean(url && anon);
+  return typeof fetch === "function";
 }
 
 let remoteDataReady = null;
@@ -48,38 +18,15 @@ function markRemoteDataDown() {
 }
 
 export async function probeRemoteData() {
-  if (!isSupabaseConfigured() || typeof fetch !== "function") return false;
+  if (!isSupabaseConfigured()) return false;
   if (remoteDataReady != null) return remoteDataReady;
-  try {
-    const res = await fetch("/api/data", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ op: "read", keys: ["subbie_rfq_seq"] }),
-    });
-    if (res.status >= 500) {
-      markRemoteDataDown();
-      return false;
-    }
-    remoteDataReady = true;
-    return true;
-  } catch {
+  const result = await postData("read", { keys: ["subbie_rfq_seq"] });
+  if (result.status >= 500 || result.status === 0) {
     markRemoteDataDown();
     return false;
   }
-}
-
-let anonClient = null;
-
-export function getSupabase() {
-  const { url, anon } = supabaseConfig();
-  if (!url || !anon) return null;
-  if (!anonClient) {
-    anonClient = createClient(url, anon, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-  }
-  return anonClient;
+  remoteDataReady = true;
+  return true;
 }
 
 const SKIP_KV_KEYS = new Set([
@@ -100,19 +47,9 @@ const inBrowser = () => typeof document !== "undefined" && typeof fetch === "fun
 
 async function dataApi(op, payload = {}) {
   if (!inBrowser()) return null;
-  try {
-    const res = await fetch("/api/data", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ op, ...payload }),
-    });
-    const data = await res.json().catch(() => null);
-    if (res.status >= 500) markRemoteDataDown();
-    return data?.ok ? data : null;
-  } catch {
-    return null;
-  }
+  const result = await postData(op, payload);
+  if (result.status >= 500 || result.status === 0) markRemoteDataDown();
+  return result.ok ? result.data : null;
 }
 
 export function persistKvNow(key, value) {
@@ -133,37 +70,14 @@ export function persistKv(key, value) {
   );
 }
 
-function kvFromRows(rows) {
-  const kv = {};
-  for (const row of rows || []) {
-    if (!row?.key || skipPersistKey(row.key)) continue;
-    kv[row.key] = row.value;
-  }
-  return kv;
-}
-
-async function fetchPublicKv(sb, keys) {
-  if (!keys.length) return {};
-  const { data, error } = await sb.from("app_kv").select("key,value").in("key", keys);
-  if (error) throw error;
-  return kvFromRows(data);
-}
-
 export async function fetchRemoteKv(keys, { withPrivate = true } = {}) {
-  const sb = getSupabase();
-  if (!sb || !Array.isArray(keys)) return null;
+  if (!Array.isArray(keys)) return null;
   const wanted = keys.filter((key) => !skipPersistKey(key));
-  const privateKeys = wanted.filter((key) => !isPublicKvKey(key));
-  try {
-    const [publicKv, privateRes] = await Promise.all([
-      fetchPublicKv(sb, wanted.filter(isPublicKvKey)),
-      withPrivate && privateKeys.length ? dataApi("read", { keys: privateKeys }) : null,
-    ]);
-    return { ...publicKv, ...(privateRes?.kv || {}) };
-  } catch (error) {
-    console.warn("supabase kv", error?.message || error);
-    return null;
-  }
+  const readKeys = withPrivate ? wanted : wanted.filter(isPublicKvKey);
+  if (!readKeys.length) return {};
+  const data = await dataApi("read", { keys: readKeys });
+  if (!data) return null;
+  return data.kv || {};
 }
 
 function rfqsMapFromRows(rows) {
@@ -183,116 +97,9 @@ export async function fetchRemoteRfqs(since = "") {
   return res ? rfqsMapFromRows(res.rows) : null;
 }
 
-function latestUpdatedAt(sb, table, filter) {
-  let query = sb.from(table).select("updated_at").order("updated_at", { ascending: false }).limit(1);
-  if (filter) query = filter(query);
-  return query;
-}
-
 export async function fetchRfqStamp() {
   const res = await dataApi("rfq-stamp");
   return res ? { table: res.table || "", kv: res.kv || "" } : null;
-}
-
-function productsFromRows(rows) {
-  return (rows || [])
-    .map((row) => {
-      const payload = row?.payload;
-      if (!payload?.id) return null;
-      const imageUrl = String(row.image_url || "").trim();
-      const image = imageUrl.startsWith("http") ? imageUrl : payload.image;
-      return { ...payload, image, imageUrl };
-    })
-    .filter(Boolean);
-}
-
-function metricsFromRows(rows) {
-  const metrics = {};
-  for (const row of rows || []) {
-    metrics[row.slug] = {
-      rating: Number(row.rating) || 0,
-      completionRate: Number(row.completion_rate) || 0,
-      onTimeRate: Number(row.on_time_rate) || 0,
-      searchCount: Number(row.search_count) || 0,
-      foundCount: Number(row.found_count) || 0,
-      rfqCount: Number(row.rfq_count) || 0,
-      empty: Boolean(row.empty),
-    };
-  }
-  return metrics;
-}
-
-const CATALOG_CACHE_KEY = "subbie_catalog_cache_v1";
-
-function readCatalogCache() {
-  try {
-    return JSON.parse(window.localStorage.getItem(CATALOG_CACHE_KEY) || "null");
-  } catch {
-    return null;
-  }
-}
-
-function writeCatalogCache(stamp, state) {
-  try {
-    window.localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify({ stamp, state }));
-  } catch {
-    try {
-      window.localStorage.removeItem(CATALOG_CACHE_KEY);
-    } catch {
-      /* ignore */
-    }
-  }
-}
-
-async function catalogStamp(sb, keys) {
-  const [products, count, kv, metrics] = await Promise.all([
-    latestUpdatedAt(sb, "products"),
-    sb.from("products").select("id", { count: "exact", head: true }),
-    latestUpdatedAt(sb, "app_kv", (q) => q.in("key", keys)),
-    latestUpdatedAt(sb, "supplier_metrics"),
-  ]);
-  if (products.error || count.error || kv.error) return "";
-  return [products.data?.[0]?.updated_at, count.count, kv.data?.[0]?.updated_at, metrics.data?.[0]?.updated_at].join("|");
-}
-
-async function fetchPublicCatalog(sb, publicKeys) {
-  const stamp = inBrowser() && publicKeys.length ? await catalogStamp(sb, publicKeys) : "";
-  const cached = stamp ? readCatalogCache() : null;
-  if (cached?.stamp === stamp && cached.state) return cached.state;
-  const [kvRes, productRes, metricRes] = await Promise.all([
-    sb.from("app_kv").select("key,value").in("key", publicKeys),
-    sb.from("products").select("id,payload,image_url").eq("published", true).eq("deleted", false).eq("held", false),
-    sb.from("supplier_metrics").select("*"),
-  ]);
-  if (productRes.error) {
-    console.warn("supabase hydrate", productRes.error.message);
-    return null;
-  }
-  const state = {
-    kv: kvFromRows(kvRes.data),
-    products: productsFromRows(productRes.data),
-    metrics: metricsFromRows(metricRes.data),
-  };
-  if (stamp && !kvRes.error && !metricRes.error) writeCatalogCache(stamp, state);
-  return state;
-}
-
-export async function fetchCatalogState(keys = [], { withPrivate = false } = {}) {
-  const sb = getSupabase();
-  if (!sb) return null;
-  const kvKeys = keys.filter((key) => !skipPersistKey(key));
-  const privateKeys = kvKeys.filter((key) => !isPublicKvKey(key));
-  try {
-    const [state, privateRes] = await Promise.all([
-      fetchPublicCatalog(sb, kvKeys.filter(isPublicKvKey)),
-      withPrivate && privateKeys.length ? dataApi("read", { keys: privateKeys }) : null,
-    ]);
-    if (!state) return null;
-    return { ...state, kv: { ...state.kv, ...(privateRes?.kv || {}) } };
-  } catch (error) {
-    console.warn("supabase hydrate", error?.message || error);
-    return null;
-  }
 }
 
 export async function fetchSessionState({ includeRfqs = true } = {}) {

@@ -413,6 +413,8 @@ export const ADMIN_ZH = {
   "No limit. Each product needs a promo price and an end date, and can belong to only one banner.": "沒有上限。每件產品要有優惠價和結束日期，而且只能屬於一個橫幅。",
   "Promo price": "優惠價",
   "End date": "結束日期",
+  "Apply to all products on this banner": "套用到此橫幅全部產品",
+  Expired: "已過期",
   Remove: "移除",
   "Search product name, SKU, or category": "搜尋產品名稱、SKU 或分類",
   "Drop to add": "放開以加入",

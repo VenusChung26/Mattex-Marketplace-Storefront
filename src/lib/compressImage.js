@@ -16,7 +16,7 @@ export function productImageList(product) {
 
 export function compressImageFile(file, { maxBytes = PRODUCT_IMAGE_MAX_BYTES, maxSide = PRODUCT_IMAGE_MAX_SIDE } = {}) {
   return new Promise((resolve, reject) => {
-    if (!file || !String(file.type || "").startsWith("image/")) {
+    if (!file || !(String(file.type || "").startsWith("image/") || /\.webp$/i.test(file.name || ""))) {
       reject(new Error("bad_image"));
       return;
     }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { canDirectBuy, catalogPathForCategory, displayLeadTime, getProduct, isBuyerVisible, isHitProduct, productSkuId, stockStatusKey, supplierDisplayName, supplierPath, addCustomLine, requireBuyerAuth } from "../lib/store";
+import { displayLeadTime, getProduct, isBuyerVisible, isHitProduct, productSkuId, stockStatusKey, supplierDisplayName, supplierPath, addCustomLine, requireBuyerAuth, catalogPathForCategory, canDirectBuy } from "../lib/store";
+import { orderMinimum, productImageUrl } from "../lib/productFields";
 import { groupOf, useCatalogGroups } from "../lib/catalogGroups";
 import { usePromo } from "../lib/promo";
 import { useStore } from "../hooks/useStore";
@@ -380,8 +381,8 @@ function tailorInitialFromProduct(product, qty) {
   return {
     name: product.name || "",
     description: bits.join("\n"),
-    qty: Math.max(1, Number(qty) || Number(product.moq) || 1),
-    image: product.image || "",
+    qty: Math.max(1, Number(qty) || Number(orderMinimum(product)) || 1),
+    image: productImageUrl(product),
     category: product.category || "",
     attachments: [],
   };
@@ -695,7 +696,7 @@ export function ProductListRow({ product, onAdd, grouped = false }) {
   );
 }
 
-export default function ProductCard({ product, onAdd, rank = null, compact = false, grouped = false }) {
+export default function ProductCard({ product, onAdd, rank = null, compact = false, grouped = false, showOfferEnded = false }) {
   const { t, lang } = useLanguage();
   const { selected, members, selectedId, setSelectedId } = useSelectedVariant(product, grouped);
   const supplierName = supplierDisplayName(selected.supplier);
@@ -750,7 +751,7 @@ export default function ProductCard({ product, onAdd, rank = null, compact = fal
         />
         <ProductMetaChips product={selected} className="mt-2.5" />
         <div className="mt-auto pt-4">
-          <ProductPrice product={selected} className="!mt-0" />
+          <ProductPrice product={selected} className="!mt-0" showOfferEnded={showOfferEnded} />
           <div className="mt-3">
             <ProductActions product={selected} onAdd={onAdd} size="card" />
           </div>

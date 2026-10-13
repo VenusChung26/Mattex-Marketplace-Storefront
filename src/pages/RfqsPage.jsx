@@ -624,7 +624,7 @@ export default function RfqsPage() {
   }, [user?.email]);
   const [params] = useSearchParams();
   const storedList = rfqs || [];
-  const usingDemo = SHOW_RFQ_QUOTES && storedList.length === 0;
+  const usingDemo = false;
   const list = sortRfqsNewestFirst(usingDemo ? [DEMO_QUOTED_RFQ] : storedList);
 
   const initial = params.get("id") || (list[0] && list[0].id) || null;
@@ -1303,6 +1303,7 @@ function SubmittedStep({ rfq, t, editing = false, onChangeLine, onRemoveLine, on
             <span className="text-mute shrink-0 text-right">
               {(() => {
                 const unit = lineQuoteUnit(l);
+                if (l.custom && l.quotedUnitPrice == null) return formatPrice(null);
                 if (unit == null) return formatPrice(null);
                 if (l.quotedUnitPrice != null) {
                   return (
@@ -1675,7 +1676,7 @@ function PaymentStep({ acceptance, quotes, po, payment, onChange, onContinue, on
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <label className="btn-soft !px-4 !py-2 cursor-pointer">
-            <input type="file" accept="image/*,.pdf" className="sr-only" onChange={onUploadReceipt} />
+            <input type="file" accept="image/*,.webp,.pdf" className="sr-only" onChange={onUploadReceipt} />
             {receiptName ? "Replace file" : "Upload receipt"}
           </label>
           {receiptName ? (
@@ -1802,7 +1803,7 @@ function DeliveryStep({ rfq, acceptance, quotes, po, payment, delivery, onChange
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-mute">Waiting for supplier upload…</p>
             <label className="btn-primary !px-4 !py-2 cursor-pointer text-sm">
-              <input type="file" accept="image/*,.pdf" className="sr-only" onChange={onUploadNote} />
+              <input type="file" accept="image/*,.webp,.pdf" className="sr-only" onChange={onUploadNote} />
               Simulate supplier upload
             </label>
           </div>
@@ -1813,7 +1814,7 @@ function DeliveryStep({ rfq, acceptance, quotes, po, payment, delivery, onChange
                 {noteName}
               </span>
               <label className="btn-soft !px-3 !py-1.5 cursor-pointer text-xs">
-                <input type="file" accept="image/*,.pdf" className="sr-only" onChange={onUploadNote} />
+                <input type="file" accept="image/*,.webp,.pdf" className="sr-only" onChange={onUploadNote} />
                 Replace
               </label>
             </div>

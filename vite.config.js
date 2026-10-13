@@ -96,12 +96,21 @@ function jsonPlugin() {
         }
         if (path === "/api/catalog" && req.method === "GET") {
           const request = new Request(`http://${req.headers.host || "localhost"}${req.url || ""}`, {
-            headers: { cookie: String(req.headers.cookie || "") },
+            headers: {
+              cookie: String(req.headers.cookie || ""),
+              "if-none-match": String(req.headers["if-none-match"] || ""),
+            },
           });
           const result = await handleCatalogRequest(request);
           res.statusCode = result.status;
+          const etag = result.headers.get("etag");
+          if (etag) res.setHeader("ETag", etag);
+          res.setHeader("Cache-Control", result.headers.get("cache-control") || "no-store");
+          if (result.status === 304) {
+            res.end();
+            return;
+          }
           res.setHeader("Content-Type", "application/json");
-          res.setHeader("Cache-Control", "no-store");
           res.end(await result.text());
           return;
         }

@@ -96,7 +96,8 @@ function seedMessages(thread, t, rfq) {
   const names = (thread.lines || [])
     .map((l) => {
       const remark = l.remark ? ` — ${l.remark}` : "";
-      return `• ${l.name} × ${l.qty}${l.unitPrice != null ? ` (${formatPrice(l.unitPrice)})` : ""}${remark}`;
+      const pending = (l.custom && l.quotedUnitPrice == null) || l.unitPrice == null;
+      return `• ${l.name} × ${l.qty} (${pending ? formatPrice(null) : formatPrice(l.unitPrice)})${remark}`;
     })
     .join("\n");
   const intro = isQuoteAsk(rfq) ? t("waWantQuote") : t("waWantToBuy");
@@ -130,8 +131,10 @@ export default function WhatsappChatPage() {
   const { t, lang } = useLanguage();
   const stored = rfqId ? getRfq(decodeURIComponent(rfqId)) : null;
   const pending = stored ? null : getPendingWhatsappOrder();
-  const source = stored || pending || demoRfq();
-  const isDemo = !stored && !pending;
+  const allowDemo = params.get("demo") === "1";
+  const isEmpty = !stored && !pending && !allowDemo;
+  const source = stored || pending || (allowDemo ? demoRfq() : { id: "", lines: [], askKind: "buy", project: "", pricedSubtotal: 0 });
+  const isDemo = allowDemo && !stored && !pending;
   const [rfq, setRfq] = useState(source);
 
   useEffect(() => {
@@ -159,7 +162,7 @@ export default function WhatsappChatPage() {
   const messages = inbox[effectiveSlug] || [];
 
   useEffect(() => {
-    if (!thread) return;
+    if (!thread || isEmpty) return;
     const key = `${rfq.id}:${thread.slug}`;
     if (seededRef.current.has(key)) return;
     seededRef.current.add(key);
@@ -281,6 +284,11 @@ export default function WhatsappChatPage() {
     <div className="min-h-screen bg-[#0b141a]">
       <Seo lang={lang} path={withLocale(lang, "/whatsapp-chat")} title={`${t("whatsapp")} | Mattex Marketplace`} description={t("waChatDemoBanner")} noindex />
       <SiteHeader />
+      {isEmpty ? (
+        <p className="px-4 py-16 text-center text-sm text-[#8696a0]">{t("waBackDraft")}</p>
+      ) : null}
+      {!isEmpty ? (
+      <>
       <div className="border-b border-white/10 bg-[#111b21] px-4 py-2 text-center text-[11px] text-[#8696a0]">
         {t("waChatDemoBanner")}
         {isDemo ? ` · ${t("waDemoHint")}` : ` · ${t("waSentOrder", { id: rfq.id })}`}
@@ -311,6 +319,8 @@ export default function WhatsappChatPage() {
         {t("waDemoState", { supplier: thread?.supplier || "—", n: messages.length })}
       </p>
       <PrototypeSwitcher variants={WA_CHAT_VARIANTS} current={variant} />
+      </>
+      ) : null}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import ProductRating from "../components/ProductRating";
 import { ProductActions, ProductBadges, ProductImage } from "../components/ProductCard";
 import CartToast from "../components/CartToast";
 import { productImageList } from "../lib/compressImage";
+import { productImageUrl } from "../lib/productFields";
 import { useStore } from "../hooks/useStore";
 import { useLanguage } from "../i18n";
 import { bootProduct } from "../lib/bootPage";
@@ -176,7 +177,7 @@ export default function DetailsPage() {
         path={path}
         title={copy.productTitle(product.name)}
         description={copy.productDesc(product)}
-        image={product.image || "/og-default.webp"}
+        image={productImageUrl(product) || "/og-default.webp"}
         ogType="product"
         jsonLd={[
           orgJsonLd(origin),
@@ -205,7 +206,7 @@ export default function DetailsPage() {
           <div className="relative overflow-hidden bg-brand-50 border border-line rounded-xl self-start w-full">
             <ProductBadges product={product} />
             <ProductImage
-              src={activeImage || product.image}
+              src={activeImage || productImageUrl(product)}
               fallback={activeImage === product.image ? product.imageFallback : ""}
               alt={product.name}
               className="block w-full"

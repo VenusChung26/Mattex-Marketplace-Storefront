@@ -9,8 +9,8 @@ import { compressImageFile, PRODUCT_IMAGE_MAX } from "../lib/compressImage";
 const emptyForm = { name: "", description: "", qty: 1, image: "", images: [], category: "", attachments: [] };
 export const SHOW_CUSTOM_FILE_UPLOADS = true;
 export const SHOW_CUSTOM_IMAGE_UPLOAD = true;
-export const SPEC_FILE_ACCEPT = ".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx";
-export const SPEC_FILE_EXT = /\.(jpe?g|png|pdf|docx?|xlsx?)$/i;
+export const SPEC_FILE_ACCEPT = ".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx,.xls,.xlsx";
+export const SPEC_FILE_EXT = /\.(jpe?g|png|webp|pdf|docx?|xlsx?)$/i;
 
 const SPEC_FILE_MAX = 8;
 
@@ -80,7 +80,7 @@ export default function CustomProductForm({
   }, [initial.name, initial.description, initial.qty, initial.image, initial.category, mode]);
 
   async function handleImages(fileList) {
-    const picked = Array.from(fileList || []).filter((file) => String(file.type || "").startsWith("image/"));
+    const picked = Array.from(fileList || []).filter((file) => String(file.type || "").startsWith("image/") || /\.webp$/i.test(file.name || ""));
     if (!picked.length) return;
     const remaining = PRODUCT_IMAGE_MAX - images.length;
     if (remaining <= 0) {
@@ -257,7 +257,7 @@ export default function CustomProductForm({
         <input
           ref={imageInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,.webp"
           multiple
           className="sr-only"
           onChange={(e) => {

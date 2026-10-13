@@ -3,6 +3,7 @@
  */
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { formatPrice, buildSupplierMetrics, getSupplier, supplierSlug, getProduct } from "../../lib/store";
+import { scrollLeftSoon, scrollNodeIntoView } from "../../lib/scrollInto";
 import { useLanguage } from "../../i18n";
 
 function metricsForSupplier(name) {
@@ -838,10 +839,10 @@ export default function VariantA({ rfq, quotes, acceptance, onAccept, onSupplier
         if (cancelled) return;
         const table = document.getElementById("quote-compare-table");
         const col = document.getElementById(`quote-col-${reviewQuoteId}`);
-        table?.scrollIntoView({ behavior: "smooth", block: "start" });
+        scrollNodeIntoView(table, { block: "start" });
         if (table && col) {
           const left = col.offsetLeft - table.clientWidth / 2 + col.offsetWidth / 2;
-          table.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+          scrollLeftSoon(table, Math.max(0, left));
         }
       });
     }, 60);

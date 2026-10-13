@@ -26,12 +26,12 @@ export function activeBannerOffers(banner, now = new Date()) {
   return bannerProductOffers(banner).filter((row) => offerStillOn(row.endsOn, now));
 }
 
-export function findProductOffer(productId, promo = promoCache, now = new Date()) {
+function offerOnBanners(productId, promo, now, stillOn) {
   const id = String(productId || "");
   if (!id || !promo) return null;
   const banners = Array.isArray(promo.banners) ? promo.banners : [];
   for (const banner of banners) {
-    const row = activeBannerOffers(banner, now).find((item) => item.productId === id);
+    const row = bannerProductOffers(banner).find((item) => item.productId === id && offerStillOn(item.endsOn, now) === stillOn);
     if (!row) continue;
     return {
       ...row,
@@ -41,6 +41,14 @@ export function findProductOffer(productId, promo = promoCache, now = new Date()
     };
   }
   return null;
+}
+
+export function findProductOffer(productId, promo = promoCache, now = new Date()) {
+  return offerOnBanners(productId, promo, now, true);
+}
+
+export function findEndedProductOffer(productId, promo = promoCache, now = new Date()) {
+  return offerOnBanners(productId, promo, now, false);
 }
 
 export function activeOfferPrice(productId) {

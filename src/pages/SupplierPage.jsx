@@ -37,7 +37,7 @@ export default function SupplierPage() {
   const [catalogShown, setCatalogShown] = useState(24);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     setSearchQuery("");
     setSelectedCategory("");
     setPriceFilter("all");

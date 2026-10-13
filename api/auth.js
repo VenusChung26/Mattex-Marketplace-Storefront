@@ -26,8 +26,8 @@ function db() {
 function secret() {
   const value = process.env.SESSION_SECRET || "";
   if (value.length >= 32) return value;
-  if (!process.env.VERCEL_ENV) return "local-dev-only-session-secret-mattex-32";
-  throw new Error("auth_not_configured");
+  if (process.env.VERCEL || process.env.VERCEL_ENV) throw new Error("auth_not_configured");
+  return "local-dev-only-session-secret-mattex-32";
 }
 
 function localStaffMatch(email, password) {

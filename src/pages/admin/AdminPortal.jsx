@@ -6,6 +6,7 @@ import AttachmentLinks, { linePhotoSrc, PreviewThumb } from "../../components/At
 import { buildQuotePdf, downloadBlob } from "../../lib/quotePdf";
 import { compressImageFile, PRODUCT_IMAGE_MAX, productImageList } from "../../lib/compressImage";
 import { uploadCatalogImage } from "../../lib/catalogImage";
+import { scrollNodeIntoView } from "../../lib/scrollInto";
 
 function legacyImageUrl(url) {
   const value = String(url || "").trim();
@@ -516,7 +517,10 @@ export default function AdminPortal() {
   useEffect(() => {
     if (!staff?.email || page !== "rfqs") return undefined;
     refreshRemoteRfqs();
-    const timer = window.setInterval(() => refreshRemoteRfqs(), 15000);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      refreshRemoteRfqs();
+    }, 15000);
     return () => window.clearInterval(timer);
   }, [staff?.email, page]);
 
@@ -1955,7 +1959,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
   }
 
   async function onImageFiles(fileList) {
-    const picked = Array.from(fileList || []).filter((file) => String(file.type || "").startsWith("image/"));
+    const picked = Array.from(fileList || []).filter((file) => String(file.type || "").startsWith("image/") || /\.webp$/i.test(file.name || ""));
     if (!picked.length) {
       setFormError(pt("Please choose an image file."));
       return;
@@ -2603,7 +2607,7 @@ function ProductsPanel({ products, product, editing, setEditing, note, reports =
               <input
                 ref={imageInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,.webp"
                 multiple
                 className="sr-only"
                 onChange={(e) => {
@@ -4106,7 +4110,7 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
   useEffect(() => {
     if (!focusId) return undefined;
     const timer = window.setTimeout(() => {
-      document.getElementById(`admin-rfq-${focusId}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+      scrollNodeIntoView(document.getElementById(`admin-rfq-${focusId}`), { block: "center" });
     }, 80);
     return () => window.clearTimeout(timer);
   }, [focusId, view]);
@@ -4141,7 +4145,7 @@ function RfqPanel({ rfqs: rawRfqs, note, focusId = "", onClearFocus, onOpenDetai
       setStatusTab(statusTabs.some((tab) => tab.id === key) ? key : "all");
     }
     window.setTimeout(() => {
-      document.getElementById(`admin-rfq-${rfq.id}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+      scrollNodeIntoView(document.getElementById(`admin-rfq-${rfq.id}`), { block: "center" });
     }, 80);
   }
 
@@ -5170,7 +5174,7 @@ function AccountPanel({ note, kind = "sales", focusEmail = "", onOpenRfq }) {
   useEffect(() => {
     if (!focusEmail || kind !== "buyer") return undefined;
     const timer = window.setTimeout(() => {
-      document.getElementById(buyerDomId(focusEmail))?.scrollIntoView({ block: "center", behavior: "smooth" });
+      scrollNodeIntoView(document.getElementById(buyerDomId(focusEmail)), { block: "center" });
     }, 80);
     return () => window.clearTimeout(timer);
   }, [kind, focusEmail, statusTab]);

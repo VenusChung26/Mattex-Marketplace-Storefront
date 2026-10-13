@@ -142,7 +142,7 @@ export default function EmailSentPage() {
                         {line.productNo || line.productId}
                       </td>
                       <td className="px-3 py-2.5 text-right font-medium whitespace-nowrap">{line.qty}</td>
-                      <td className="px-3 py-2.5 text-right whitespace-nowrap">{formatPrice(line.unitPrice)}</td>
+                      <td className="px-3 py-2.5 text-right whitespace-nowrap">{line.custom && line.quotedUnitPrice == null ? formatPrice(null) : formatPrice(line.unitPrice)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatPrice } from "../../lib/store";
+import { scrollNodeIntoView } from "../../lib/scrollInto";
 import { SHOW_RFQ } from "../../lib/flags";
 import { useLanguage } from "../../i18n";
 
@@ -45,9 +46,11 @@ function OrderCards({ lines, t, editable, onChangeLine, onRemoveLine }) {
             )}
             <div className="min-w-0 flex-1 py-1.5 pr-2">
               <p className="truncate text-[13px] font-semibold leading-snug text-[#111b21]">{line.name}</p>
-              {line.unitPrice != null ? (
+              {(line.custom && line.quotedUnitPrice == null) || line.unitPrice == null ? (
+                <p className="text-[11px] text-[#667781]">{formatPrice(null)}</p>
+              ) : (
                 <p className="text-[11px] text-[#667781]">{formatPrice(line.unitPrice)}</p>
-              ) : null}
+              )}
               {line.supplier ? <p className="truncate text-[10px] text-[#8696a0]">{line.supplier}</p> : null}
               {editable ? (
                 <div className="mt-1 flex items-center gap-2">
@@ -204,7 +207,7 @@ function ChatWallpaper({ children, className = "" }) {
 function MessageList({ messages, typing, t, onChangeLine, onRemoveLine }) {
   const endRef = useRef(null);
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    scrollNodeIntoView(endRef.current, { block: "end" });
   }, [messages, typing]);
   return (
     <div className="space-y-1.5 px-3 py-3">

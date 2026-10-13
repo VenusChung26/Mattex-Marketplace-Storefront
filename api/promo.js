@@ -149,6 +149,9 @@ async function storeImage(id, decoded) {
     });
     return blob.url;
   }
+  if (process.env.VERCEL) {
+    throw new Error("blob_required");
+  }
   await mkdir(UPLOAD_DIR, { recursive: true });
   await writeFile(path.join(UPLOAD_DIR, filename), decoded.body);
   return `/assets/promo/uploads/${filename}`;

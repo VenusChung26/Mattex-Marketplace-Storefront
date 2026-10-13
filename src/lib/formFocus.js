@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import { scrollNodeIntoView } from "./scrollInto";
 
 export function revealFormIssue(root) {
   if (typeof document === "undefined") return;
@@ -7,7 +8,7 @@ export function revealFormIssue(root) {
   const alert = scope.querySelector("[data-form-alert]");
   const target = invalid || alert;
   if (!target) return;
-  target.scrollIntoView({ behavior: "smooth", block: "center" });
+  scrollNodeIntoView(target, { block: "center" });
   const focusable = invalid && typeof invalid.focus === "function" ? invalid : alert;
   if (focusable && typeof focusable.focus === "function") {
     try {

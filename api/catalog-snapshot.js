@@ -312,7 +312,12 @@ export async function GET(request) {
   }
   const snapshot = catalogForCaller(await handleCatalogGet(), request);
   if (!snapshot) return Response.json({ etag: SEED }, { status: 404, headers });
-  return Response.json(snapshot, { headers });
+  const etag = String(snapshot.etag || "");
+  const inm = String(request.headers.get("if-none-match") || "").replace(/"/g, "");
+  const catalogHeaders = { "cache-control": "private, no-cache" };
+  if (etag) catalogHeaders.etag = etag;
+  if (etag && etag !== SEED && inm === etag) return new Response(null, { status: 304, headers: catalogHeaders });
+  return Response.json(snapshot, { headers: catalogHeaders });
 }
 
 export async function POST(request) {

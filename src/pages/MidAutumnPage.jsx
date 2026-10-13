@@ -81,7 +81,7 @@ export default function MidAutumnPage() {
               </div>
               <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {offerProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} onAdd={handleAdd} />
+                  <ProductCard key={product.id} product={product} onAdd={handleAdd} showOfferEnded />
                 ))}
               </div>
             </section>
